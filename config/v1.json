@@ -1,0 +1,1064 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Config",
+  "type": "object",
+  "properties": {
+    "api": {
+      "default": {
+        "internal": {
+          "allowed_cidrs": [],
+          "api_token": null
+        },
+        "metadata_allowed_keys": [],
+        "rate_limit": {
+          "burst": 10,
+          "enabled": true,
+          "requests_per_minute": 60
+        }
+      },
+      "allOf": [
+        {
+          "$ref": "#/definitions/ApiConfig"
+        }
+      ]
+    },
+    "compliance": {
+      "default": {
+        "data_retention": {
+          "audit_log_days": 2555,
+          "deleted_user_anonymize_after_days": 0,
+          "guest_ttl_days": 30
+        },
+        "deletion": {
+          "anonymize_email_pattern": "deleted-{hash}@anonymized.local",
+          "preserve_referential_integrity": true
+        }
+      },
+      "allOf": [
+        {
+          "$ref": "#/definitions/ComplianceConfig"
+        }
+      ]
+    },
+    "credentials": {
+      "default": {
+        "mfa": {
+          "totp": {
+            "algorithm": "SHA1",
+            "digits": 6,
+            "issuer": null,
+            "period": 30,
+            "recovery_codes": {
+              "code_length": 12,
+              "count": 10
+            },
+            "skew": 1
+          }
+        },
+        "passkeys": {
+          "origins": [],
+          "resident_key": "preferred",
+          "rp_id": null,
+          "rp_name": null,
+          "timeout_seconds": 60,
+          "user_verification": "preferred"
+        },
+        "password": {
+          "argon2": {
+            "memory_cost": 65536,
+            "parallelism": 2,
+            "time_cost": 3
+          },
+          "hashing_algorithm": "argon2id",
+          "policy": {
+            "disallow_common": true,
+            "min_length": 12,
+            "require_digit": true,
+            "require_lowercase": true,
+            "require_symbol": true,
+            "require_uppercase": true
+          }
+        }
+      },
+      "allOf": [
+        {
+          "$ref": "#/definitions/CredentialsConfig"
+        }
+      ]
+    },
+    "crypto": {
+      "default": {
+        "jwt": {
+          "algorithm": "RS256",
+          "audience": null,
+          "enabled": false,
+          "issuer": null,
+          "private_key": null,
+          "public_key": null
+        },
+        "master_key": null
+      },
+      "allOf": [
+        {
+          "$ref": "#/definitions/CryptoConfig"
+        }
+      ]
+    },
+    "database": {
+      "default": null,
+      "anyOf": [
+        {
+          "$ref": "#/definitions/DatabaseConfig"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "email": {
+      "default": {
+        "enabled": true,
+        "from_address": null,
+        "from_name": null,
+        "smtp": {
+          "host": null,
+          "password": null,
+          "port": 587,
+          "starttls": true,
+          "timeout_seconds": 30,
+          "username": null
+        },
+        "templates": {
+          "password_reset": null,
+          "verification": null
+        }
+      },
+      "allOf": [
+        {
+          "$ref": "#/definitions/EmailConfig"
+        }
+      ]
+    },
+    "redis": {
+      "default": {
+        "enabled": false,
+        "max_connections": 10,
+        "url": "redis://127.0.0.1:6379/0"
+      },
+      "allOf": [
+        {
+          "$ref": "#/definitions/RedisConfig"
+        }
+      ]
+    },
+    "server": {
+      "default": {
+        "host": "0.0.0.0",
+        "log_format": "json",
+        "log_level": "info",
+        "log_output": [
+          "stdout"
+        ],
+        "port": 8080,
+        "public_url": null,
+        "tls_cert": null,
+        "tls_key": null
+      },
+      "allOf": [
+        {
+          "$ref": "#/definitions/ServerConfig"
+        }
+      ]
+    },
+    "session": {
+      "default": null,
+      "anyOf": [
+        {
+          "$ref": "#/definitions/SessionConfig"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "webhooks": {
+      "default": {
+        "enabled": false,
+        "endpoints": []
+      },
+      "allOf": [
+        {
+          "$ref": "#/definitions/WebhooksConfig"
+        }
+      ]
+    }
+  },
+  "definitions": {
+    "ApiConfig": {
+      "type": "object",
+      "properties": {
+        "internal": {
+          "default": {
+            "allowed_cidrs": [],
+            "api_token": null
+          },
+          "allOf": [
+            {
+              "$ref": "#/definitions/InternalApiConfig"
+            }
+          ]
+        },
+        "metadata_allowed_keys": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "rate_limit": {
+          "default": {
+            "burst": 10,
+            "enabled": true,
+            "requests_per_minute": 60
+          },
+          "allOf": [
+            {
+              "$ref": "#/definitions/RateLimitConfig"
+            }
+          ]
+        }
+      }
+    },
+    "Argon2Config": {
+      "type": "object",
+      "properties": {
+        "memory_cost": {
+          "default": 65536,
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        },
+        "parallelism": {
+          "default": 2,
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        },
+        "time_cost": {
+          "default": 3,
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        }
+      }
+    },
+    "BearerConfig": {
+      "type": "object",
+      "properties": {
+        "default_ttl_minutes": {
+          "default": 15,
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        },
+        "opaque_token_length": {
+          "default": 32,
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        },
+        "refresh_token_enabled": {
+          "default": false,
+          "type": "boolean"
+        },
+        "refresh_token_ttl_days": {
+          "default": 30,
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        }
+      }
+    },
+    "ComplianceConfig": {
+      "type": "object",
+      "properties": {
+        "data_retention": {
+          "default": {
+            "audit_log_days": 2555,
+            "deleted_user_anonymize_after_days": 0,
+            "guest_ttl_days": 30
+          },
+          "allOf": [
+            {
+              "$ref": "#/definitions/DataRetentionConfig"
+            }
+          ]
+        },
+        "deletion": {
+          "default": {
+            "anonymize_email_pattern": "deleted-{hash}@anonymized.local",
+            "preserve_referential_integrity": true
+          },
+          "allOf": [
+            {
+              "$ref": "#/definitions/DeletionConfig"
+            }
+          ]
+        }
+      }
+    },
+    "CookieConfig": {
+      "type": "object",
+      "properties": {
+        "domain": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "http_only": {
+          "default": true,
+          "type": "boolean"
+        },
+        "name": {
+          "default": "aegis_session",
+          "type": "string"
+        },
+        "path": {
+          "default": "/",
+          "type": "string"
+        },
+        "same_site": {
+          "default": "lax",
+          "type": "string"
+        },
+        "secure": {
+          "default": true,
+          "type": "boolean"
+        }
+      }
+    },
+    "CredentialsConfig": {
+      "type": "object",
+      "properties": {
+        "mfa": {
+          "default": {
+            "totp": {
+              "algorithm": "SHA1",
+              "digits": 6,
+              "issuer": null,
+              "period": 30,
+              "recovery_codes": {
+                "code_length": 12,
+                "count": 10
+              },
+              "skew": 1
+            }
+          },
+          "allOf": [
+            {
+              "$ref": "#/definitions/MfaConfig"
+            }
+          ]
+        },
+        "passkeys": {
+          "default": {
+            "origins": [],
+            "resident_key": "preferred",
+            "rp_id": null,
+            "rp_name": null,
+            "timeout_seconds": 60,
+            "user_verification": "preferred"
+          },
+          "allOf": [
+            {
+              "$ref": "#/definitions/PasskeysConfig"
+            }
+          ]
+        },
+        "password": {
+          "default": {
+            "argon2": {
+              "memory_cost": 65536,
+              "parallelism": 2,
+              "time_cost": 3
+            },
+            "hashing_algorithm": "argon2id",
+            "policy": {
+              "disallow_common": true,
+              "min_length": 12,
+              "require_digit": true,
+              "require_lowercase": true,
+              "require_symbol": true,
+              "require_uppercase": true
+            }
+          },
+          "allOf": [
+            {
+              "$ref": "#/definitions/PasswordConfig"
+            }
+          ]
+        }
+      }
+    },
+    "CryptoConfig": {
+      "type": "object",
+      "properties": {
+        "jwt": {
+          "default": {
+            "algorithm": "RS256",
+            "audience": null,
+            "enabled": false,
+            "issuer": null,
+            "private_key": null,
+            "public_key": null
+          },
+          "allOf": [
+            {
+              "$ref": "#/definitions/JwtConfig"
+            }
+          ]
+        },
+        "master_key": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "DataRetentionConfig": {
+      "type": "object",
+      "properties": {
+        "audit_log_days": {
+          "default": 2555,
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        },
+        "deleted_user_anonymize_after_days": {
+          "default": 0,
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        },
+        "guest_ttl_days": {
+          "default": 30,
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        }
+      }
+    },
+    "DatabaseConfig": {
+      "type": "object",
+      "required": [
+        "url"
+      ],
+      "properties": {
+        "connection_timeout_seconds": {
+          "default": 30,
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        },
+        "encryption_key": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "max_connections": {
+          "default": 25,
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        },
+        "min_idle": {
+          "default": 5,
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        },
+        "url": {
+          "type": "string"
+        }
+      }
+    },
+    "DeletionConfig": {
+      "type": "object",
+      "properties": {
+        "anonymize_email_pattern": {
+          "default": "deleted-{hash}@anonymized.local",
+          "type": "string"
+        },
+        "preserve_referential_integrity": {
+          "default": true,
+          "type": "boolean"
+        }
+      }
+    },
+    "EmailConfig": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "default": true,
+          "type": "boolean"
+        },
+        "from_address": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "from_name": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "smtp": {
+          "default": {
+            "host": null,
+            "password": null,
+            "port": 587,
+            "starttls": true,
+            "timeout_seconds": 30,
+            "username": null
+          },
+          "allOf": [
+            {
+              "$ref": "#/definitions/SmtpConfig"
+            }
+          ]
+        },
+        "templates": {
+          "default": {
+            "password_reset": null,
+            "verification": null
+          },
+          "allOf": [
+            {
+              "$ref": "#/definitions/EmailTemplatesConfig"
+            }
+          ]
+        }
+      }
+    },
+    "EmailTemplatesConfig": {
+      "type": "object",
+      "properties": {
+        "password_reset": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "verification": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "InternalApiConfig": {
+      "type": "object",
+      "properties": {
+        "allowed_cidrs": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "api_token": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "JwtConfig": {
+      "type": "object",
+      "properties": {
+        "algorithm": {
+          "default": "RS256",
+          "type": "string"
+        },
+        "audience": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "enabled": {
+          "default": false,
+          "type": "boolean"
+        },
+        "issuer": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "private_key": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "public_key": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "MfaConfig": {
+      "type": "object",
+      "properties": {
+        "totp": {
+          "default": {
+            "algorithm": "SHA1",
+            "digits": 6,
+            "issuer": null,
+            "period": 30,
+            "recovery_codes": {
+              "code_length": 12,
+              "count": 10
+            },
+            "skew": 1
+          },
+          "allOf": [
+            {
+              "$ref": "#/definitions/TotpConfig"
+            }
+          ]
+        }
+      }
+    },
+    "PasskeysConfig": {
+      "type": "object",
+      "properties": {
+        "origins": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "resident_key": {
+          "default": "preferred",
+          "type": "string"
+        },
+        "rp_id": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "rp_name": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "timeout_seconds": {
+          "default": 60,
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        },
+        "user_verification": {
+          "default": "preferred",
+          "type": "string"
+        }
+      }
+    },
+    "PasswordConfig": {
+      "type": "object",
+      "properties": {
+        "argon2": {
+          "default": {
+            "memory_cost": 65536,
+            "parallelism": 2,
+            "time_cost": 3
+          },
+          "allOf": [
+            {
+              "$ref": "#/definitions/Argon2Config"
+            }
+          ]
+        },
+        "hashing_algorithm": {
+          "default": "argon2id",
+          "type": "string"
+        },
+        "policy": {
+          "default": {
+            "disallow_common": true,
+            "min_length": 12,
+            "require_digit": true,
+            "require_lowercase": true,
+            "require_symbol": true,
+            "require_uppercase": true
+          },
+          "allOf": [
+            {
+              "$ref": "#/definitions/PasswordPolicyConfig"
+            }
+          ]
+        }
+      }
+    },
+    "PasswordPolicyConfig": {
+      "type": "object",
+      "properties": {
+        "disallow_common": {
+          "default": true,
+          "type": "boolean"
+        },
+        "min_length": {
+          "default": 12,
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "require_digit": {
+          "default": true,
+          "type": "boolean"
+        },
+        "require_lowercase": {
+          "default": true,
+          "type": "boolean"
+        },
+        "require_symbol": {
+          "default": true,
+          "type": "boolean"
+        },
+        "require_uppercase": {
+          "default": true,
+          "type": "boolean"
+        }
+      }
+    },
+    "RateLimitConfig": {
+      "type": "object",
+      "properties": {
+        "burst": {
+          "default": 10,
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        },
+        "enabled": {
+          "default": true,
+          "type": "boolean"
+        },
+        "requests_per_minute": {
+          "default": 60,
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        }
+      }
+    },
+    "RecoveryCodesConfig": {
+      "type": "object",
+      "properties": {
+        "code_length": {
+          "default": 12,
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        },
+        "count": {
+          "default": 10,
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        }
+      }
+    },
+    "RedisConfig": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "default": false,
+          "type": "boolean"
+        },
+        "max_connections": {
+          "default": 10,
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        },
+        "url": {
+          "default": "redis://127.0.0.1:6379/0",
+          "type": "string"
+        }
+      }
+    },
+    "ServerConfig": {
+      "type": "object",
+      "properties": {
+        "host": {
+          "default": "0.0.0.0",
+          "type": "string"
+        },
+        "log_format": {
+          "default": "json",
+          "type": "string"
+        },
+        "log_level": {
+          "default": "info",
+          "type": "string"
+        },
+        "log_output": {
+          "default": [
+            "stdout"
+          ],
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "port": {
+          "default": 8080,
+          "type": "integer",
+          "format": "uint16",
+          "minimum": 0.0
+        },
+        "public_url": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tls_cert": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tls_key": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "SessionConfig": {
+      "type": "object",
+      "required": [
+        "secret"
+      ],
+      "properties": {
+        "bearer": {
+          "default": {
+            "default_ttl_minutes": 15,
+            "opaque_token_length": 32,
+            "refresh_token_enabled": false,
+            "refresh_token_ttl_days": 30
+          },
+          "allOf": [
+            {
+              "$ref": "#/definitions/BearerConfig"
+            }
+          ]
+        },
+        "cookie": {
+          "default": {
+            "domain": null,
+            "http_only": true,
+            "name": "aegis_session",
+            "path": "/",
+            "same_site": "lax",
+            "secure": true
+          },
+          "allOf": [
+            {
+              "$ref": "#/definitions/CookieConfig"
+            }
+          ]
+        },
+        "idle_timeout_minutes": {
+          "default": 30,
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        },
+        "max_age_hours": {
+          "default": 168,
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        },
+        "secret": {
+          "type": "string"
+        }
+      }
+    },
+    "SmtpConfig": {
+      "type": "object",
+      "properties": {
+        "host": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "password": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "port": {
+          "default": 587,
+          "type": "integer",
+          "format": "uint16",
+          "minimum": 0.0
+        },
+        "starttls": {
+          "default": true,
+          "type": "boolean"
+        },
+        "timeout_seconds": {
+          "default": 30,
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        },
+        "username": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "TotpConfig": {
+      "type": "object",
+      "properties": {
+        "algorithm": {
+          "default": "SHA1",
+          "type": "string"
+        },
+        "digits": {
+          "default": 6,
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        },
+        "issuer": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "period": {
+          "default": 30,
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        },
+        "recovery_codes": {
+          "default": {
+            "code_length": 12,
+            "count": 10
+          },
+          "allOf": [
+            {
+              "$ref": "#/definitions/RecoveryCodesConfig"
+            }
+          ]
+        },
+        "skew": {
+          "default": 1,
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        }
+      }
+    },
+    "WebhookEndpointConfig": {
+      "type": "object",
+      "required": [
+        "url"
+      ],
+      "properties": {
+        "events": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "retry_max_attempts": {
+          "default": 5,
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        },
+        "secret": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "timeout_seconds": {
+          "default": 10,
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        },
+        "url": {
+          "type": "string"
+        }
+      }
+    },
+    "WebhooksConfig": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "default": false,
+          "type": "boolean"
+        },
+        "endpoints": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/WebhookEndpointConfig"
+          }
+        }
+      }
+    }
+  }
+}
