@@ -193,6 +193,8 @@
       ]
     }
   },
+  "additionalProperties": false,
+  "x-tombi-toml-version": "1.0.0",
   "definitions": {
     "ApiConfig": {
       "type": "object",
@@ -209,6 +211,8 @@
           ]
         },
         "metadata_allowed_keys": {
+          "title": "Allowed metadata keys",
+          "description": "Allowlist of metadata keys users can set.",
           "default": [],
           "type": "array",
           "items": {
@@ -227,57 +231,72 @@
             }
           ]
         }
-      }
+      },
+      "additionalProperties": false
     },
     "Argon2Config": {
       "type": "object",
       "properties": {
         "memory_cost": {
+          "title": "Memory cost",
+          "description": "Argon2 memory cost in KiB.",
           "default": 65536,
           "type": "integer",
-          "format": "uint32",
+          "maximum": 4294967295.0,
           "minimum": 0.0
         },
         "parallelism": {
+          "title": "Parallelism",
+          "description": "Argon2 parallelism parameter.",
           "default": 2,
           "type": "integer",
-          "format": "uint32",
+          "maximum": 4294967295.0,
           "minimum": 0.0
         },
         "time_cost": {
+          "title": "Time cost",
+          "description": "Argon2 time cost parameter.",
           "default": 3,
           "type": "integer",
-          "format": "uint32",
+          "maximum": 4294967295.0,
           "minimum": 0.0
         }
-      }
+      },
+      "additionalProperties": false
     },
     "BearerConfig": {
       "type": "object",
       "properties": {
         "default_ttl_minutes": {
+          "title": "Default TTL",
+          "description": "Default bearer token TTL in minutes.",
           "default": 15,
           "type": "integer",
-          "format": "uint64",
           "minimum": 0.0
         },
         "opaque_token_length": {
+          "title": "Token length",
+          "description": "Length of opaque bearer tokens in bytes.",
           "default": 32,
           "type": "integer",
-          "format": "uint32",
+          "maximum": 4294967295.0,
           "minimum": 0.0
         },
         "refresh_token_enabled": {
+          "title": "Refresh tokens",
+          "description": "Enable refresh token flow.",
           "default": false,
           "type": "boolean"
         },
         "refresh_token_ttl_days": {
+          "title": "Refresh TTL",
+          "description": "Refresh token TTL in days.",
           "default": 30,
           "type": "integer",
-          "format": "uint64",
           "minimum": 0.0
         }
-      }
+      },
+      "additionalProperties": false
     },
     "ComplianceConfig": {
       "type": "object",
@@ -305,12 +324,15 @@
             }
           ]
         }
-      }
+      },
+      "additionalProperties": false
     },
     "CookieConfig": {
       "type": "object",
       "properties": {
         "domain": {
+          "title": "Cookie domain",
+          "description": "Domain for the cookie.",
           "default": null,
           "type": [
             "string",
@@ -318,26 +340,41 @@
           ]
         },
         "http_only": {
+          "title": "HTTP only",
+          "description": "Prevent JavaScript access to cookie.",
           "default": true,
           "type": "boolean"
         },
         "name": {
+          "title": "Cookie name",
+          "description": "Name of the session cookie.",
           "default": "aegis_session",
           "type": "string"
         },
         "path": {
+          "title": "Cookie path",
+          "description": "URL path for the cookie.",
           "default": "/",
           "type": "string"
         },
         "same_site": {
+          "title": "SameSite",
+          "description": "Cookie SameSite policy.",
           "default": "lax",
-          "type": "string"
+          "allOf": [
+            {
+              "$ref": "#/definitions/SameSite"
+            }
+          ]
         },
         "secure": {
+          "title": "Secure",
+          "description": "Only send cookie over HTTPS.",
           "default": true,
           "type": "boolean"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "CredentialsConfig": {
       "type": "object",
@@ -400,7 +437,8 @@
             }
           ]
         }
-      }
+      },
+      "additionalProperties": false
     },
     "CryptoConfig": {
       "type": "object",
@@ -421,36 +459,46 @@
           ]
         },
         "master_key": {
+          "title": "Master key",
+          "description": "Master encryption key. Use env:VAR or file:/path reference.",
           "default": null,
           "type": [
             "string",
             "null"
           ]
         }
-      }
+      },
+      "additionalProperties": false
     },
     "DataRetentionConfig": {
       "type": "object",
       "properties": {
         "audit_log_days": {
+          "title": "Audit log retention",
+          "description": "Days to retain audit logs (~7 years = 2555).",
           "default": 2555,
           "type": "integer",
-          "format": "uint32",
+          "maximum": 4294967295.0,
           "minimum": 0.0
         },
         "deleted_user_anonymize_after_days": {
+          "title": "Anonymize after",
+          "description": "Days after deletion to anonymize user data (0 = immediate).",
           "default": 0,
           "type": "integer",
-          "format": "uint32",
+          "maximum": 4294967295.0,
           "minimum": 0.0
         },
         "guest_ttl_days": {
+          "title": "Guest TTL",
+          "description": "Days before expired guests are purged.",
           "default": 30,
           "type": "integer",
-          "format": "uint32",
+          "maximum": 4294967295.0,
           "minimum": 0.0
         }
-      }
+      },
+      "additionalProperties": false
     },
     "DatabaseConfig": {
       "type": "object",
@@ -459,12 +507,15 @@
       ],
       "properties": {
         "connection_timeout_seconds": {
+          "title": "Connection timeout",
+          "description": "Connection timeout in seconds.",
           "default": 30,
           "type": "integer",
-          "format": "uint64",
           "minimum": 0.0
         },
         "encryption_key": {
+          "title": "Encryption key",
+          "description": "Key for encrypting sensitive columns. Use env:VAR or file:/path references.",
           "default": null,
           "type": [
             "string",
@@ -472,43 +523,59 @@
           ]
         },
         "max_connections": {
+          "title": "Max connections",
+          "description": "Maximum number of database connections.",
           "default": 25,
           "type": "integer",
-          "format": "uint32",
+          "maximum": 4294967295.0,
           "minimum": 0.0
         },
         "min_idle": {
+          "title": "Min idle",
+          "description": "Minimum number of idle connections.",
           "default": 5,
           "type": "integer",
-          "format": "uint32",
+          "maximum": 4294967295.0,
           "minimum": 0.0
         },
         "url": {
+          "title": "Database URL",
+          "description": "PostgreSQL connection string.",
           "type": "string"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "DeletionConfig": {
       "type": "object",
       "properties": {
         "anonymize_email_pattern": {
+          "title": "Anonymize pattern",
+          "description": "Pattern for anonymized emails. Use {hash} as placeholder.",
           "default": "deleted-{hash}@anonymized.local",
           "type": "string"
         },
         "preserve_referential_integrity": {
+          "title": "Preserve referential integrity",
+          "description": "Keep anonymized records for referential integrity.",
           "default": true,
           "type": "boolean"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "EmailConfig": {
       "type": "object",
       "properties": {
         "enabled": {
+          "title": "Enabled",
+          "description": "Enable email delivery.",
           "default": true,
           "type": "boolean"
         },
         "from_address": {
+          "title": "From address",
+          "description": "Sender email address.",
           "default": null,
           "type": [
             "string",
@@ -516,6 +583,8 @@
           ]
         },
         "from_name": {
+          "title": "From name",
+          "description": "Sender display name.",
           "default": null,
           "type": [
             "string",
@@ -548,12 +617,15 @@
             }
           ]
         }
-      }
+      },
+      "additionalProperties": false
     },
     "EmailTemplatesConfig": {
       "type": "object",
       "properties": {
         "password_reset": {
+          "title": "Password reset template",
+          "description": "Path to password reset template.",
           "default": null,
           "type": [
             "string",
@@ -561,18 +633,29 @@
           ]
         },
         "verification": {
+          "title": "Verification template",
+          "description": "Path to email verification template.",
           "default": null,
           "type": [
             "string",
             "null"
           ]
         }
-      }
+      },
+      "additionalProperties": false
+    },
+    "HashingAlgorithm": {
+      "type": "string",
+      "enum": [
+        "argon2id"
+      ]
     },
     "InternalApiConfig": {
       "type": "object",
       "properties": {
         "allowed_cidrs": {
+          "title": "Allowed CIDRs",
+          "description": "Network ranges allowed for internal API access.",
           "default": [],
           "type": "array",
           "items": {
@@ -580,22 +663,41 @@
           }
         },
         "api_token": {
+          "title": "API token",
+          "description": "Static token for service-to-service auth. Use env:VAR reference.",
           "default": null,
           "type": [
             "string",
             "null"
           ]
         }
-      }
+      },
+      "additionalProperties": false
+    },
+    "JwtAlgorithm": {
+      "type": "string",
+      "enum": [
+        "RS256",
+        "ES256",
+        "HS256"
+      ]
     },
     "JwtConfig": {
       "type": "object",
       "properties": {
         "algorithm": {
+          "title": "Algorithm",
+          "description": "JWT signing algorithm.",
           "default": "RS256",
-          "type": "string"
+          "allOf": [
+            {
+              "$ref": "#/definitions/JwtAlgorithm"
+            }
+          ]
         },
         "audience": {
+          "title": "Audience",
+          "description": "JWT audience claim.",
           "default": null,
           "type": [
             "string",
@@ -603,10 +705,14 @@
           ]
         },
         "enabled": {
+          "title": "Enabled",
+          "description": "Enable JWT-based stateless authentication.",
           "default": false,
           "type": "boolean"
         },
         "issuer": {
+          "title": "Issuer",
+          "description": "JWT issuer claim.",
           "default": null,
           "type": [
             "string",
@@ -614,6 +720,8 @@
           ]
         },
         "private_key": {
+          "title": "Private key",
+          "description": "Path or reference to JWT private key.",
           "default": null,
           "type": [
             "string",
@@ -621,13 +729,32 @@
           ]
         },
         "public_key": {
+          "title": "Public key",
+          "description": "Path or reference to JWT public key.",
           "default": null,
           "type": [
             "string",
             "null"
           ]
         }
-      }
+      },
+      "additionalProperties": false
+    },
+    "LogFormat": {
+      "type": "string",
+      "enum": [
+        "json",
+        "text"
+      ]
+    },
+    "LogLevel": {
+      "type": "string",
+      "enum": [
+        "info",
+        "debug",
+        "warn",
+        "error"
+      ]
     },
     "MfaConfig": {
       "type": "object",
@@ -650,12 +777,15 @@
             }
           ]
         }
-      }
+      },
+      "additionalProperties": false
     },
     "PasskeysConfig": {
       "type": "object",
       "properties": {
         "origins": {
+          "title": "Origins",
+          "description": "Allowed origins for WebAuthn.",
           "default": [],
           "type": "array",
           "items": {
@@ -663,10 +793,18 @@
           }
         },
         "resident_key": {
+          "title": "Resident key",
+          "description": "WebAuthn resident key requirement.",
           "default": "preferred",
-          "type": "string"
+          "allOf": [
+            {
+              "$ref": "#/definitions/ResidentKey"
+            }
+          ]
         },
         "rp_id": {
+          "title": "Relying party ID",
+          "description": "WebAuthn relying party identifier.",
           "default": null,
           "type": [
             "string",
@@ -674,6 +812,8 @@
           ]
         },
         "rp_name": {
+          "title": "Relying party name",
+          "description": "Human-readable relying party name.",
           "default": null,
           "type": [
             "string",
@@ -681,16 +821,24 @@
           ]
         },
         "timeout_seconds": {
+          "title": "Timeout",
+          "description": "WebAuthn ceremony timeout in seconds.",
           "default": 60,
           "type": "integer",
-          "format": "uint64",
           "minimum": 0.0
         },
         "user_verification": {
+          "title": "User verification",
+          "description": "WebAuthn user verification requirement.",
           "default": "preferred",
-          "type": "string"
+          "allOf": [
+            {
+              "$ref": "#/definitions/UserVerification"
+            }
+          ]
         }
-      }
+      },
+      "additionalProperties": false
     },
     "PasswordConfig": {
       "type": "object",
@@ -708,8 +856,14 @@
           ]
         },
         "hashing_algorithm": {
+          "title": "Hashing algorithm",
+          "description": "Password hashing algorithm.",
           "default": "argon2id",
-          "type": "string"
+          "allOf": [
+            {
+              "$ref": "#/definitions/HashingAlgorithm"
+            }
+          ]
         },
         "policy": {
           "default": {
@@ -726,112 +880,176 @@
             }
           ]
         }
-      }
+      },
+      "additionalProperties": false
     },
     "PasswordPolicyConfig": {
       "type": "object",
       "properties": {
         "disallow_common": {
+          "title": "Disallow common",
+          "description": "Disallow commonly used passwords.",
           "default": true,
           "type": "boolean"
         },
         "min_length": {
+          "title": "Minimum length",
+          "description": "Minimum password length.",
           "default": 12,
           "type": "integer",
-          "format": "uint",
           "minimum": 0.0
         },
         "require_digit": {
+          "title": "Require digit",
+          "description": "Require at least one digit.",
           "default": true,
           "type": "boolean"
         },
         "require_lowercase": {
+          "title": "Require lowercase",
+          "description": "Require at least one lowercase letter.",
           "default": true,
           "type": "boolean"
         },
         "require_symbol": {
+          "title": "Require symbol",
+          "description": "Require at least one symbol.",
           "default": true,
           "type": "boolean"
         },
         "require_uppercase": {
+          "title": "Require uppercase",
+          "description": "Require at least one uppercase letter.",
           "default": true,
           "type": "boolean"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "RateLimitConfig": {
       "type": "object",
       "properties": {
         "burst": {
+          "title": "Burst",
+          "description": "Burst capacity for rate limiter.",
           "default": 10,
           "type": "integer",
-          "format": "uint32",
+          "maximum": 4294967295.0,
           "minimum": 0.0
         },
         "enabled": {
+          "title": "Enabled",
+          "description": "Enable rate limiting.",
           "default": true,
           "type": "boolean"
         },
         "requests_per_minute": {
+          "title": "Requests per minute",
+          "description": "Maximum requests per minute per client.",
           "default": 60,
           "type": "integer",
-          "format": "uint32",
+          "maximum": 4294967295.0,
           "minimum": 0.0
         }
-      }
+      },
+      "additionalProperties": false
     },
     "RecoveryCodesConfig": {
       "type": "object",
       "properties": {
         "code_length": {
+          "title": "Code length",
+          "description": "Length of each recovery code.",
           "default": 12,
           "type": "integer",
-          "format": "uint32",
+          "maximum": 4294967295.0,
           "minimum": 0.0
         },
         "count": {
+          "title": "Count",
+          "description": "Number of recovery codes to generate.",
           "default": 10,
           "type": "integer",
-          "format": "uint32",
+          "maximum": 4294967295.0,
           "minimum": 0.0
         }
-      }
+      },
+      "additionalProperties": false
     },
     "RedisConfig": {
       "type": "object",
       "properties": {
         "enabled": {
+          "title": "Enabled",
+          "description": "Enable Redis for caching and rate limiting.",
           "default": false,
           "type": "boolean"
         },
         "max_connections": {
+          "title": "Max connections",
+          "description": "Maximum number of Redis connections.",
           "default": 10,
           "type": "integer",
-          "format": "uint32",
+          "maximum": 4294967295.0,
           "minimum": 0.0
         },
         "url": {
+          "title": "Redis URL",
+          "description": "Redis connection string.",
           "default": "redis://127.0.0.1:6379/0",
           "type": "string"
         }
-      }
+      },
+      "additionalProperties": false
+    },
+    "ResidentKey": {
+      "type": "string",
+      "enum": [
+        "required",
+        "preferred",
+        "discouraged"
+      ]
+    },
+    "SameSite": {
+      "type": "string",
+      "enum": [
+        "strict",
+        "lax",
+        "none"
+      ]
     },
     "ServerConfig": {
       "type": "object",
       "properties": {
         "host": {
+          "title": "Bind host",
+          "description": "IP address to bind the server to.",
           "default": "0.0.0.0",
           "type": "string"
         },
         "log_format": {
+          "title": "Log format",
+          "description": "Structured or plain log output.",
           "default": "json",
-          "type": "string"
+          "allOf": [
+            {
+              "$ref": "#/definitions/LogFormat"
+            }
+          ]
         },
         "log_level": {
+          "title": "Log level",
+          "description": "Server log verbosity.",
           "default": "info",
-          "type": "string"
+          "allOf": [
+            {
+              "$ref": "#/definitions/LogLevel"
+            }
+          ]
         },
         "log_output": {
+          "title": "Log outputs",
+          "description": "List of log output destinations.",
           "default": [
             "stdout"
           ],
@@ -841,12 +1059,16 @@
           }
         },
         "port": {
+          "title": "Bind port",
+          "description": "TCP port to listen on.",
           "default": 8080,
           "type": "integer",
-          "format": "uint16",
+          "maximum": 65535.0,
           "minimum": 0.0
         },
         "public_url": {
+          "title": "Public URL",
+          "description": "External URL for this server (used for redirects, CORS, etc.).",
           "default": null,
           "type": [
             "string",
@@ -854,6 +1076,8 @@
           ]
         },
         "tls_cert": {
+          "title": "TLS certificate",
+          "description": "Path to TLS certificate file.",
           "default": null,
           "type": [
             "string",
@@ -861,13 +1085,16 @@
           ]
         },
         "tls_key": {
+          "title": "TLS private key",
+          "description": "Path to TLS private key file.",
           "default": null,
           "type": [
             "string",
             "null"
           ]
         }
-      }
+      },
+      "additionalProperties": false
     },
     "SessionConfig": {
       "type": "object",
@@ -904,26 +1131,33 @@
           ]
         },
         "idle_timeout_minutes": {
+          "title": "Idle timeout",
+          "description": "Session idle timeout in minutes.",
           "default": 30,
           "type": "integer",
-          "format": "uint64",
           "minimum": 0.0
         },
         "max_age_hours": {
+          "title": "Max age",
+          "description": "Maximum session lifetime in hours.",
           "default": 168,
           "type": "integer",
-          "format": "uint64",
           "minimum": 0.0
         },
         "secret": {
+          "title": "Session secret",
+          "description": "Secret key for signing session tokens. Use env:VAR reference.",
           "type": "string"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "SmtpConfig": {
       "type": "object",
       "properties": {
         "host": {
+          "title": "SMTP host",
+          "description": "SMTP server hostname.",
           "default": null,
           "type": [
             "string",
@@ -931,6 +1165,8 @@
           ]
         },
         "password": {
+          "title": "Password",
+          "description": "SMTP authentication password. Use env:VAR reference.",
           "default": null,
           "type": [
             "string",
@@ -938,44 +1174,70 @@
           ]
         },
         "port": {
+          "title": "SMTP port",
+          "description": "SMTP server port.",
           "default": 587,
           "type": "integer",
-          "format": "uint16",
+          "maximum": 65535.0,
           "minimum": 0.0
         },
         "starttls": {
+          "title": "STARTTLS",
+          "description": "Enable STARTTLS.",
           "default": true,
           "type": "boolean"
         },
         "timeout_seconds": {
+          "title": "Timeout",
+          "description": "SMTP connection timeout in seconds.",
           "default": 30,
           "type": "integer",
-          "format": "uint64",
           "minimum": 0.0
         },
         "username": {
+          "title": "Username",
+          "description": "SMTP authentication username.",
           "default": null,
           "type": [
             "string",
             "null"
           ]
         }
-      }
+      },
+      "additionalProperties": false
+    },
+    "TotpAlgorithm": {
+      "type": "string",
+      "enum": [
+        "SHA1",
+        "SHA256",
+        "SHA512"
+      ]
     },
     "TotpConfig": {
       "type": "object",
       "properties": {
         "algorithm": {
+          "title": "Algorithm",
+          "description": "TOTP HMAC algorithm.",
           "default": "SHA1",
-          "type": "string"
+          "allOf": [
+            {
+              "$ref": "#/definitions/TotpAlgorithm"
+            }
+          ]
         },
         "digits": {
+          "title": "Digits",
+          "description": "Number of TOTP digits.",
           "default": 6,
           "type": "integer",
-          "format": "uint32",
+          "maximum": 4294967295.0,
           "minimum": 0.0
         },
         "issuer": {
+          "title": "Issuer",
+          "description": "TOTP issuer name shown in authenticator apps.",
           "default": null,
           "type": [
             "string",
@@ -983,9 +1245,11 @@
           ]
         },
         "period": {
+          "title": "Period",
+          "description": "TOTP time step in seconds.",
           "default": 30,
           "type": "integer",
-          "format": "uint32",
+          "maximum": 4294967295.0,
           "minimum": 0.0
         },
         "recovery_codes": {
@@ -1000,12 +1264,23 @@
           ]
         },
         "skew": {
+          "title": "Skew",
+          "description": "Allowed TOTP time skew (periods before/after).",
           "default": 1,
           "type": "integer",
-          "format": "uint32",
+          "maximum": 4294967295.0,
           "minimum": 0.0
         }
-      }
+      },
+      "additionalProperties": false
+    },
+    "UserVerification": {
+      "type": "string",
+      "enum": [
+        "required",
+        "preferred",
+        "discouraged"
+      ]
     },
     "WebhookEndpointConfig": {
       "type": "object",
@@ -1014,6 +1289,8 @@
       ],
       "properties": {
         "events": {
+          "title": "Events",
+          "description": "List of event types to subscribe to.",
           "default": [],
           "type": "array",
           "items": {
@@ -1021,12 +1298,16 @@
           }
         },
         "retry_max_attempts": {
+          "title": "Max retries",
+          "description": "Maximum retry attempts for failed deliveries.",
           "default": 5,
           "type": "integer",
-          "format": "uint32",
+          "maximum": 4294967295.0,
           "minimum": 0.0
         },
         "secret": {
+          "title": "Signing secret",
+          "description": "Secret for webhook payload signing. Use env:VAR reference.",
           "default": null,
           "type": [
             "string",
@@ -1034,20 +1315,26 @@
           ]
         },
         "timeout_seconds": {
+          "title": "Timeout",
+          "description": "Request timeout in seconds.",
           "default": 10,
           "type": "integer",
-          "format": "uint64",
           "minimum": 0.0
         },
         "url": {
+          "title": "URL",
+          "description": "Webhook endpoint URL.",
           "type": "string"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "WebhooksConfig": {
       "type": "object",
       "properties": {
         "enabled": {
+          "title": "Enabled",
+          "description": "Enable outbound webhook delivery.",
           "default": false,
           "type": "boolean"
         },
@@ -1058,7 +1345,8 @@
             "$ref": "#/definitions/WebhookEndpointConfig"
           }
         }
-      }
+      },
+      "additionalProperties": false
     }
   }
 }
