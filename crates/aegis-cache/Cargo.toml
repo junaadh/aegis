@@ -1,0 +1,15 @@
+[package]
+name = "aegis-cache"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[features]
+default = []
+redis = ["dep:redis", "dep:tokio"]
+
+[dependencies]
+time.workspace = true
+thiserror.workspace = true
+tokio = { workspace = true, optional = true }
+redis = { workspace = true, optional = true }

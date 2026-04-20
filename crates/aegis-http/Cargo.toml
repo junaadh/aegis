@@ -1,0 +1,10 @@
+[package]
+name = "aegis-http"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+aegis-app.workspace = true
+aegis-types.workspace = true
+aegis-core.workspace = true

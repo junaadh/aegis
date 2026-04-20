@@ -1,0 +1,45 @@
+[workspace]
+members = [
+  "bin/aegisd",
+  "bin/aegis",
+  "crates/aegis-core",
+  "crates/aegis-types",
+  "crates/aegis-config",
+  "crates/aegis-db",
+  "crates/aegis-migrate",
+  "crates/aegis-app",
+  "crates/aegis-http",
+  "crates/aegis-cache",
+]
+resolver = "2"
+
+[workspace.package]
+edition = "2024"
+version = "0.1.0"
+license = "MIT"
+authors = ["Junaadh"]
+repository = "https://github.com/junaadh/aegis"
+
+[workspace.dependencies]
+paste = "1.0.15"
+time = "0.3.47"
+uuid = { version = "1.23.1", features = ["v7"] }
+thiserror = "2.0.18"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.149"
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "postgres", "uuid", "time", "json", "derive"] }
+tokio = { version = "1.52.1", default-features = false, features = ["sync", "time"] }
+redis = { version = "1.2", default-features = false, features = ["tokio-comp", "aio"] }
+toml = "0.8"
+tracing = "0.1"
+schemars = { version = "0.8", features = ["derive"] }
+clap = { version = "4", features = ["derive"] }
+
+aegis-core = { path = "crates/aegis-core" }
+aegis-types = { path = "crates/aegis-types" }
+aegis-db = { path = "crates/aegis-db" }
+aegis-config = { path = "crates/aegis-config" }
+aegis-cache = { path = "crates/aegis-cache" }
+aegis-app = { path = "crates/aegis-app" }
+aegis-http = { path = "crates/aegis-http" }
+aegis-migrate = { path = "crates/aegis-migrate" }

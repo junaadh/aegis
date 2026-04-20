@@ -1,0 +1,40 @@
+name: Publish Config Schema
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "crates/aegis-config/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate-and-publish:
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      !contains(github.event.head_commit.message, '[skip schema]')
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Generate JSON Schema
+        run: |
+          mkdir -p schemas/config
+          cargo run -p aegis-config --example gen-schema > schemas/config/v1.json
+
+      - name: Publish Schema to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./schemas
+          publish_branch: schemas
+          destination_dir: .
+          keep_files: true

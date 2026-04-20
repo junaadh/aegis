@@ -1,0 +1,11 @@
+[package]
+name = "aegis-app"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+aegis-core.workspace = true
+aegis-types.workspace = true
+aegis-db.workspace = true
+aegis-config.workspace = true
