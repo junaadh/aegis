@@ -2,11 +2,17 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
 pub struct RedisConfig {
+    #[schemars(title = "Enabled", description = "Enable Redis for caching and rate limiting.")]
     #[serde(default)]
     pub enabled: bool,
+
+    #[schemars(title = "Redis URL", description = "Redis connection string.")]
     #[serde(default = "default_redis_url")]
     pub url: String,
+
+    #[schemars(title = "Max connections", description = "Maximum number of Redis connections.")]
     #[serde(default = "default_redis_max_connections")]
     pub max_connections: u32,
 }

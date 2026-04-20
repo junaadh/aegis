@@ -3,14 +3,24 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
 pub struct DatabaseConfig {
+    #[schemars(title = "Database URL", description = "PostgreSQL connection string.")]
     pub url: String,
+
+    #[schemars(title = "Max connections", description = "Maximum number of database connections.")]
     #[serde(default = "default_max_connections")]
     pub max_connections: u32,
+
+    #[schemars(title = "Min idle", description = "Minimum number of idle connections.")]
     #[serde(default = "default_min_idle")]
     pub min_idle: u32,
+
+    #[schemars(title = "Connection timeout", description = "Connection timeout in seconds.")]
     #[serde(default = "default_connection_timeout")]
     pub connection_timeout_seconds: u64,
+
+    #[schemars(title = "Encryption key", description = "Key for encrypting sensitive columns. Use env:VAR or file:/path references.")]
     #[serde(default)]
     pub encryption_key: Option<SecretString>,
 }

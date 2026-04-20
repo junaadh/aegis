@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use std::path::Path;
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
 pub struct Config {
     #[serde(default)]
     pub server: ServerConfig,
@@ -58,9 +59,10 @@ impl Default for Config {
 const DEFAULT_FILENAME: &str = "aegis.toml";
 
 const DEFAULT_HEADER: &[&str] = &[
+    "#:schema https://raw.githubusercontent.com/junaadh/aegis/schemas/config/v1.json",
+    "",
     "# aegis.toml — Aegis Authentication & Identity Platform",
     "# Version: 1.0",
-    "# Schema: https://raw.githubusercontent.com/junaadh/aegis/schemas/config/v1.json",
 ];
 
 impl Config {

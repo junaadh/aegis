@@ -1,22 +1,39 @@
+use crate::enums::{LogFormat, LogLevel};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
 pub struct ServerConfig {
+    #[schemars(title = "Bind host", description = "IP address to bind the server to.")]
     #[serde(default = "default_host")]
     pub host: String,
+
+    #[schemars(title = "Bind port", description = "TCP port to listen on.")]
     #[serde(default = "default_port")]
     pub port: u16,
+
+    #[schemars(title = "Public URL", description = "External URL for this server (used for redirects, CORS, etc.).")]
     #[serde(default)]
     pub public_url: Option<String>,
+
+    #[schemars(title = "TLS certificate", description = "Path to TLS certificate file.")]
     #[serde(default)]
     pub tls_cert: Option<String>,
+
+    #[schemars(title = "TLS private key", description = "Path to TLS private key file.")]
     #[serde(default)]
     pub tls_key: Option<String>,
-    #[serde(default = "default_log_level")]
-    pub log_level: String,
-    #[serde(default = "default_log_format")]
-    pub log_format: String,
+
+    #[schemars(title = "Log level", description = "Server log verbosity.")]
+    #[serde(default)]
+    pub log_level: LogLevel,
+
+    #[schemars(title = "Log format", description = "Structured or plain log output.")]
+    #[serde(default)]
+    pub log_format: LogFormat,
+
+    #[schemars(title = "Log outputs", description = "List of log output destinations.")]
     #[serde(default = "default_log_output")]
     pub log_output: Vec<String>,
 }
@@ -27,14 +44,6 @@ fn default_host() -> String {
 
 fn default_port() -> u16 {
     8080
-}
-
-fn default_log_level() -> String {
-    "info".to_owned()
-}
-
-fn default_log_format() -> String {
-    "json".to_owned()
 }
 
 fn default_log_output() -> Vec<String> {
@@ -49,8 +58,8 @@ impl Default for ServerConfig {
             public_url: None,
             tls_cert: None,
             tls_key: None,
-            log_level: default_log_level(),
-            log_format: default_log_format(),
+            log_level: LogLevel::default(),
+            log_format: LogFormat::default(),
             log_output: default_log_output(),
         }
     }
@@ -63,12 +72,6 @@ impl ServerConfig {
         }
         if self.tls_key.is_some() && self.tls_cert.is_none() {
             return Err("tls_key requires tls_cert".to_owned());
-        }
-        if !["debug", "info", "warn", "error"].contains(&self.log_level.as_str()) {
-            return Err(format!("invalid log_level: {}", self.log_level));
-        }
-        if !["json", "text"].contains(&self.log_format.as_str()) {
-            return Err(format!("invalid log_format: {}", self.log_format));
         }
         Ok(())
     }

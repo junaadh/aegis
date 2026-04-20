@@ -5,6 +5,7 @@ mod crypto;
 mod database;
 mod dump;
 mod email;
+mod enums;
 mod error;
 mod redis;
 mod root;
@@ -14,6 +15,8 @@ mod session;
 mod webhooks;
 
 pub use dump::{DumpMode, DumpOptions, DumpTarget};
+pub use email::*;
+pub use enums::*;
 pub use error::ConfigError;
 pub use root::Config;
 pub use secret::{SecretError, SecretString};
