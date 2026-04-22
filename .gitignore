@@ -1,1 +1,4 @@
 target/
+aegis.toml
+.env
+.env.aegis

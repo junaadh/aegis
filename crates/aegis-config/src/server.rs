@@ -1,6 +1,73 @@
 use crate::enums::{LogFormat, LogLevel};
+use crate::error::ConfigError;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ServerConfigSrc {
+    #[schemars(title = "Bind host", description = "IP address to bind the server to.")]
+    #[serde(default = "default_host")]
+    pub host: String,
+
+    #[schemars(title = "Bind port", description = "TCP port to listen on.")]
+    #[serde(default = "default_port")]
+    pub port: u16,
+
+    #[schemars(title = "Public URL", description = "External URL for this server (used for redirects, CORS, etc.).")]
+    #[serde(default)]
+    pub public_url: Option<String>,
+
+    #[schemars(title = "TLS certificate", description = "Path to TLS certificate file.")]
+    #[serde(default)]
+    pub tls_cert: Option<String>,
+
+    #[schemars(title = "TLS private key", description = "Path to TLS private key file.")]
+    #[serde(default)]
+    pub tls_key: Option<String>,
+
+    #[schemars(title = "Log level", description = "Server log verbosity.")]
+    #[serde(default)]
+    pub log_level: LogLevel,
+
+    #[schemars(title = "Log format", description = "Structured or plain log output.")]
+    #[serde(default)]
+    pub log_format: LogFormat,
+
+    #[schemars(title = "Log outputs", description = "List of log output destinations.")]
+    #[serde(default = "default_log_output")]
+    pub log_output: Vec<String>,
+}
+
+impl Default for ServerConfigSrc {
+    fn default() -> Self {
+        Self {
+            host: default_host(),
+            port: default_port(),
+            public_url: None,
+            tls_cert: None,
+            tls_key: None,
+            log_level: LogLevel::default(),
+            log_format: LogFormat::default(),
+            log_output: default_log_output(),
+        }
+    }
+}
+
+impl ServerConfigSrc {
+    pub fn resolve(&self) -> Result<ServerConfig, ConfigError> {
+        Ok(ServerConfig {
+            host: self.host.clone(),
+            port: self.port,
+            public_url: self.public_url.clone(),
+            tls_cert: self.tls_cert.clone(),
+            tls_key: self.tls_key.clone(),
+            log_level: self.log_level,
+            log_format: self.log_format,
+            log_output: self.log_output.clone(),
+        })
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]

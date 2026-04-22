@@ -4,6 +4,9 @@ mod identity;
 mod role;
 mod token;
 
+#[cfg(test)]
+mod tests;
+
 #[allow(unused_imports)]
 pub use audit::*;
 #[allow(unused_imports)]

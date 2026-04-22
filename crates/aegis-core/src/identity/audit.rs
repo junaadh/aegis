@@ -34,6 +34,18 @@ pub struct AuditEntry {
     pub created_at: OffsetDateTime,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NewAuditEntry {
+    pub event_type: String,
+    pub actor: Actor,
+    pub target: Option<AuditTarget>,
+    pub ip_address: Option<String>,
+    pub user_agent: Option<String>,
+    pub request_id: Option<uuid::Uuid>,
+    pub metadata: Metadata,
+    pub created_at: OffsetDateTime,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ActorType {
     User,

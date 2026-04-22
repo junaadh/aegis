@@ -7,6 +7,8 @@ pub enum ConfigError {
     MissingField(String),
     Io(io::Error),
     Serialize(String),
+    ResolveEnv { var: String },
+    ResolveFile { path: String, source: String },
 }
 
 impl fmt::Display for ConfigError {
@@ -17,6 +19,8 @@ impl fmt::Display for ConfigError {
             Self::MissingField(field) => write!(f, "missing required field: {field}"),
             Self::Io(e) => write!(f, "config I/O error: {e}"),
             Self::Serialize(msg) => write!(f, "config serialization error: {msg}"),
+            Self::ResolveEnv { var } => write!(f, "env variable not found: {var}"),
+            Self::ResolveFile { path, source } => write!(f, "failed to read '{path}': {source}"),
         }
     }
 }

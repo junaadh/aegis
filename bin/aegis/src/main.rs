@@ -82,8 +82,8 @@ fn run_config(
 ) -> Result<(), Box<dyn std::error::Error>> {
     match action {
         ConfigAction::Init => {
-            let config = aegis_config::Config::default();
-            let toml = config.to_toml()?;
+            let source = aegis_config::ConfigSrc::default();
+            let toml = source.to_toml()?;
             std::fs::write(config_path, toml)?;
             println!("config written to {}", config_path.display());
 
@@ -108,7 +108,7 @@ fn run_config(
             let env_path = out
                 .as_deref()
                 .unwrap_or(std::path::Path::new(".env.aegis"));
-            config.dump_env(env_path)?;
+            aegis_config::dump_env_resolved(&config, env_path)?;
             println!("env written to {}", env_path.display());
         }
         ConfigAction::Diff { endpoint } => {
@@ -134,8 +134,8 @@ fn run_config(
                 None => aegis_config::DumpTarget::DefaultFile,
             };
 
-            let current = if matches!(dump_mode, aegis_config::DumpMode::Current) {
-                Some(aegis_config::Config::load(Some(config_path))?)
+            let source = if matches!(dump_mode, aegis_config::DumpMode::Current) {
+                Some(aegis_config::ConfigSrc::from_file(config_path)?)
             } else {
                 None
             };
@@ -146,7 +146,7 @@ fn run_config(
                 env_file: None,
             };
 
-            aegis_config::Config::dump(&opts, current.as_ref())?;
+            aegis_config::dump(&opts, source.as_ref())?;
         }
     }
     Ok(())
@@ -206,7 +206,7 @@ fn run_migrate(
 fn run_schema(out: Option<PathBuf>) -> Result<(), Box<dyn std::error::Error>> {
     use schemars::schema_for;
 
-    let schema = schema_for!(aegis_config::Config);
+    let schema = schema_for!(aegis_config::ConfigSrc);
     let json = serde_json::to_string_pretty(&schema)?;
 
     match out {

@@ -6,6 +6,11 @@ license.workspace = true
 
 [dependencies]
 aegis-core.workspace = true
-aegis-types.workspace = true
-aegis-db.workspace = true
 aegis-config.workspace = true
+thiserror.workspace = true
+async-trait.workspace = true
+time.workspace = true
+uuid.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt", "sync"] }

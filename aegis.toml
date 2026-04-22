@@ -2,7 +2,7 @@
 
 # aegis.toml — Aegis Authentication & Identity Platform
 # Version: 1.0
-# Schema: https://raw.githubusercontent.com/junaadh/aegis/schemas/config/v1.json
+
 [server]
 host = "0.0.0.0"
 port = 8080
@@ -11,14 +11,14 @@ log_format = "json"
 log_output = ["stdout"]
 
 [database]
-url = "postgresql://aegis:password@localhost:5432/aegis"
+url = "env:AEGIS_DATABASE_URL"
 max_connections = 25
 min_idle = 5
 connection_timeout_seconds = 30
 
 [redis]
-enabled = false
-url = "redis://127.0.0.1:6379/0"
+enabled = true
+url = "env:AEGIS_REDIS_URL"
 max_connections = 10
 
 [session]
@@ -29,7 +29,7 @@ idle_timeout_minutes = 30
 [session.cookie]
 name = "aegis_session"
 path = "/"
-secure = true
+secure = false
 http_only = true
 same_site = "lax"
 
@@ -56,12 +56,15 @@ require_symbol = true
 disallow_common = true
 
 [credentials.passkeys]
+rp_id = ""
+rp_name = ""
 origins = []
 user_verification = "preferred"
 resident_key = "preferred"
 timeout_seconds = 60
 
 [credentials.mfa.totp]
+issuer = "Aegis"
 period = 30
 digits = 6
 algorithm = "SHA1"
@@ -73,13 +76,22 @@ code_length = 12
 
 [email]
 enabled = true
+from_address = "env:AEGIS_EMAIL_FROM_ADDRESS"
+from_name = "Aegis"
+verification_token_ttl_hours = 24
+password_reset_token_ttl_minutes = 60
 
 [email.smtp]
-port = 587
-starttls = true
+host = "localhost"
+port = 1025
+username = ""
+password = ""
+starttls = false
 timeout_seconds = 30
 
 [email.templates]
+verification = ""
+password_reset = ""
 
 [api]
 metadata_allowed_keys = []

@@ -1,7 +1,6 @@
 use aegis_core::{
-    GuestId, SessionId, UserId,
-    DisplayName, EmailAddress,
-    Guest, Metadata, Session, SessionIdentity, User, UserStatus,
+    DisplayName, EmailAddress, Guest, GuestId, GuestStatus, Metadata, Session, SessionId,
+    SessionIdentity, User, UserId, UserStatus,
 };
 
 use crate::error::ConversionError;
@@ -63,6 +62,7 @@ impl TryFrom<GuestRow> for Guest {
         }
 
         if let Some(uid) = row.converted_to {
+            builder = builder.status(GuestStatus::Converted);
             builder = builder.converted_to(UserId::from_uuid(uid));
         }
 
