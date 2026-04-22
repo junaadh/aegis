@@ -46,7 +46,7 @@
           "totp": {
             "algorithm": "SHA1",
             "digits": 6,
-            "issuer": null,
+            "issuer": "",
             "period": 30,
             "recovery_codes": {
               "code_length": 12,
@@ -58,8 +58,8 @@
         "passkeys": {
           "origins": [],
           "resident_key": "preferred",
-          "rp_id": null,
-          "rp_name": null,
+          "rp_id": "",
+          "rp_name": "",
           "timeout_seconds": 60,
           "user_verification": "preferred"
         },
@@ -117,21 +117,23 @@
     },
     "email": {
       "default": {
-        "enabled": true,
-        "from_address": null,
-        "from_name": null,
+        "enabled": false,
+        "from_address": "",
+        "from_name": "",
+        "password_reset_token_ttl_minutes": 60,
         "smtp": {
-          "host": null,
-          "password": null,
+          "host": "",
+          "password": "",
           "port": 587,
           "starttls": true,
           "timeout_seconds": 30,
-          "username": null
+          "username": ""
         },
         "templates": {
-          "password_reset": null,
-          "verification": null
-        }
+          "password_reset": "",
+          "verification": ""
+        },
+        "verification_token_ttl_hours": 24
       },
       "allOf": [
         {
@@ -384,7 +386,7 @@
             "totp": {
               "algorithm": "SHA1",
               "digits": 6,
-              "issuer": null,
+              "issuer": "",
               "period": 30,
               "recovery_codes": {
                 "code_length": 12,
@@ -403,8 +405,8 @@
           "default": {
             "origins": [],
             "resident_key": "preferred",
-            "rp_id": null,
-            "rp_name": null,
+            "rp_id": "",
+            "rp_name": "",
             "timeout_seconds": 60,
             "user_verification": "preferred"
           },
@@ -570,35 +572,36 @@
         "enabled": {
           "title": "Enabled",
           "description": "Enable email delivery.",
-          "default": true,
+          "default": false,
           "type": "boolean"
         },
         "from_address": {
           "title": "From address",
           "description": "Sender email address.",
-          "default": null,
-          "type": [
-            "string",
-            "null"
-          ]
+          "default": "",
+          "type": "string"
         },
         "from_name": {
           "title": "From name",
           "description": "Sender display name.",
-          "default": null,
-          "type": [
-            "string",
-            "null"
-          ]
+          "default": "",
+          "type": "string"
+        },
+        "password_reset_token_ttl_minutes": {
+          "title": "Password reset token TTL (minutes)",
+          "description": "How long password reset tokens remain valid.",
+          "default": 60,
+          "type": "integer",
+          "minimum": 0.0
         },
         "smtp": {
           "default": {
-            "host": null,
-            "password": null,
+            "host": "",
+            "password": "",
             "port": 587,
             "starttls": true,
             "timeout_seconds": 30,
-            "username": null
+            "username": ""
           },
           "allOf": [
             {
@@ -608,14 +611,21 @@
         },
         "templates": {
           "default": {
-            "password_reset": null,
-            "verification": null
+            "password_reset": "",
+            "verification": ""
           },
           "allOf": [
             {
               "$ref": "#/definitions/EmailTemplatesConfig"
             }
           ]
+        },
+        "verification_token_ttl_hours": {
+          "title": "Verification token TTL (hours)",
+          "description": "How long email verification tokens remain valid.",
+          "default": 24,
+          "type": "integer",
+          "minimum": 0.0
         }
       },
       "additionalProperties": false
@@ -626,20 +636,14 @@
         "password_reset": {
           "title": "Password reset template",
           "description": "Path to password reset template.",
-          "default": null,
-          "type": [
-            "string",
-            "null"
-          ]
+          "default": "",
+          "type": "string"
         },
         "verification": {
           "title": "Verification template",
           "description": "Path to email verification template.",
-          "default": null,
-          "type": [
-            "string",
-            "null"
-          ]
+          "default": "",
+          "type": "string"
         }
       },
       "additionalProperties": false
@@ -763,7 +767,7 @@
           "default": {
             "algorithm": "SHA1",
             "digits": 6,
-            "issuer": null,
+            "issuer": "",
             "period": 30,
             "recovery_codes": {
               "code_length": 12,
@@ -805,20 +809,14 @@
         "rp_id": {
           "title": "Relying party ID",
           "description": "WebAuthn relying party identifier.",
-          "default": null,
-          "type": [
-            "string",
-            "null"
-          ]
+          "default": "",
+          "type": "string"
         },
         "rp_name": {
           "title": "Relying party name",
           "description": "Human-readable relying party name.",
-          "default": null,
-          "type": [
-            "string",
-            "null"
-          ]
+          "default": "",
+          "type": "string"
         },
         "timeout_seconds": {
           "title": "Timeout",
@@ -1158,20 +1156,14 @@
         "host": {
           "title": "SMTP host",
           "description": "SMTP server hostname.",
-          "default": null,
-          "type": [
-            "string",
-            "null"
-          ]
+          "default": "",
+          "type": "string"
         },
         "password": {
           "title": "Password",
           "description": "SMTP authentication password. Use env:VAR reference.",
-          "default": null,
-          "type": [
-            "string",
-            "null"
-          ]
+          "default": "",
+          "type": "string"
         },
         "port": {
           "title": "SMTP port",
@@ -1197,11 +1189,8 @@
         "username": {
           "title": "Username",
           "description": "SMTP authentication username.",
-          "default": null,
-          "type": [
-            "string",
-            "null"
-          ]
+          "default": "",
+          "type": "string"
         }
       },
       "additionalProperties": false
@@ -1238,11 +1227,8 @@
         "issuer": {
           "title": "Issuer",
           "description": "TOTP issuer name shown in authenticator apps.",
-          "default": null,
-          "type": [
-            "string",
-            "null"
-          ]
+          "default": "",
+          "type": "string"
         },
         "period": {
           "title": "Period",
