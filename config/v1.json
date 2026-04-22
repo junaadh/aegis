@@ -1,7 +1,2540 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Config",
-  "type": "object",
+  "additionalProperties": false,
+  "definitions": {
+    "ApiConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "internal": {
+          "default": {
+            "allowed_cidrs": [],
+            "api_token": null
+          },
+          "oneOf": [
+            {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/InternalApiConfig"
+                }
+              ]
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "x-aegis-ref": true
+        },
+        "metadata_allowed_keys": {
+          "default": [],
+          "description": "Allowlist of metadata keys users can set.",
+          "oneOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Allowed metadata keys",
+          "x-aegis-ref": true
+        },
+        "rate_limit": {
+          "default": {
+            "burst": 10,
+            "enabled": true,
+            "requests_per_minute": 60
+          },
+          "oneOf": [
+            {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/RateLimitConfig"
+                }
+              ]
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "x-aegis-ref": true
+        }
+      },
+      "type": "object"
+    },
+    "Argon2Config": {
+      "additionalProperties": false,
+      "properties": {
+        "memory_cost": {
+          "default": 65536,
+          "description": "Argon2 memory cost in KiB.",
+          "oneOf": [
+            {
+              "maximum": 4294967295,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Memory cost",
+          "x-aegis-ref": true
+        },
+        "parallelism": {
+          "default": 2,
+          "description": "Argon2 parallelism parameter.",
+          "oneOf": [
+            {
+              "maximum": 4294967295,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Parallelism",
+          "x-aegis-ref": true
+        },
+        "time_cost": {
+          "default": 3,
+          "description": "Argon2 time cost parameter.",
+          "oneOf": [
+            {
+              "maximum": 4294967295,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Time cost",
+          "x-aegis-ref": true
+        }
+      },
+      "type": "object"
+    },
+    "BearerConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "default_ttl_minutes": {
+          "default": 15,
+          "description": "Default bearer token TTL in minutes.",
+          "oneOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Default TTL",
+          "x-aegis-ref": true
+        },
+        "opaque_token_length": {
+          "default": 32,
+          "description": "Length of opaque bearer tokens in bytes.",
+          "oneOf": [
+            {
+              "maximum": 4294967295,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Token length",
+          "x-aegis-ref": true
+        },
+        "refresh_token_enabled": {
+          "default": false,
+          "description": "Enable refresh token flow.",
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Refresh tokens",
+          "x-aegis-ref": true
+        },
+        "refresh_token_ttl_days": {
+          "default": 30,
+          "description": "Refresh token TTL in days.",
+          "oneOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Refresh TTL",
+          "x-aegis-ref": true
+        }
+      },
+      "type": "object"
+    },
+    "ComplianceConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "data_retention": {
+          "default": {
+            "audit_log_days": 2555,
+            "deleted_user_anonymize_after_days": 0,
+            "guest_ttl_days": 30
+          },
+          "oneOf": [
+            {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/DataRetentionConfig"
+                }
+              ]
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "x-aegis-ref": true
+        },
+        "deletion": {
+          "default": {
+            "anonymize_email_pattern": "deleted-{hash}@anonymized.local",
+            "preserve_referential_integrity": true
+          },
+          "oneOf": [
+            {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/DeletionConfig"
+                }
+              ]
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "x-aegis-ref": true
+        }
+      },
+      "type": "object"
+    },
+    "CookieConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "domain": {
+          "default": null,
+          "description": "Domain for the cookie.",
+          "oneOf": [
+            {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Cookie domain",
+          "x-aegis-ref": true
+        },
+        "http_only": {
+          "default": true,
+          "description": "Prevent JavaScript access to cookie.",
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "HTTP only",
+          "x-aegis-ref": true
+        },
+        "name": {
+          "default": "aegis_session",
+          "description": "Name of the session cookie.",
+          "oneOf": [
+            {
+              "pattern": "^(?!env:)(?!file:).*$",
+              "type": "string"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Cookie name",
+          "x-aegis-ref": true
+        },
+        "path": {
+          "default": "/",
+          "description": "URL path for the cookie.",
+          "oneOf": [
+            {
+              "pattern": "^(?!env:)(?!file:).*$",
+              "type": "string"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Cookie path",
+          "x-aegis-ref": true
+        },
+        "same_site": {
+          "default": "lax",
+          "description": "Cookie SameSite policy.",
+          "oneOf": [
+            {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/SameSite"
+                }
+              ]
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "SameSite",
+          "x-aegis-ref": true
+        },
+        "secure": {
+          "default": true,
+          "description": "Only send cookie over HTTPS.",
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Secure",
+          "x-aegis-ref": true
+        }
+      },
+      "type": "object"
+    },
+    "CredentialsConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "mfa": {
+          "default": {
+            "totp": {
+              "algorithm": "SHA1",
+              "digits": 6,
+              "issuer": "",
+              "period": 30,
+              "recovery_codes": {
+                "code_length": 12,
+                "count": 10
+              },
+              "skew": 1
+            }
+          },
+          "oneOf": [
+            {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/MfaConfig"
+                }
+              ]
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "x-aegis-ref": true
+        },
+        "passkeys": {
+          "default": {
+            "origins": [],
+            "resident_key": "preferred",
+            "rp_id": "",
+            "rp_name": "",
+            "timeout_seconds": 60,
+            "user_verification": "preferred"
+          },
+          "oneOf": [
+            {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/PasskeysConfig"
+                }
+              ]
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "x-aegis-ref": true
+        },
+        "password": {
+          "default": {
+            "argon2": {
+              "memory_cost": 65536,
+              "parallelism": 2,
+              "time_cost": 3
+            },
+            "hashing_algorithm": "argon2id",
+            "policy": {
+              "disallow_common": true,
+              "min_length": 12,
+              "require_digit": true,
+              "require_lowercase": true,
+              "require_symbol": true,
+              "require_uppercase": true
+            }
+          },
+          "oneOf": [
+            {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/PasswordConfig"
+                }
+              ]
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "x-aegis-ref": true
+        }
+      },
+      "type": "object"
+    },
+    "CryptoConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "jwt": {
+          "default": {
+            "algorithm": "RS256",
+            "audience": null,
+            "enabled": false,
+            "issuer": null,
+            "private_key": null,
+            "public_key": null
+          },
+          "oneOf": [
+            {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/JwtConfig"
+                }
+              ]
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "x-aegis-ref": true
+        },
+        "master_key": {
+          "default": null,
+          "description": "Master encryption key. Use env:VAR or file:/path reference.",
+          "oneOf": [
+            {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Master key",
+          "x-aegis-ref": true
+        }
+      },
+      "type": "object"
+    },
+    "DataRetentionConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "audit_log_days": {
+          "default": 2555,
+          "description": "Days to retain audit logs (~7 years = 2555).",
+          "oneOf": [
+            {
+              "maximum": 4294967295,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Audit log retention",
+          "x-aegis-ref": true
+        },
+        "deleted_user_anonymize_after_days": {
+          "default": 0,
+          "description": "Days after deletion to anonymize user data (0 = immediate).",
+          "oneOf": [
+            {
+              "maximum": 4294967295,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Anonymize after",
+          "x-aegis-ref": true
+        },
+        "guest_ttl_days": {
+          "default": 30,
+          "description": "Days before expired guests are purged.",
+          "oneOf": [
+            {
+              "maximum": 4294967295,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Guest TTL",
+          "x-aegis-ref": true
+        }
+      },
+      "type": "object"
+    },
+    "DatabaseConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "connection_timeout_seconds": {
+          "default": 30,
+          "description": "Connection timeout in seconds.",
+          "oneOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Connection timeout",
+          "x-aegis-ref": true
+        },
+        "encryption_key": {
+          "default": null,
+          "description": "Key for encrypting sensitive columns. Use env:VAR or file:/path references.",
+          "oneOf": [
+            {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Encryption key",
+          "x-aegis-ref": true
+        },
+        "max_connections": {
+          "default": 25,
+          "description": "Maximum number of database connections.",
+          "oneOf": [
+            {
+              "maximum": 4294967295,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Max connections",
+          "x-aegis-ref": true
+        },
+        "min_idle": {
+          "default": 5,
+          "description": "Minimum number of idle connections.",
+          "oneOf": [
+            {
+              "maximum": 4294967295,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Min idle",
+          "x-aegis-ref": true
+        },
+        "url": {
+          "description": "PostgreSQL connection string.",
+          "oneOf": [
+            {
+              "pattern": "^(?!env:)(?!file:).*$",
+              "type": "string"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Database URL",
+          "x-aegis-ref": true
+        }
+      },
+      "required": [
+        "url"
+      ],
+      "type": "object"
+    },
+    "DeletionConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "anonymize_email_pattern": {
+          "default": "deleted-{hash}@anonymized.local",
+          "description": "Pattern for anonymized emails. Use {hash} as placeholder.",
+          "oneOf": [
+            {
+              "pattern": "^(?!env:)(?!file:).*$",
+              "type": "string"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Anonymize pattern",
+          "x-aegis-ref": true
+        },
+        "preserve_referential_integrity": {
+          "default": true,
+          "description": "Keep anonymized records for referential integrity.",
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Preserve referential integrity",
+          "x-aegis-ref": true
+        }
+      },
+      "type": "object"
+    },
+    "EmailConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "default": false,
+          "description": "Enable email delivery.",
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Enabled",
+          "x-aegis-ref": true
+        },
+        "from_address": {
+          "default": "",
+          "description": "Sender email address.",
+          "oneOf": [
+            {
+              "pattern": "^(?!env:)(?!file:).*$",
+              "type": "string"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "From address",
+          "x-aegis-ref": true
+        },
+        "from_name": {
+          "default": "",
+          "description": "Sender display name.",
+          "oneOf": [
+            {
+              "pattern": "^(?!env:)(?!file:).*$",
+              "type": "string"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "From name",
+          "x-aegis-ref": true
+        },
+        "password_reset_token_ttl_minutes": {
+          "default": 60,
+          "description": "How long password reset tokens remain valid.",
+          "oneOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Password reset token TTL (minutes)",
+          "x-aegis-ref": true
+        },
+        "smtp": {
+          "default": {
+            "host": "",
+            "password": "",
+            "port": 587,
+            "starttls": true,
+            "timeout_seconds": 30,
+            "username": ""
+          },
+          "oneOf": [
+            {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/SmtpConfig"
+                }
+              ]
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "x-aegis-ref": true
+        },
+        "templates": {
+          "default": {
+            "password_reset": "",
+            "verification": ""
+          },
+          "oneOf": [
+            {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/EmailTemplatesConfig"
+                }
+              ]
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "x-aegis-ref": true
+        },
+        "verification_token_ttl_hours": {
+          "default": 24,
+          "description": "How long email verification tokens remain valid.",
+          "oneOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Verification token TTL (hours)",
+          "x-aegis-ref": true
+        }
+      },
+      "type": "object"
+    },
+    "EmailTemplatesConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "password_reset": {
+          "default": "",
+          "description": "Path to password reset template.",
+          "oneOf": [
+            {
+              "pattern": "^(?!env:)(?!file:).*$",
+              "type": "string"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Password reset template",
+          "x-aegis-ref": true
+        },
+        "verification": {
+          "default": "",
+          "description": "Path to email verification template.",
+          "oneOf": [
+            {
+              "pattern": "^(?!env:)(?!file:).*$",
+              "type": "string"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Verification template",
+          "x-aegis-ref": true
+        }
+      },
+      "type": "object"
+    },
+    "HashingAlgorithm": {
+      "enum": [
+        "argon2id"
+      ],
+      "type": "string"
+    },
+    "InternalApiConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "allowed_cidrs": {
+          "default": [],
+          "description": "Network ranges allowed for internal API access.",
+          "oneOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Allowed CIDRs",
+          "x-aegis-ref": true
+        },
+        "api_token": {
+          "default": null,
+          "description": "Static token for service-to-service auth. Use env:VAR reference.",
+          "oneOf": [
+            {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "API token",
+          "x-aegis-ref": true
+        }
+      },
+      "type": "object"
+    },
+    "JwtAlgorithm": {
+      "enum": [
+        "RS256",
+        "ES256",
+        "HS256"
+      ],
+      "type": "string"
+    },
+    "JwtConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "algorithm": {
+          "default": "RS256",
+          "description": "JWT signing algorithm.",
+          "oneOf": [
+            {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/JwtAlgorithm"
+                }
+              ]
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Algorithm",
+          "x-aegis-ref": true
+        },
+        "audience": {
+          "default": null,
+          "description": "JWT audience claim.",
+          "oneOf": [
+            {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Audience",
+          "x-aegis-ref": true
+        },
+        "enabled": {
+          "default": false,
+          "description": "Enable JWT-based stateless authentication.",
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Enabled",
+          "x-aegis-ref": true
+        },
+        "issuer": {
+          "default": null,
+          "description": "JWT issuer claim.",
+          "oneOf": [
+            {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Issuer",
+          "x-aegis-ref": true
+        },
+        "private_key": {
+          "default": null,
+          "description": "Path or reference to JWT private key.",
+          "oneOf": [
+            {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Private key",
+          "x-aegis-ref": true
+        },
+        "public_key": {
+          "default": null,
+          "description": "Path or reference to JWT public key.",
+          "oneOf": [
+            {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Public key",
+          "x-aegis-ref": true
+        }
+      },
+      "type": "object"
+    },
+    "LogFormat": {
+      "enum": [
+        "json",
+        "text"
+      ],
+      "type": "string"
+    },
+    "LogLevel": {
+      "enum": [
+        "info",
+        "debug",
+        "warn",
+        "error"
+      ],
+      "type": "string"
+    },
+    "MfaConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "totp": {
+          "default": {
+            "algorithm": "SHA1",
+            "digits": 6,
+            "issuer": "",
+            "period": 30,
+            "recovery_codes": {
+              "code_length": 12,
+              "count": 10
+            },
+            "skew": 1
+          },
+          "oneOf": [
+            {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/TotpConfig"
+                }
+              ]
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "x-aegis-ref": true
+        }
+      },
+      "type": "object"
+    },
+    "PasskeysConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "origins": {
+          "default": [],
+          "description": "Allowed origins for WebAuthn.",
+          "oneOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Origins",
+          "x-aegis-ref": true
+        },
+        "resident_key": {
+          "default": "preferred",
+          "description": "WebAuthn resident key requirement.",
+          "oneOf": [
+            {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/ResidentKey"
+                }
+              ]
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Resident key",
+          "x-aegis-ref": true
+        },
+        "rp_id": {
+          "default": "",
+          "description": "WebAuthn relying party identifier.",
+          "oneOf": [
+            {
+              "pattern": "^(?!env:)(?!file:).*$",
+              "type": "string"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Relying party ID",
+          "x-aegis-ref": true
+        },
+        "rp_name": {
+          "default": "",
+          "description": "Human-readable relying party name.",
+          "oneOf": [
+            {
+              "pattern": "^(?!env:)(?!file:).*$",
+              "type": "string"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Relying party name",
+          "x-aegis-ref": true
+        },
+        "timeout_seconds": {
+          "default": 60,
+          "description": "WebAuthn ceremony timeout in seconds.",
+          "oneOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Timeout",
+          "x-aegis-ref": true
+        },
+        "user_verification": {
+          "default": "preferred",
+          "description": "WebAuthn user verification requirement.",
+          "oneOf": [
+            {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/UserVerification"
+                }
+              ]
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "User verification",
+          "x-aegis-ref": true
+        }
+      },
+      "type": "object"
+    },
+    "PasswordConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "argon2": {
+          "default": {
+            "memory_cost": 65536,
+            "parallelism": 2,
+            "time_cost": 3
+          },
+          "oneOf": [
+            {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/Argon2Config"
+                }
+              ]
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "x-aegis-ref": true
+        },
+        "hashing_algorithm": {
+          "default": "argon2id",
+          "description": "Password hashing algorithm.",
+          "oneOf": [
+            {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/HashingAlgorithm"
+                }
+              ]
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Hashing algorithm",
+          "x-aegis-ref": true
+        },
+        "policy": {
+          "default": {
+            "disallow_common": true,
+            "min_length": 12,
+            "require_digit": true,
+            "require_lowercase": true,
+            "require_symbol": true,
+            "require_uppercase": true
+          },
+          "oneOf": [
+            {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/PasswordPolicyConfig"
+                }
+              ]
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "x-aegis-ref": true
+        }
+      },
+      "type": "object"
+    },
+    "PasswordPolicyConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "disallow_common": {
+          "default": true,
+          "description": "Disallow commonly used passwords.",
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Disallow common",
+          "x-aegis-ref": true
+        },
+        "min_length": {
+          "default": 12,
+          "description": "Minimum password length.",
+          "oneOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Minimum length",
+          "x-aegis-ref": true
+        },
+        "require_digit": {
+          "default": true,
+          "description": "Require at least one digit.",
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Require digit",
+          "x-aegis-ref": true
+        },
+        "require_lowercase": {
+          "default": true,
+          "description": "Require at least one lowercase letter.",
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Require lowercase",
+          "x-aegis-ref": true
+        },
+        "require_symbol": {
+          "default": true,
+          "description": "Require at least one symbol.",
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Require symbol",
+          "x-aegis-ref": true
+        },
+        "require_uppercase": {
+          "default": true,
+          "description": "Require at least one uppercase letter.",
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Require uppercase",
+          "x-aegis-ref": true
+        }
+      },
+      "type": "object"
+    },
+    "RateLimitConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "burst": {
+          "default": 10,
+          "description": "Burst capacity for rate limiter.",
+          "oneOf": [
+            {
+              "maximum": 4294967295,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Burst",
+          "x-aegis-ref": true
+        },
+        "enabled": {
+          "default": true,
+          "description": "Enable rate limiting.",
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Enabled",
+          "x-aegis-ref": true
+        },
+        "requests_per_minute": {
+          "default": 60,
+          "description": "Maximum requests per minute per client.",
+          "oneOf": [
+            {
+              "maximum": 4294967295,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Requests per minute",
+          "x-aegis-ref": true
+        }
+      },
+      "type": "object"
+    },
+    "RecoveryCodesConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "code_length": {
+          "default": 12,
+          "description": "Length of each recovery code.",
+          "oneOf": [
+            {
+              "maximum": 4294967295,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Code length",
+          "x-aegis-ref": true
+        },
+        "count": {
+          "default": 10,
+          "description": "Number of recovery codes to generate.",
+          "oneOf": [
+            {
+              "maximum": 4294967295,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Count",
+          "x-aegis-ref": true
+        }
+      },
+      "type": "object"
+    },
+    "RedisConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "default": false,
+          "description": "Enable Redis for caching and rate limiting.",
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Enabled",
+          "x-aegis-ref": true
+        },
+        "max_connections": {
+          "default": 10,
+          "description": "Maximum number of Redis connections.",
+          "oneOf": [
+            {
+              "maximum": 4294967295,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Max connections",
+          "x-aegis-ref": true
+        },
+        "url": {
+          "default": "redis://127.0.0.1:6379/0",
+          "description": "Redis connection string.",
+          "oneOf": [
+            {
+              "pattern": "^(?!env:)(?!file:).*$",
+              "type": "string"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Redis URL",
+          "x-aegis-ref": true
+        }
+      },
+      "type": "object"
+    },
+    "ResidentKey": {
+      "enum": [
+        "required",
+        "preferred",
+        "discouraged"
+      ],
+      "type": "string"
+    },
+    "SameSite": {
+      "enum": [
+        "strict",
+        "lax",
+        "none"
+      ],
+      "type": "string"
+    },
+    "ServerConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "host": {
+          "default": "0.0.0.0",
+          "description": "IP address to bind the server to.",
+          "oneOf": [
+            {
+              "pattern": "^(?!env:)(?!file:).*$",
+              "type": "string"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Bind host",
+          "x-aegis-ref": true
+        },
+        "log_format": {
+          "default": "json",
+          "description": "Structured or plain log output.",
+          "oneOf": [
+            {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/LogFormat"
+                }
+              ]
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Log format",
+          "x-aegis-ref": true
+        },
+        "log_level": {
+          "default": "info",
+          "description": "Server log verbosity.",
+          "oneOf": [
+            {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/LogLevel"
+                }
+              ]
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Log level",
+          "x-aegis-ref": true
+        },
+        "log_output": {
+          "default": [
+            "stdout"
+          ],
+          "description": "List of log output destinations.",
+          "oneOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Log outputs",
+          "x-aegis-ref": true
+        },
+        "port": {
+          "default": 8080,
+          "description": "TCP port to listen on.",
+          "oneOf": [
+            {
+              "maximum": 65535,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Bind port",
+          "x-aegis-ref": true
+        },
+        "public_url": {
+          "default": null,
+          "description": "External URL for this server (used for redirects, CORS, etc.).",
+          "oneOf": [
+            {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Public URL",
+          "x-aegis-ref": true
+        },
+        "tls_cert": {
+          "default": null,
+          "description": "Path to TLS certificate file.",
+          "oneOf": [
+            {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "TLS certificate",
+          "x-aegis-ref": true
+        },
+        "tls_key": {
+          "default": null,
+          "description": "Path to TLS private key file.",
+          "oneOf": [
+            {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "TLS private key",
+          "x-aegis-ref": true
+        }
+      },
+      "type": "object"
+    },
+    "SessionConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "bearer": {
+          "default": {
+            "default_ttl_minutes": 15,
+            "opaque_token_length": 32,
+            "refresh_token_enabled": false,
+            "refresh_token_ttl_days": 30
+          },
+          "oneOf": [
+            {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/BearerConfig"
+                }
+              ]
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "x-aegis-ref": true
+        },
+        "cookie": {
+          "default": {
+            "domain": null,
+            "http_only": true,
+            "name": "aegis_session",
+            "path": "/",
+            "same_site": "lax",
+            "secure": true
+          },
+          "oneOf": [
+            {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/CookieConfig"
+                }
+              ]
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "x-aegis-ref": true
+        },
+        "idle_timeout_minutes": {
+          "default": 30,
+          "description": "Session idle timeout in minutes.",
+          "oneOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Idle timeout",
+          "x-aegis-ref": true
+        },
+        "max_age_hours": {
+          "default": 168,
+          "description": "Maximum session lifetime in hours.",
+          "oneOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Max age",
+          "x-aegis-ref": true
+        },
+        "secret": {
+          "description": "Secret key for signing session tokens. Use env:VAR reference.",
+          "oneOf": [
+            {
+              "pattern": "^(?!env:)(?!file:).*$",
+              "type": "string"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Session secret",
+          "x-aegis-ref": true
+        }
+      },
+      "required": [
+        "secret"
+      ],
+      "type": "object"
+    },
+    "SmtpConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "host": {
+          "default": "",
+          "description": "SMTP server hostname.",
+          "oneOf": [
+            {
+              "pattern": "^(?!env:)(?!file:).*$",
+              "type": "string"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "SMTP host",
+          "x-aegis-ref": true
+        },
+        "password": {
+          "default": "",
+          "description": "SMTP authentication password. Use env:VAR reference.",
+          "oneOf": [
+            {
+              "pattern": "^(?!env:)(?!file:).*$",
+              "type": "string"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Password",
+          "x-aegis-ref": true
+        },
+        "port": {
+          "default": 587,
+          "description": "SMTP server port.",
+          "oneOf": [
+            {
+              "maximum": 65535,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "SMTP port",
+          "x-aegis-ref": true
+        },
+        "starttls": {
+          "default": true,
+          "description": "Enable STARTTLS.",
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "STARTTLS",
+          "x-aegis-ref": true
+        },
+        "timeout_seconds": {
+          "default": 30,
+          "description": "SMTP connection timeout in seconds.",
+          "oneOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Timeout",
+          "x-aegis-ref": true
+        },
+        "username": {
+          "default": "",
+          "description": "SMTP authentication username.",
+          "oneOf": [
+            {
+              "pattern": "^(?!env:)(?!file:).*$",
+              "type": "string"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Username",
+          "x-aegis-ref": true
+        }
+      },
+      "type": "object"
+    },
+    "TotpAlgorithm": {
+      "enum": [
+        "SHA1",
+        "SHA256",
+        "SHA512"
+      ],
+      "type": "string"
+    },
+    "TotpConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "algorithm": {
+          "default": "SHA1",
+          "description": "TOTP HMAC algorithm.",
+          "oneOf": [
+            {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/TotpAlgorithm"
+                }
+              ]
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Algorithm",
+          "x-aegis-ref": true
+        },
+        "digits": {
+          "default": 6,
+          "description": "Number of TOTP digits.",
+          "oneOf": [
+            {
+              "maximum": 4294967295,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Digits",
+          "x-aegis-ref": true
+        },
+        "issuer": {
+          "default": "",
+          "description": "TOTP issuer name shown in authenticator apps.",
+          "oneOf": [
+            {
+              "pattern": "^(?!env:)(?!file:).*$",
+              "type": "string"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Issuer",
+          "x-aegis-ref": true
+        },
+        "period": {
+          "default": 30,
+          "description": "TOTP time step in seconds.",
+          "oneOf": [
+            {
+              "maximum": 4294967295,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Period",
+          "x-aegis-ref": true
+        },
+        "recovery_codes": {
+          "default": {
+            "code_length": 12,
+            "count": 10
+          },
+          "oneOf": [
+            {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/RecoveryCodesConfig"
+                }
+              ]
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "x-aegis-ref": true
+        },
+        "skew": {
+          "default": 1,
+          "description": "Allowed TOTP time skew (periods before/after).",
+          "oneOf": [
+            {
+              "maximum": 4294967295,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Skew",
+          "x-aegis-ref": true
+        }
+      },
+      "type": "object"
+    },
+    "UserVerification": {
+      "enum": [
+        "required",
+        "preferred",
+        "discouraged"
+      ],
+      "type": "string"
+    },
+    "WebhookEndpointConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "events": {
+          "default": [],
+          "description": "List of event types to subscribe to.",
+          "oneOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Events",
+          "x-aegis-ref": true
+        },
+        "retry_max_attempts": {
+          "default": 5,
+          "description": "Maximum retry attempts for failed deliveries.",
+          "oneOf": [
+            {
+              "maximum": 4294967295,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Max retries",
+          "x-aegis-ref": true
+        },
+        "secret": {
+          "default": null,
+          "description": "Secret for webhook payload signing. Use env:VAR reference.",
+          "oneOf": [
+            {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Signing secret",
+          "x-aegis-ref": true
+        },
+        "timeout_seconds": {
+          "default": 10,
+          "description": "Request timeout in seconds.",
+          "oneOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Timeout",
+          "x-aegis-ref": true
+        },
+        "url": {
+          "description": "Webhook endpoint URL.",
+          "oneOf": [
+            {
+              "pattern": "^(?!env:)(?!file:).*$",
+              "type": "string"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "URL",
+          "x-aegis-ref": true
+        }
+      },
+      "required": [
+        "url"
+      ],
+      "type": "object"
+    },
+    "WebhooksConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "default": false,
+          "description": "Enable outbound webhook delivery.",
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "title": "Enabled",
+          "x-aegis-ref": true
+        },
+        "endpoints": {
+          "default": [],
+          "oneOf": [
+            {
+              "items": {
+                "$ref": "#/definitions/WebhookEndpointConfig"
+              },
+              "type": "array"
+            },
+            {
+              "pattern": "^env:.+",
+              "type": "string"
+            },
+            {
+              "pattern": "^file:.+",
+              "type": "string"
+            }
+          ],
+          "x-aegis-ref": true
+        }
+      },
+      "type": "object"
+    }
+  },
   "properties": {
     "api": {
       "default": {
@@ -16,11 +2549,24 @@
           "requests_per_minute": 60
         }
       },
-      "allOf": [
+      "oneOf": [
         {
-          "$ref": "#/definitions/ApiConfig"
+          "allOf": [
+            {
+              "$ref": "#/definitions/ApiConfig"
+            }
+          ]
+        },
+        {
+          "pattern": "^env:.+",
+          "type": "string"
+        },
+        {
+          "pattern": "^file:.+",
+          "type": "string"
         }
-      ]
+      ],
+      "x-aegis-ref": true
     },
     "compliance": {
       "default": {
@@ -34,11 +2580,24 @@
           "preserve_referential_integrity": true
         }
       },
-      "allOf": [
+      "oneOf": [
         {
-          "$ref": "#/definitions/ComplianceConfig"
+          "allOf": [
+            {
+              "$ref": "#/definitions/ComplianceConfig"
+            }
+          ]
+        },
+        {
+          "pattern": "^env:.+",
+          "type": "string"
+        },
+        {
+          "pattern": "^file:.+",
+          "type": "string"
         }
-      ]
+      ],
+      "x-aegis-ref": true
     },
     "credentials": {
       "default": {
@@ -80,11 +2639,24 @@
           }
         }
       },
-      "allOf": [
+      "oneOf": [
         {
-          "$ref": "#/definitions/CredentialsConfig"
+          "allOf": [
+            {
+              "$ref": "#/definitions/CredentialsConfig"
+            }
+          ]
+        },
+        {
+          "pattern": "^env:.+",
+          "type": "string"
+        },
+        {
+          "pattern": "^file:.+",
+          "type": "string"
         }
-      ]
+      ],
+      "x-aegis-ref": true
     },
     "crypto": {
       "default": {
@@ -98,22 +2670,41 @@
         },
         "master_key": null
       },
-      "allOf": [
+      "oneOf": [
         {
-          "$ref": "#/definitions/CryptoConfig"
+          "allOf": [
+            {
+              "$ref": "#/definitions/CryptoConfig"
+            }
+          ]
+        },
+        {
+          "pattern": "^env:.+",
+          "type": "string"
+        },
+        {
+          "pattern": "^file:.+",
+          "type": "string"
         }
-      ]
+      ],
+      "x-aegis-ref": true
     },
     "database": {
       "default": null,
-      "anyOf": [
+      "oneOf": [
         {
           "$ref": "#/definitions/DatabaseConfig"
         },
         {
-          "type": "null"
+          "pattern": "^env:.+",
+          "type": "string"
+        },
+        {
+          "pattern": "^file:.+",
+          "type": "string"
         }
-      ]
+      ],
+      "x-aegis-ref": true
     },
     "email": {
       "default": {
@@ -135,11 +2726,24 @@
         },
         "verification_token_ttl_hours": 24
       },
-      "allOf": [
+      "oneOf": [
         {
-          "$ref": "#/definitions/EmailConfig"
+          "allOf": [
+            {
+              "$ref": "#/definitions/EmailConfig"
+            }
+          ]
+        },
+        {
+          "pattern": "^env:.+",
+          "type": "string"
+        },
+        {
+          "pattern": "^file:.+",
+          "type": "string"
         }
-      ]
+      ],
+      "x-aegis-ref": true
     },
     "redis": {
       "default": {
@@ -147,11 +2751,24 @@
         "max_connections": 10,
         "url": "redis://127.0.0.1:6379/0"
       },
-      "allOf": [
+      "oneOf": [
         {
-          "$ref": "#/definitions/RedisConfig"
+          "allOf": [
+            {
+              "$ref": "#/definitions/RedisConfig"
+            }
+          ]
+        },
+        {
+          "pattern": "^env:.+",
+          "type": "string"
+        },
+        {
+          "pattern": "^file:.+",
+          "type": "string"
         }
-      ]
+      ],
+      "x-aegis-ref": true
     },
     "server": {
       "default": {
@@ -166,1173 +2783,67 @@
         "tls_cert": null,
         "tls_key": null
       },
-      "allOf": [
+      "oneOf": [
         {
-          "$ref": "#/definitions/ServerConfig"
+          "allOf": [
+            {
+              "$ref": "#/definitions/ServerConfig"
+            }
+          ]
+        },
+        {
+          "pattern": "^env:.+",
+          "type": "string"
+        },
+        {
+          "pattern": "^file:.+",
+          "type": "string"
         }
-      ]
+      ],
+      "x-aegis-ref": true
     },
     "session": {
       "default": null,
-      "anyOf": [
+      "oneOf": [
         {
           "$ref": "#/definitions/SessionConfig"
         },
         {
-          "type": "null"
+          "pattern": "^env:.+",
+          "type": "string"
+        },
+        {
+          "pattern": "^file:.+",
+          "type": "string"
         }
-      ]
+      ],
+      "x-aegis-ref": true
     },
     "webhooks": {
       "default": {
         "enabled": false,
         "endpoints": []
       },
-      "allOf": [
+      "oneOf": [
         {
-          "$ref": "#/definitions/WebhooksConfig"
+          "allOf": [
+            {
+              "$ref": "#/definitions/WebhooksConfig"
+            }
+          ]
+        },
+        {
+          "pattern": "^env:.+",
+          "type": "string"
+        },
+        {
+          "pattern": "^file:.+",
+          "type": "string"
         }
-      ]
+      ],
+      "x-aegis-ref": true
     }
   },
-  "additionalProperties": false,
-  "x-tombi-toml-version": "1.0.0",
-  "definitions": {
-    "ApiConfig": {
-      "type": "object",
-      "properties": {
-        "internal": {
-          "default": {
-            "allowed_cidrs": [],
-            "api_token": null
-          },
-          "allOf": [
-            {
-              "$ref": "#/definitions/InternalApiConfig"
-            }
-          ]
-        },
-        "metadata_allowed_keys": {
-          "title": "Allowed metadata keys",
-          "description": "Allowlist of metadata keys users can set.",
-          "default": [],
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "rate_limit": {
-          "default": {
-            "burst": 10,
-            "enabled": true,
-            "requests_per_minute": 60
-          },
-          "allOf": [
-            {
-              "$ref": "#/definitions/RateLimitConfig"
-            }
-          ]
-        }
-      },
-      "additionalProperties": false
-    },
-    "Argon2Config": {
-      "type": "object",
-      "properties": {
-        "memory_cost": {
-          "title": "Memory cost",
-          "description": "Argon2 memory cost in KiB.",
-          "default": 65536,
-          "type": "integer",
-          "maximum": 4294967295.0,
-          "minimum": 0.0
-        },
-        "parallelism": {
-          "title": "Parallelism",
-          "description": "Argon2 parallelism parameter.",
-          "default": 2,
-          "type": "integer",
-          "maximum": 4294967295.0,
-          "minimum": 0.0
-        },
-        "time_cost": {
-          "title": "Time cost",
-          "description": "Argon2 time cost parameter.",
-          "default": 3,
-          "type": "integer",
-          "maximum": 4294967295.0,
-          "minimum": 0.0
-        }
-      },
-      "additionalProperties": false
-    },
-    "BearerConfig": {
-      "type": "object",
-      "properties": {
-        "default_ttl_minutes": {
-          "title": "Default TTL",
-          "description": "Default bearer token TTL in minutes.",
-          "default": 15,
-          "type": "integer",
-          "minimum": 0.0
-        },
-        "opaque_token_length": {
-          "title": "Token length",
-          "description": "Length of opaque bearer tokens in bytes.",
-          "default": 32,
-          "type": "integer",
-          "maximum": 4294967295.0,
-          "minimum": 0.0
-        },
-        "refresh_token_enabled": {
-          "title": "Refresh tokens",
-          "description": "Enable refresh token flow.",
-          "default": false,
-          "type": "boolean"
-        },
-        "refresh_token_ttl_days": {
-          "title": "Refresh TTL",
-          "description": "Refresh token TTL in days.",
-          "default": 30,
-          "type": "integer",
-          "minimum": 0.0
-        }
-      },
-      "additionalProperties": false
-    },
-    "ComplianceConfig": {
-      "type": "object",
-      "properties": {
-        "data_retention": {
-          "default": {
-            "audit_log_days": 2555,
-            "deleted_user_anonymize_after_days": 0,
-            "guest_ttl_days": 30
-          },
-          "allOf": [
-            {
-              "$ref": "#/definitions/DataRetentionConfig"
-            }
-          ]
-        },
-        "deletion": {
-          "default": {
-            "anonymize_email_pattern": "deleted-{hash}@anonymized.local",
-            "preserve_referential_integrity": true
-          },
-          "allOf": [
-            {
-              "$ref": "#/definitions/DeletionConfig"
-            }
-          ]
-        }
-      },
-      "additionalProperties": false
-    },
-    "CookieConfig": {
-      "type": "object",
-      "properties": {
-        "domain": {
-          "title": "Cookie domain",
-          "description": "Domain for the cookie.",
-          "default": null,
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "http_only": {
-          "title": "HTTP only",
-          "description": "Prevent JavaScript access to cookie.",
-          "default": true,
-          "type": "boolean"
-        },
-        "name": {
-          "title": "Cookie name",
-          "description": "Name of the session cookie.",
-          "default": "aegis_session",
-          "type": "string"
-        },
-        "path": {
-          "title": "Cookie path",
-          "description": "URL path for the cookie.",
-          "default": "/",
-          "type": "string"
-        },
-        "same_site": {
-          "title": "SameSite",
-          "description": "Cookie SameSite policy.",
-          "default": "lax",
-          "allOf": [
-            {
-              "$ref": "#/definitions/SameSite"
-            }
-          ]
-        },
-        "secure": {
-          "title": "Secure",
-          "description": "Only send cookie over HTTPS.",
-          "default": true,
-          "type": "boolean"
-        }
-      },
-      "additionalProperties": false
-    },
-    "CredentialsConfig": {
-      "type": "object",
-      "properties": {
-        "mfa": {
-          "default": {
-            "totp": {
-              "algorithm": "SHA1",
-              "digits": 6,
-              "issuer": "",
-              "period": 30,
-              "recovery_codes": {
-                "code_length": 12,
-                "count": 10
-              },
-              "skew": 1
-            }
-          },
-          "allOf": [
-            {
-              "$ref": "#/definitions/MfaConfig"
-            }
-          ]
-        },
-        "passkeys": {
-          "default": {
-            "origins": [],
-            "resident_key": "preferred",
-            "rp_id": "",
-            "rp_name": "",
-            "timeout_seconds": 60,
-            "user_verification": "preferred"
-          },
-          "allOf": [
-            {
-              "$ref": "#/definitions/PasskeysConfig"
-            }
-          ]
-        },
-        "password": {
-          "default": {
-            "argon2": {
-              "memory_cost": 65536,
-              "parallelism": 2,
-              "time_cost": 3
-            },
-            "hashing_algorithm": "argon2id",
-            "policy": {
-              "disallow_common": true,
-              "min_length": 12,
-              "require_digit": true,
-              "require_lowercase": true,
-              "require_symbol": true,
-              "require_uppercase": true
-            }
-          },
-          "allOf": [
-            {
-              "$ref": "#/definitions/PasswordConfig"
-            }
-          ]
-        }
-      },
-      "additionalProperties": false
-    },
-    "CryptoConfig": {
-      "type": "object",
-      "properties": {
-        "jwt": {
-          "default": {
-            "algorithm": "RS256",
-            "audience": null,
-            "enabled": false,
-            "issuer": null,
-            "private_key": null,
-            "public_key": null
-          },
-          "allOf": [
-            {
-              "$ref": "#/definitions/JwtConfig"
-            }
-          ]
-        },
-        "master_key": {
-          "title": "Master key",
-          "description": "Master encryption key. Use env:VAR or file:/path reference.",
-          "default": null,
-          "type": [
-            "string",
-            "null"
-          ]
-        }
-      },
-      "additionalProperties": false
-    },
-    "DataRetentionConfig": {
-      "type": "object",
-      "properties": {
-        "audit_log_days": {
-          "title": "Audit log retention",
-          "description": "Days to retain audit logs (~7 years = 2555).",
-          "default": 2555,
-          "type": "integer",
-          "maximum": 4294967295.0,
-          "minimum": 0.0
-        },
-        "deleted_user_anonymize_after_days": {
-          "title": "Anonymize after",
-          "description": "Days after deletion to anonymize user data (0 = immediate).",
-          "default": 0,
-          "type": "integer",
-          "maximum": 4294967295.0,
-          "minimum": 0.0
-        },
-        "guest_ttl_days": {
-          "title": "Guest TTL",
-          "description": "Days before expired guests are purged.",
-          "default": 30,
-          "type": "integer",
-          "maximum": 4294967295.0,
-          "minimum": 0.0
-        }
-      },
-      "additionalProperties": false
-    },
-    "DatabaseConfig": {
-      "type": "object",
-      "required": [
-        "url"
-      ],
-      "properties": {
-        "connection_timeout_seconds": {
-          "title": "Connection timeout",
-          "description": "Connection timeout in seconds.",
-          "default": 30,
-          "type": "integer",
-          "minimum": 0.0
-        },
-        "encryption_key": {
-          "title": "Encryption key",
-          "description": "Key for encrypting sensitive columns. Use env:VAR or file:/path references.",
-          "default": null,
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "max_connections": {
-          "title": "Max connections",
-          "description": "Maximum number of database connections.",
-          "default": 25,
-          "type": "integer",
-          "maximum": 4294967295.0,
-          "minimum": 0.0
-        },
-        "min_idle": {
-          "title": "Min idle",
-          "description": "Minimum number of idle connections.",
-          "default": 5,
-          "type": "integer",
-          "maximum": 4294967295.0,
-          "minimum": 0.0
-        },
-        "url": {
-          "title": "Database URL",
-          "description": "PostgreSQL connection string.",
-          "type": "string"
-        }
-      },
-      "additionalProperties": false
-    },
-    "DeletionConfig": {
-      "type": "object",
-      "properties": {
-        "anonymize_email_pattern": {
-          "title": "Anonymize pattern",
-          "description": "Pattern for anonymized emails. Use {hash} as placeholder.",
-          "default": "deleted-{hash}@anonymized.local",
-          "type": "string"
-        },
-        "preserve_referential_integrity": {
-          "title": "Preserve referential integrity",
-          "description": "Keep anonymized records for referential integrity.",
-          "default": true,
-          "type": "boolean"
-        }
-      },
-      "additionalProperties": false
-    },
-    "EmailConfig": {
-      "type": "object",
-      "properties": {
-        "enabled": {
-          "title": "Enabled",
-          "description": "Enable email delivery.",
-          "default": false,
-          "type": "boolean"
-        },
-        "from_address": {
-          "title": "From address",
-          "description": "Sender email address.",
-          "default": "",
-          "type": "string"
-        },
-        "from_name": {
-          "title": "From name",
-          "description": "Sender display name.",
-          "default": "",
-          "type": "string"
-        },
-        "password_reset_token_ttl_minutes": {
-          "title": "Password reset token TTL (minutes)",
-          "description": "How long password reset tokens remain valid.",
-          "default": 60,
-          "type": "integer",
-          "minimum": 0.0
-        },
-        "smtp": {
-          "default": {
-            "host": "",
-            "password": "",
-            "port": 587,
-            "starttls": true,
-            "timeout_seconds": 30,
-            "username": ""
-          },
-          "allOf": [
-            {
-              "$ref": "#/definitions/SmtpConfig"
-            }
-          ]
-        },
-        "templates": {
-          "default": {
-            "password_reset": "",
-            "verification": ""
-          },
-          "allOf": [
-            {
-              "$ref": "#/definitions/EmailTemplatesConfig"
-            }
-          ]
-        },
-        "verification_token_ttl_hours": {
-          "title": "Verification token TTL (hours)",
-          "description": "How long email verification tokens remain valid.",
-          "default": 24,
-          "type": "integer",
-          "minimum": 0.0
-        }
-      },
-      "additionalProperties": false
-    },
-    "EmailTemplatesConfig": {
-      "type": "object",
-      "properties": {
-        "password_reset": {
-          "title": "Password reset template",
-          "description": "Path to password reset template.",
-          "default": "",
-          "type": "string"
-        },
-        "verification": {
-          "title": "Verification template",
-          "description": "Path to email verification template.",
-          "default": "",
-          "type": "string"
-        }
-      },
-      "additionalProperties": false
-    },
-    "HashingAlgorithm": {
-      "type": "string",
-      "enum": [
-        "argon2id"
-      ]
-    },
-    "InternalApiConfig": {
-      "type": "object",
-      "properties": {
-        "allowed_cidrs": {
-          "title": "Allowed CIDRs",
-          "description": "Network ranges allowed for internal API access.",
-          "default": [],
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "api_token": {
-          "title": "API token",
-          "description": "Static token for service-to-service auth. Use env:VAR reference.",
-          "default": null,
-          "type": [
-            "string",
-            "null"
-          ]
-        }
-      },
-      "additionalProperties": false
-    },
-    "JwtAlgorithm": {
-      "type": "string",
-      "enum": [
-        "RS256",
-        "ES256",
-        "HS256"
-      ]
-    },
-    "JwtConfig": {
-      "type": "object",
-      "properties": {
-        "algorithm": {
-          "title": "Algorithm",
-          "description": "JWT signing algorithm.",
-          "default": "RS256",
-          "allOf": [
-            {
-              "$ref": "#/definitions/JwtAlgorithm"
-            }
-          ]
-        },
-        "audience": {
-          "title": "Audience",
-          "description": "JWT audience claim.",
-          "default": null,
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "enabled": {
-          "title": "Enabled",
-          "description": "Enable JWT-based stateless authentication.",
-          "default": false,
-          "type": "boolean"
-        },
-        "issuer": {
-          "title": "Issuer",
-          "description": "JWT issuer claim.",
-          "default": null,
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "private_key": {
-          "title": "Private key",
-          "description": "Path or reference to JWT private key.",
-          "default": null,
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "public_key": {
-          "title": "Public key",
-          "description": "Path or reference to JWT public key.",
-          "default": null,
-          "type": [
-            "string",
-            "null"
-          ]
-        }
-      },
-      "additionalProperties": false
-    },
-    "LogFormat": {
-      "type": "string",
-      "enum": [
-        "json",
-        "text"
-      ]
-    },
-    "LogLevel": {
-      "type": "string",
-      "enum": [
-        "info",
-        "debug",
-        "warn",
-        "error"
-      ]
-    },
-    "MfaConfig": {
-      "type": "object",
-      "properties": {
-        "totp": {
-          "default": {
-            "algorithm": "SHA1",
-            "digits": 6,
-            "issuer": "",
-            "period": 30,
-            "recovery_codes": {
-              "code_length": 12,
-              "count": 10
-            },
-            "skew": 1
-          },
-          "allOf": [
-            {
-              "$ref": "#/definitions/TotpConfig"
-            }
-          ]
-        }
-      },
-      "additionalProperties": false
-    },
-    "PasskeysConfig": {
-      "type": "object",
-      "properties": {
-        "origins": {
-          "title": "Origins",
-          "description": "Allowed origins for WebAuthn.",
-          "default": [],
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "resident_key": {
-          "title": "Resident key",
-          "description": "WebAuthn resident key requirement.",
-          "default": "preferred",
-          "allOf": [
-            {
-              "$ref": "#/definitions/ResidentKey"
-            }
-          ]
-        },
-        "rp_id": {
-          "title": "Relying party ID",
-          "description": "WebAuthn relying party identifier.",
-          "default": "",
-          "type": "string"
-        },
-        "rp_name": {
-          "title": "Relying party name",
-          "description": "Human-readable relying party name.",
-          "default": "",
-          "type": "string"
-        },
-        "timeout_seconds": {
-          "title": "Timeout",
-          "description": "WebAuthn ceremony timeout in seconds.",
-          "default": 60,
-          "type": "integer",
-          "minimum": 0.0
-        },
-        "user_verification": {
-          "title": "User verification",
-          "description": "WebAuthn user verification requirement.",
-          "default": "preferred",
-          "allOf": [
-            {
-              "$ref": "#/definitions/UserVerification"
-            }
-          ]
-        }
-      },
-      "additionalProperties": false
-    },
-    "PasswordConfig": {
-      "type": "object",
-      "properties": {
-        "argon2": {
-          "default": {
-            "memory_cost": 65536,
-            "parallelism": 2,
-            "time_cost": 3
-          },
-          "allOf": [
-            {
-              "$ref": "#/definitions/Argon2Config"
-            }
-          ]
-        },
-        "hashing_algorithm": {
-          "title": "Hashing algorithm",
-          "description": "Password hashing algorithm.",
-          "default": "argon2id",
-          "allOf": [
-            {
-              "$ref": "#/definitions/HashingAlgorithm"
-            }
-          ]
-        },
-        "policy": {
-          "default": {
-            "disallow_common": true,
-            "min_length": 12,
-            "require_digit": true,
-            "require_lowercase": true,
-            "require_symbol": true,
-            "require_uppercase": true
-          },
-          "allOf": [
-            {
-              "$ref": "#/definitions/PasswordPolicyConfig"
-            }
-          ]
-        }
-      },
-      "additionalProperties": false
-    },
-    "PasswordPolicyConfig": {
-      "type": "object",
-      "properties": {
-        "disallow_common": {
-          "title": "Disallow common",
-          "description": "Disallow commonly used passwords.",
-          "default": true,
-          "type": "boolean"
-        },
-        "min_length": {
-          "title": "Minimum length",
-          "description": "Minimum password length.",
-          "default": 12,
-          "type": "integer",
-          "minimum": 0.0
-        },
-        "require_digit": {
-          "title": "Require digit",
-          "description": "Require at least one digit.",
-          "default": true,
-          "type": "boolean"
-        },
-        "require_lowercase": {
-          "title": "Require lowercase",
-          "description": "Require at least one lowercase letter.",
-          "default": true,
-          "type": "boolean"
-        },
-        "require_symbol": {
-          "title": "Require symbol",
-          "description": "Require at least one symbol.",
-          "default": true,
-          "type": "boolean"
-        },
-        "require_uppercase": {
-          "title": "Require uppercase",
-          "description": "Require at least one uppercase letter.",
-          "default": true,
-          "type": "boolean"
-        }
-      },
-      "additionalProperties": false
-    },
-    "RateLimitConfig": {
-      "type": "object",
-      "properties": {
-        "burst": {
-          "title": "Burst",
-          "description": "Burst capacity for rate limiter.",
-          "default": 10,
-          "type": "integer",
-          "maximum": 4294967295.0,
-          "minimum": 0.0
-        },
-        "enabled": {
-          "title": "Enabled",
-          "description": "Enable rate limiting.",
-          "default": true,
-          "type": "boolean"
-        },
-        "requests_per_minute": {
-          "title": "Requests per minute",
-          "description": "Maximum requests per minute per client.",
-          "default": 60,
-          "type": "integer",
-          "maximum": 4294967295.0,
-          "minimum": 0.0
-        }
-      },
-      "additionalProperties": false
-    },
-    "RecoveryCodesConfig": {
-      "type": "object",
-      "properties": {
-        "code_length": {
-          "title": "Code length",
-          "description": "Length of each recovery code.",
-          "default": 12,
-          "type": "integer",
-          "maximum": 4294967295.0,
-          "minimum": 0.0
-        },
-        "count": {
-          "title": "Count",
-          "description": "Number of recovery codes to generate.",
-          "default": 10,
-          "type": "integer",
-          "maximum": 4294967295.0,
-          "minimum": 0.0
-        }
-      },
-      "additionalProperties": false
-    },
-    "RedisConfig": {
-      "type": "object",
-      "properties": {
-        "enabled": {
-          "title": "Enabled",
-          "description": "Enable Redis for caching and rate limiting.",
-          "default": false,
-          "type": "boolean"
-        },
-        "max_connections": {
-          "title": "Max connections",
-          "description": "Maximum number of Redis connections.",
-          "default": 10,
-          "type": "integer",
-          "maximum": 4294967295.0,
-          "minimum": 0.0
-        },
-        "url": {
-          "title": "Redis URL",
-          "description": "Redis connection string.",
-          "default": "redis://127.0.0.1:6379/0",
-          "type": "string"
-        }
-      },
-      "additionalProperties": false
-    },
-    "ResidentKey": {
-      "type": "string",
-      "enum": [
-        "required",
-        "preferred",
-        "discouraged"
-      ]
-    },
-    "SameSite": {
-      "type": "string",
-      "enum": [
-        "strict",
-        "lax",
-        "none"
-      ]
-    },
-    "ServerConfig": {
-      "type": "object",
-      "properties": {
-        "host": {
-          "title": "Bind host",
-          "description": "IP address to bind the server to.",
-          "default": "0.0.0.0",
-          "type": "string"
-        },
-        "log_format": {
-          "title": "Log format",
-          "description": "Structured or plain log output.",
-          "default": "json",
-          "allOf": [
-            {
-              "$ref": "#/definitions/LogFormat"
-            }
-          ]
-        },
-        "log_level": {
-          "title": "Log level",
-          "description": "Server log verbosity.",
-          "default": "info",
-          "allOf": [
-            {
-              "$ref": "#/definitions/LogLevel"
-            }
-          ]
-        },
-        "log_output": {
-          "title": "Log outputs",
-          "description": "List of log output destinations.",
-          "default": [
-            "stdout"
-          ],
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "port": {
-          "title": "Bind port",
-          "description": "TCP port to listen on.",
-          "default": 8080,
-          "type": "integer",
-          "maximum": 65535.0,
-          "minimum": 0.0
-        },
-        "public_url": {
-          "title": "Public URL",
-          "description": "External URL for this server (used for redirects, CORS, etc.).",
-          "default": null,
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "tls_cert": {
-          "title": "TLS certificate",
-          "description": "Path to TLS certificate file.",
-          "default": null,
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "tls_key": {
-          "title": "TLS private key",
-          "description": "Path to TLS private key file.",
-          "default": null,
-          "type": [
-            "string",
-            "null"
-          ]
-        }
-      },
-      "additionalProperties": false
-    },
-    "SessionConfig": {
-      "type": "object",
-      "required": [
-        "secret"
-      ],
-      "properties": {
-        "bearer": {
-          "default": {
-            "default_ttl_minutes": 15,
-            "opaque_token_length": 32,
-            "refresh_token_enabled": false,
-            "refresh_token_ttl_days": 30
-          },
-          "allOf": [
-            {
-              "$ref": "#/definitions/BearerConfig"
-            }
-          ]
-        },
-        "cookie": {
-          "default": {
-            "domain": null,
-            "http_only": true,
-            "name": "aegis_session",
-            "path": "/",
-            "same_site": "lax",
-            "secure": true
-          },
-          "allOf": [
-            {
-              "$ref": "#/definitions/CookieConfig"
-            }
-          ]
-        },
-        "idle_timeout_minutes": {
-          "title": "Idle timeout",
-          "description": "Session idle timeout in minutes.",
-          "default": 30,
-          "type": "integer",
-          "minimum": 0.0
-        },
-        "max_age_hours": {
-          "title": "Max age",
-          "description": "Maximum session lifetime in hours.",
-          "default": 168,
-          "type": "integer",
-          "minimum": 0.0
-        },
-        "secret": {
-          "title": "Session secret",
-          "description": "Secret key for signing session tokens. Use env:VAR reference.",
-          "type": "string"
-        }
-      },
-      "additionalProperties": false
-    },
-    "SmtpConfig": {
-      "type": "object",
-      "properties": {
-        "host": {
-          "title": "SMTP host",
-          "description": "SMTP server hostname.",
-          "default": "",
-          "type": "string"
-        },
-        "password": {
-          "title": "Password",
-          "description": "SMTP authentication password. Use env:VAR reference.",
-          "default": "",
-          "type": "string"
-        },
-        "port": {
-          "title": "SMTP port",
-          "description": "SMTP server port.",
-          "default": 587,
-          "type": "integer",
-          "maximum": 65535.0,
-          "minimum": 0.0
-        },
-        "starttls": {
-          "title": "STARTTLS",
-          "description": "Enable STARTTLS.",
-          "default": true,
-          "type": "boolean"
-        },
-        "timeout_seconds": {
-          "title": "Timeout",
-          "description": "SMTP connection timeout in seconds.",
-          "default": 30,
-          "type": "integer",
-          "minimum": 0.0
-        },
-        "username": {
-          "title": "Username",
-          "description": "SMTP authentication username.",
-          "default": "",
-          "type": "string"
-        }
-      },
-      "additionalProperties": false
-    },
-    "TotpAlgorithm": {
-      "type": "string",
-      "enum": [
-        "SHA1",
-        "SHA256",
-        "SHA512"
-      ]
-    },
-    "TotpConfig": {
-      "type": "object",
-      "properties": {
-        "algorithm": {
-          "title": "Algorithm",
-          "description": "TOTP HMAC algorithm.",
-          "default": "SHA1",
-          "allOf": [
-            {
-              "$ref": "#/definitions/TotpAlgorithm"
-            }
-          ]
-        },
-        "digits": {
-          "title": "Digits",
-          "description": "Number of TOTP digits.",
-          "default": 6,
-          "type": "integer",
-          "maximum": 4294967295.0,
-          "minimum": 0.0
-        },
-        "issuer": {
-          "title": "Issuer",
-          "description": "TOTP issuer name shown in authenticator apps.",
-          "default": "",
-          "type": "string"
-        },
-        "period": {
-          "title": "Period",
-          "description": "TOTP time step in seconds.",
-          "default": 30,
-          "type": "integer",
-          "maximum": 4294967295.0,
-          "minimum": 0.0
-        },
-        "recovery_codes": {
-          "default": {
-            "code_length": 12,
-            "count": 10
-          },
-          "allOf": [
-            {
-              "$ref": "#/definitions/RecoveryCodesConfig"
-            }
-          ]
-        },
-        "skew": {
-          "title": "Skew",
-          "description": "Allowed TOTP time skew (periods before/after).",
-          "default": 1,
-          "type": "integer",
-          "maximum": 4294967295.0,
-          "minimum": 0.0
-        }
-      },
-      "additionalProperties": false
-    },
-    "UserVerification": {
-      "type": "string",
-      "enum": [
-        "required",
-        "preferred",
-        "discouraged"
-      ]
-    },
-    "WebhookEndpointConfig": {
-      "type": "object",
-      "required": [
-        "url"
-      ],
-      "properties": {
-        "events": {
-          "title": "Events",
-          "description": "List of event types to subscribe to.",
-          "default": [],
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "retry_max_attempts": {
-          "title": "Max retries",
-          "description": "Maximum retry attempts for failed deliveries.",
-          "default": 5,
-          "type": "integer",
-          "maximum": 4294967295.0,
-          "minimum": 0.0
-        },
-        "secret": {
-          "title": "Signing secret",
-          "description": "Secret for webhook payload signing. Use env:VAR reference.",
-          "default": null,
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "timeout_seconds": {
-          "title": "Timeout",
-          "description": "Request timeout in seconds.",
-          "default": 10,
-          "type": "integer",
-          "minimum": 0.0
-        },
-        "url": {
-          "title": "URL",
-          "description": "Webhook endpoint URL.",
-          "type": "string"
-        }
-      },
-      "additionalProperties": false
-    },
-    "WebhooksConfig": {
-      "type": "object",
-      "properties": {
-        "enabled": {
-          "title": "Enabled",
-          "description": "Enable outbound webhook delivery.",
-          "default": false,
-          "type": "boolean"
-        },
-        "endpoints": {
-          "default": [],
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/WebhookEndpointConfig"
-          }
-        }
-      },
-      "additionalProperties": false
-    }
-  }
+  "title": "Config",
+  "type": "object"
 }
