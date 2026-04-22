@@ -116,56 +116,51 @@ fn dump_env_from_source(source: &ConfigSrc, path: &Path) -> Result<(), ConfigErr
     Ok(())
 }
 
+fn collect_env_refs_from_refor<T>(r: &RefOr<T>, entries: &mut Vec<String>) {
+    if let RefOr::Env(var) = r {
+        entries.push(var.clone());
+    }
+}
+
 fn collect_env_refs(source: &ConfigSrc) -> Vec<String> {
     let mut entries = Vec::new();
 
-    if let Some(ref db) = source.database {
-        if let Some(var) = db.url.env_var() {
-            entries.push(var.to_owned());
-        }
-        if let Some(RefOr::Env(var)) = db.encryption_key.as_ref() {
-            entries.push(var.clone());
-        }
+    if let RefOr::Value(Some(db)) = &source.database {
+        collect_env_refs_from_refor(&db.url, &mut entries);
+        collect_env_refs_from_refor(&db.encryption_key, &mut entries);
     }
 
-    if let Some(ref session) = source.session
-        && let Some(var) = session.secret.env_var()
-    {
-        entries.push(var.to_owned());
+    if let RefOr::Value(Some(session)) = &source.session {
+        collect_env_refs_from_refor(&session.secret, &mut entries);
     }
 
-    if let Some(var) = source.email.from_address.env_var() {
-        entries.push(var.to_owned());
-    }
-
-    if let Some(var) = source.email.smtp.host.env_var() {
-        entries.push(var.to_owned());
-    }
-    if let Some(var) = source.email.smtp.password.env_var() {
-        entries.push(var.to_owned());
-    }
-
-    if let Some(RefOr::Env(var)) = source.api.internal.api_token.as_ref() {
-        entries.push(var.clone());
-    }
-
-    if let Some(RefOr::Env(var)) = source.crypto.master_key.as_ref() {
-        entries.push(var.clone());
-    }
-
-    if let Some(RefOr::Env(var)) = source.crypto.jwt.private_key.as_ref() {
-        entries.push(var.clone());
-    }
-    if let Some(RefOr::Env(var)) = source.crypto.jwt.public_key.as_ref() {
-        entries.push(var.clone());
-    }
-
-    for endpoint in &source.webhooks.endpoints {
-        if let Some(RefOr::Env(var)) = endpoint.secret.as_ref() {
-            entries.push(format!("AEGIS_WEBHOOK_{}", var));
-            entries.push(var.clone());
+    if let RefOr::Value(email) = &source.email {
+        collect_env_refs_from_refor(&email.from_address, &mut entries);
+        if let RefOr::Value(smtp) = &email.smtp {
+            collect_env_refs_from_refor(&smtp.host, &mut entries);
+            collect_env_refs_from_refor(&smtp.password, &mut entries);
         }
     }
+
+    if let RefOr::Value(api) = &source.api
+        && let RefOr::Value(internal) = &api.internal {
+            collect_env_refs_from_refor(&internal.api_token, &mut entries);
+        }
+
+    if let RefOr::Value(crypto) = &source.crypto {
+        collect_env_refs_from_refor(&crypto.master_key, &mut entries);
+        if let RefOr::Value(jwt) = &crypto.jwt {
+            collect_env_refs_from_refor(&jwt.private_key, &mut entries);
+            collect_env_refs_from_refor(&jwt.public_key, &mut entries);
+        }
+    }
+
+    if let RefOr::Value(webhooks) = &source.webhooks
+        && let RefOr::Value(eps) = &webhooks.endpoints {
+            for e in eps {
+                collect_env_refs_from_refor(&e.secret, &mut entries);
+            }
+        }
 
     entries.sort();
     entries.dedup();
@@ -175,28 +170,31 @@ fn collect_env_refs(source: &ConfigSrc) -> Vec<String> {
 pub fn dump_env_resolved(config: &Config, path: &Path) -> Result<(), ConfigError> {
     let mut entries = Vec::new();
 
-    if let Some(key) = config.database.as_ref().and_then(|db| db.encryption_key.as_ref()) {
-        entries.push(("AEGIS_DATABASE_ENCRYPTION_KEY".to_owned(), key.raw().to_owned()));
-    }
+    if let Some(db) = config.database.as_ref()
+        && let Some(ref key) = db.encryption_key
+            && !key.is_empty() {
+                entries.push(("AEGIS_DATABASE_ENCRYPTION_KEY".to_owned(), key.clone()));
+            }
 
-    if let Some(ref session) = config.session {
-        entries.push(("AEGIS_SESSION_SECRET".to_owned(), session.secret.raw().to_owned()));
-    }
+    if let Some(ref session) = config.session
+        && !session.secret.is_empty() {
+            entries.push(("AEGIS_SESSION_SECRET".to_owned(), session.secret.clone()));
+        }
 
-    if !config.email.smtp.password.raw().is_empty() {
-        entries.push(("AEGIS_EMAIL_SMTP_PASSWORD".to_owned(), config.email.smtp.password.raw().to_owned()));
+    if !config.email.smtp.password.is_empty() {
+        entries.push(("AEGIS_EMAIL_SMTP_PASSWORD".to_owned(), config.email.smtp.password.clone()));
     }
 
     if let Some(ref token) = config.api.internal.api_token {
-        entries.push(("AEGIS_API_INTERNAL_TOKEN".to_owned(), token.raw().to_owned()));
+        entries.push(("AEGIS_API_INTERNAL_TOKEN".to_owned(), token.clone()));
     }
 
     if let Some(ref key) = config.crypto.master_key {
-        entries.push(("AEGIS_CRYPTO_MASTER_KEY".to_owned(), key.raw().to_owned()));
+        entries.push(("AEGIS_CRYPTO_MASTER_KEY".to_owned(), key.clone()));
     }
 
     if let Some(ref key) = config.crypto.jwt.private_key {
-        entries.push(("AEGIS_CRYPTO_JWT_PRIVATE_KEY".to_owned(), key.raw().to_owned()));
+        entries.push(("AEGIS_CRYPTO_JWT_PRIVATE_KEY".to_owned(), key.clone()));
     }
 
     if entries.is_empty() {

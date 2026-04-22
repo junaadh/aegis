@@ -8,7 +8,6 @@ use crate::{
     error::ConfigError,
     redis::{RedisConfig, RedisConfigSrc},
     ref_or::RefOr,
-    secret::SecretString,
     server::{ServerConfig, ServerConfigSrc},
     session::{SessionConfig, SessionConfigSrc},
     webhooks::{WebhooksConfig, WebhooksConfigSrc},
@@ -46,25 +45,25 @@ pub struct Config {
 #[serde(deny_unknown_fields)]
 pub struct ConfigSrc {
     #[serde(default)]
-    pub server: ServerConfigSrc,
+    pub server: RefOr<ServerConfigSrc>,
     #[serde(default)]
-    pub database: Option<DatabaseConfigSrc>,
+    pub database: RefOr<Option<DatabaseConfigSrc>>,
     #[serde(default)]
-    pub redis: RedisConfigSrc,
+    pub redis: RefOr<RedisConfigSrc>,
     #[serde(default)]
-    pub session: Option<SessionConfigSrc>,
+    pub session: RefOr<Option<SessionConfigSrc>>,
     #[serde(default)]
-    pub credentials: CredentialsConfigSrc,
+    pub credentials: RefOr<CredentialsConfigSrc>,
     #[serde(default)]
-    pub email: EmailConfigSrc,
+    pub email: RefOr<EmailConfigSrc>,
     #[serde(default)]
-    pub api: ApiConfigSrc,
+    pub api: RefOr<ApiConfigSrc>,
     #[serde(default)]
-    pub crypto: CryptoConfigSrc,
+    pub crypto: RefOr<CryptoConfigSrc>,
     #[serde(default)]
-    pub compliance: ComplianceConfigSrc,
+    pub compliance: RefOr<ComplianceConfigSrc>,
     #[serde(default)]
-    pub webhooks: WebhooksConfigSrc,
+    pub webhooks: RefOr<WebhooksConfigSrc>,
 }
 
 impl Default for Config {
@@ -77,7 +76,7 @@ impl Default for Config {
             }),
             redis: RedisConfig::default(),
             session: Some(SessionConfig {
-                secret: SecretString::new(""),
+                secret: String::new(),
                 ..SessionConfig::default()
             }),
             credentials: CredentialsConfig::default(),
@@ -93,22 +92,22 @@ impl Default for Config {
 impl Default for ConfigSrc {
     fn default() -> Self {
         Self {
-            server: ServerConfigSrc::default(),
-            database: Some(DatabaseConfigSrc {
+            server: RefOr::Value(ServerConfigSrc::default()),
+            database: RefOr::Value(Some(DatabaseConfigSrc {
                 url: RefOr::Env("AEGIS_DATABASE_URL".to_owned()),
                 ..DatabaseConfigSrc::default()
-            }),
-            redis: RedisConfigSrc::default(),
-            session: Some(SessionConfigSrc {
+            })),
+            redis: RefOr::Value(RedisConfigSrc::default()),
+            session: RefOr::Value(Some(SessionConfigSrc {
                 secret: RefOr::Env("AEGIS_SESSION_SECRET".to_owned()),
                 ..SessionConfigSrc::default()
-            }),
-            credentials: CredentialsConfigSrc::default(),
-            email: EmailConfigSrc::default(),
-            api: ApiConfigSrc::default(),
-            crypto: CryptoConfigSrc::default(),
-            compliance: ComplianceConfigSrc::default(),
-            webhooks: WebhooksConfigSrc::default(),
+            })),
+            credentials: RefOr::Value(CredentialsConfigSrc::default()),
+            email: RefOr::Value(EmailConfigSrc::default()),
+            api: RefOr::Value(ApiConfigSrc::default()),
+            crypto: RefOr::Value(CryptoConfigSrc::default()),
+            compliance: RefOr::Value(ComplianceConfigSrc::default()),
+            webhooks: RefOr::Value(WebhooksConfigSrc::default()),
         }
     }
 }
@@ -117,27 +116,31 @@ impl ConfigSrc {
     pub fn resolve(&self) -> Result<Config, ConfigError> {
         let database = self
             .database
-            .as_ref()
-            .map(|db| db.resolve())
-            .transpose()?;
+            .resolve_nested(|opt| {
+                opt.as_ref()
+                    .map(|db| db.resolve())
+                    .transpose()
+            })?;
 
         let session = self
             .session
-            .as_ref()
-            .map(|s| s.resolve())
-            .transpose()?;
+            .resolve_nested(|opt| {
+                opt.as_ref()
+                    .map(|s| s.resolve())
+                    .transpose()
+            })?;
 
         let config = Config {
-            server: self.server.resolve()?,
+            server: self.server.resolve_nested(|s| s.resolve())?,
             database,
-            redis: self.redis.resolve()?,
+            redis: self.redis.resolve_nested(|s| s.resolve())?,
             session,
-            credentials: self.credentials.resolve()?,
-            email: self.email.resolve()?,
-            api: self.api.resolve()?,
-            crypto: self.crypto.resolve()?,
-            compliance: self.compliance.resolve()?,
-            webhooks: self.webhooks.resolve()?,
+            credentials: self.credentials.resolve_nested(|s| s.resolve())?,
+            email: self.email.resolve_nested(|s| s.resolve())?,
+            api: self.api.resolve_nested(|s| s.resolve())?,
+            crypto: self.crypto.resolve_nested(|s| s.resolve())?,
+            compliance: self.compliance.resolve_nested(|s| s.resolve())?,
+            webhooks: self.webhooks.resolve_nested(|s| s.resolve())?,
         };
 
         config.validate()?;

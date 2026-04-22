@@ -100,8 +100,8 @@ fn run_config(
             println!("config is valid");
         }
         ConfigAction::Show => {
-            let config = aegis_config::Config::load(Some(config_path))?;
-            println!("{}", config.to_toml()?);
+            let source = aegis_config::ConfigSrc::from_file(config_path)?;
+            println!("{}", source.to_toml()?);
         }
         ConfigAction::EnvExport { out } => {
             let config = aegis_config::Config::load(Some(config_path))?;
@@ -204,9 +204,7 @@ fn run_migrate(
 }
 
 fn run_schema(out: Option<PathBuf>) -> Result<(), Box<dyn std::error::Error>> {
-    use schemars::schema_for;
-
-    let schema = schema_for!(aegis_config::ConfigSrc);
+    let schema = aegis_config::generate_schema();
     let json = serde_json::to_string_pretty(&schema)?;
 
     match out {

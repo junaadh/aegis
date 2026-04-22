@@ -1,15 +1,7 @@
-use crate::{Config, ConfigError, ConfigSrc, RefOr, SecretString};
+use crate::{Config, ConfigError, ConfigSrc, RefOr};
 
 #[test]
 fn default_config_serializes() {
-    let config = Config::default();
-    let toml_str = config.to_toml().unwrap();
-    assert!(toml_str.contains("[server]"));
-    assert!(toml_str.contains("[database]"));
-}
-
-#[test]
-fn default_config_roundtrips_through_toml() {
     let config = Config::default();
     let toml_str = config.to_toml().unwrap();
     assert!(toml_str.contains("[server]"));
@@ -85,21 +77,15 @@ enabled = false
 }
 
 #[test]
-fn secret_plain_value() {
-    let secret = SecretString::new("my-secret");
-    assert_eq!(secret.raw(), "my-secret");
-}
-
-#[test]
-fn secret_display_masks() {
-    let secret = SecretString::new("my-secret");
-    assert_eq!(format!("{secret}"), "***");
-}
-
-#[test]
 fn ref_or_value_resolves() {
     let r: RefOr<String> = RefOr::Value("hello".to_owned());
     assert_eq!(r.resolve().unwrap(), "hello");
+}
+
+#[test]
+fn ref_or_u16_resolves() {
+    let r: RefOr<u16> = RefOr::Value(587);
+    assert_eq!(r.resolve().unwrap(), 587);
 }
 
 #[test]
@@ -190,6 +176,20 @@ fn ref_or_serde_roundtrip_file() {
 }
 
 #[test]
+fn ref_or_bool_serde() {
+    #[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+    struct Wrap {
+        enabled: RefOr<bool>,
+    }
+    let w = Wrap { enabled: RefOr::Value(true) };
+    let toml_str = toml::to_string(&w).unwrap();
+    assert!(toml_str.contains("enabled = true"));
+
+    let parsed: Wrap = toml::from_str(&toml_str).unwrap();
+    assert_eq!(parsed.enabled, RefOr::Value(true));
+}
+
+#[test]
 fn config_src_deserialize_with_env_refs() {
     let toml_str = r#"
 [database]
@@ -213,14 +213,18 @@ enabled = false
 
     let source: ConfigSrc = toml::from_str(toml_str).unwrap();
 
-    assert!(source.database.is_some());
-    let db = source.database.as_ref().unwrap();
-    assert!(matches!(&db.url, RefOr::Env(v) if v == "AEGIS_DATABASE_URL"));
-    assert_eq!(db.max_connections, 25);
+    if let RefOr::Value(Some(db)) = &source.database {
+        assert!(matches!(&db.url, RefOr::Env(v) if v == "AEGIS_DATABASE_URL"));
+        assert!(matches!(&db.max_connections, RefOr::Value(25)));
+    } else {
+        panic!("expected database");
+    }
 
-    assert!(source.session.is_some());
-    let session = source.session.as_ref().unwrap();
-    assert!(matches!(&session.secret, RefOr::Env(v) if v == "AEGIS_SESSION_SECRET"));
+    if let RefOr::Value(Some(session)) = &source.session {
+        assert!(matches!(&session.secret, RefOr::Env(v) if v == "AEGIS_SESSION_SECRET"));
+    } else {
+        panic!("expected session");
+    }
 }
 
 #[test]
@@ -228,7 +232,7 @@ fn config_src_serialize_preserves_refs() {
     let source = ConfigSrc::default();
     let toml_str = toml::to_string_pretty(&source).unwrap();
 
-    assert!(toml_str.contains("env:AEGIS_DATABASE_URL") || toml_str.contains("env:"));
+    assert!(toml_str.contains("env:AEGIS_DATABASE_URL"));
     assert!(toml_str.contains("env:AEGIS_SESSION_SECRET"));
 }
 
@@ -243,15 +247,46 @@ fn config_src_roundtrip() {
 
 #[test]
 fn schema_generation_succeeds() {
-    use schemars::r#gen::{SchemaGenerator, SchemaSettings};
-
-    let mut generator = SchemaGenerator::new(SchemaSettings::default());
-    let schema = generator.root_schema_for::<ConfigSrc>();
-    let json = serde_json::to_string(&schema).unwrap();
-    assert!(json.contains("ConfigSrc"));
+    let schema = crate::schema::generate_schema();
+    let json = serde_json::to_string_pretty(&schema).unwrap();
+    assert!(json.contains("Config"));
     assert!(json.contains("server"));
     assert!(json.contains("database"));
     assert!(json.contains("session"));
+    assert!(json.contains("oneOf"));
+    assert!(!json.contains("anyOf"));
+    assert!(json.contains("^env:.+"));
+    assert!(json.contains("^file:.+"));
+    assert!(json.contains("minimum"));
+    assert!(json.contains("maximum"));
+    assert!(json.contains("x-aegis-ref"));
+    assert!(json.contains("^(?!env:)(?!file:).*$"));
+}
+
+#[test]
+fn schema_no_fake_integer_formats() {
+    let schema = crate::schema::generate_schema();
+    let json = serde_json::to_string_pretty(&schema).unwrap();
+    assert!(!json.contains("\"uint16\""));
+    assert!(!json.contains("\"uint32\""));
+    assert!(!json.contains("\"uint64\""));
+    assert!(!json.contains("\"uint\""));
+}
+
+#[test]
+fn schema_integer_constraints() {
+    let schema = crate::schema::generate_schema();
+    let json = serde_json::to_string_pretty(&schema).unwrap();
+
+    let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
+    let defs = parsed["definitions"].as_object().unwrap();
+
+    let server = &defs["ServerConfig"];
+    let port = &server["properties"]["port"];
+    let port_obj = port["oneOf"][0].as_object().unwrap();
+    assert_eq!(port_obj.get("minimum").unwrap(), 0);
+    assert_eq!(port_obj.get("maximum").unwrap(), 65535);
+    assert!(port_obj.get("format").is_none());
 }
 
 #[test]
@@ -325,7 +360,7 @@ enabled = false
 
     let config = Config::from_toml(toml_str).unwrap();
     assert_eq!(config.database.unwrap().url, "postgresql://aegis:aegis@localhost:5432/aegis_dev");
-    assert_eq!(config.session.unwrap().secret.raw(), "test-session-secret-for-testing");
+    assert_eq!(config.session.unwrap().secret, "test-session-secret-for-testing");
 }
 
 #[test]
@@ -355,10 +390,41 @@ enabled = false
 
     let config = Config::from_toml(toml_str).unwrap();
     assert_eq!(config.database.unwrap().url, "postgresql://test:test@localhost/testdb");
-    assert_eq!(config.session.unwrap().secret.raw(), "my-session-secret");
+    assert_eq!(config.session.unwrap().secret, "my-session-secret");
 
     unsafe {
         std::env::remove_var("TEST_AEGIS_DB_URL");
         std::env::remove_var("TEST_AEGIS_SESSION");
     }
+}
+
+#[test]
+fn ref_or_option_string_resolves() {
+    let r: RefOr<Option<String>> = RefOr::Value(None);
+    assert_eq!(r.resolve().unwrap(), None);
+
+    let r: RefOr<Option<String>> = RefOr::Value(Some("hello".to_owned()));
+    assert_eq!(r.resolve().unwrap(), Some("hello".to_owned()));
+}
+
+#[test]
+fn ref_or_vec_string_resolves() {
+    let r: RefOr<Vec<String>> = RefOr::Value(vec!["stdout".to_owned()]);
+    assert_eq!(r.resolve().unwrap(), vec!["stdout".to_owned()]);
+}
+
+#[test]
+fn ref_or_nested_resolves() {
+    #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+    struct Inner {
+        port: RefOr<u16>,
+    }
+    #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+    struct Outer {
+        inner: RefOr<Inner>,
+    }
+
+    let o = Outer { inner: RefOr::Value(Inner { port: RefOr::Value(587) }) };
+    let resolved = o.inner.resolve_nested(|i| i.port.resolve()).unwrap();
+    assert_eq!(resolved, 587);
 }

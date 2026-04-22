@@ -6,7 +6,7 @@ use schemars::JsonSchema;
 use serde::de::IntoDeserializer;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RefOr<T> {
     Value(T),
     Env(String),
@@ -49,6 +49,33 @@ impl<T: Clone + ResolveLeaf> RefOr<T> {
                     }
                 })?;
                 T::from_resolved_str(raw.trim())
+            }
+        }
+    }
+}
+
+impl<T: serde::de::DeserializeOwned> RefOr<T> {
+    pub fn resolve_nested<R, F>(&self, f: F) -> Result<R, ConfigError>
+    where
+        F: FnOnce(&T) -> Result<R, ConfigError>,
+    {
+        match self {
+            RefOr::Value(t) => f(t),
+            RefOr::Env(var) => {
+                let raw = std::env::var(var)
+                    .map_err(|_| ConfigError::ResolveEnv { var: var.clone() })?;
+                let src: T = toml::from_str(&raw)?;
+                f(&src)
+            }
+            RefOr::File(path) => {
+                let raw = std::fs::read_to_string(path).map_err(|e| {
+                    ConfigError::ResolveFile {
+                        path: path.clone(),
+                        source: e.to_string(),
+                    }
+                })?;
+                let src: T = toml::from_str(raw.trim())?;
+                f(&src)
             }
         }
     }
@@ -173,9 +200,21 @@ impl ResolveLeaf for bool {
     }
 }
 
-impl ResolveLeaf for crate::secret::SecretString {
+impl<T: ResolveLeaf> ResolveLeaf for Option<T> {
     fn from_resolved_str(s: &str) -> Result<Self, ConfigError> {
-        Ok(Self::new(s))
+        if s.is_empty() {
+            Ok(None)
+        } else {
+            T::from_resolved_str(s).map(Some)
+        }
+    }
+}
+
+impl ResolveLeaf for Vec<String> {
+    fn from_resolved_str(_s: &str) -> Result<Self, ConfigError> {
+        Err(ConfigError::Validation(
+            "array fields cannot use env:/file: references".to_owned(),
+        ))
     }
 }
 
@@ -201,3 +240,12 @@ impl_resolve_leaf_enum!(
     crate::enums::ResidentKey,
     crate::enums::JwtAlgorithm,
 );
+
+#[macro_export]
+macro_rules! ref_val {
+    ($name:ident, $ty:ty, $val:expr) => {
+        fn $name() -> $crate::ref_or::RefOr<$ty> {
+            $crate::ref_or::RefOr::Value($val)
+        }
+    };
+}

@@ -1,7 +1,6 @@
 use crate::enums::JwtAlgorithm;
 use crate::error::ConfigError;
 use crate::ref_or::RefOr;
-use crate::secret::SecretString;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -10,7 +9,7 @@ use serde::{Deserialize, Serialize};
 pub struct CryptoConfig {
     #[schemars(title = "Master key", description = "Master encryption key. Use env:VAR or file:/path reference.")]
     #[serde(default)]
-    pub master_key: Option<SecretString>,
+    pub master_key: Option<String>,
 
     #[serde(default)]
     pub jwt: JwtConfig,
@@ -29,11 +28,11 @@ pub struct JwtConfig {
 
     #[schemars(title = "Private key", description = "Path or reference to JWT private key.")]
     #[serde(default)]
-    pub private_key: Option<SecretString>,
+    pub private_key: Option<String>,
 
     #[schemars(title = "Public key", description = "Path or reference to JWT public key.")]
     #[serde(default)]
-    pub public_key: Option<SecretString>,
+    pub public_key: Option<String>,
 
     #[schemars(title = "Issuer", description = "JWT issuer claim.")]
     #[serde(default)]
@@ -49,21 +48,17 @@ pub struct JwtConfig {
 pub struct CryptoConfigSrc {
     #[schemars(title = "Master key", description = "Master encryption key. Use env:VAR or file:/path reference.")]
     #[serde(default)]
-    pub master_key: Option<RefOr<SecretString>>,
+    pub master_key: RefOr<Option<String>>,
 
     #[serde(default)]
-    pub jwt: JwtConfigSrc,
+    pub jwt: RefOr<JwtConfigSrc>,
 }
 
 impl CryptoConfigSrc {
     pub fn resolve(&self) -> Result<CryptoConfig, ConfigError> {
         Ok(CryptoConfig {
-            master_key: self
-                .master_key
-                .as_ref()
-                .map(|r| r.resolve())
-                .transpose()?,
-            jwt: self.jwt.resolve()?,
+            master_key: self.master_key.resolve()?,
+            jwt: self.jwt.resolve_nested(|s| s.resolve())?,
         })
     }
 }
@@ -73,46 +68,38 @@ impl CryptoConfigSrc {
 pub struct JwtConfigSrc {
     #[schemars(title = "Enabled", description = "Enable JWT-based stateless authentication.")]
     #[serde(default)]
-    pub enabled: bool,
+    pub enabled: RefOr<bool>,
 
     #[schemars(title = "Algorithm", description = "JWT signing algorithm.")]
     #[serde(default)]
-    pub algorithm: JwtAlgorithm,
+    pub algorithm: RefOr<JwtAlgorithm>,
 
     #[schemars(title = "Private key", description = "Path or reference to JWT private key.")]
     #[serde(default)]
-    pub private_key: Option<RefOr<SecretString>>,
+    pub private_key: RefOr<Option<String>>,
 
     #[schemars(title = "Public key", description = "Path or reference to JWT public key.")]
     #[serde(default)]
-    pub public_key: Option<RefOr<SecretString>>,
+    pub public_key: RefOr<Option<String>>,
 
     #[schemars(title = "Issuer", description = "JWT issuer claim.")]
     #[serde(default)]
-    pub issuer: Option<String>,
+    pub issuer: RefOr<Option<String>>,
 
     #[schemars(title = "Audience", description = "JWT audience claim.")]
     #[serde(default)]
-    pub audience: Option<String>,
+    pub audience: RefOr<Option<String>>,
 }
 
 impl JwtConfigSrc {
     pub fn resolve(&self) -> Result<JwtConfig, ConfigError> {
         Ok(JwtConfig {
-            enabled: self.enabled,
-            algorithm: self.algorithm,
-            private_key: self
-                .private_key
-                .as_ref()
-                .map(|r| r.resolve())
-                .transpose()?,
-            public_key: self
-                .public_key
-                .as_ref()
-                .map(|r| r.resolve())
-                .transpose()?,
-            issuer: self.issuer.clone(),
-            audience: self.audience.clone(),
+            enabled: self.enabled.resolve()?,
+            algorithm: self.algorithm.resolve()?,
+            private_key: self.private_key.resolve()?,
+            public_key: self.public_key.resolve()?,
+            issuer: self.issuer.resolve()?,
+            audience: self.audience.resolve()?,
         })
     }
 }

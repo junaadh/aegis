@@ -10,7 +10,7 @@ mod error;
 mod redis;
 mod ref_or;
 mod root;
-mod secret;
+mod schema;
 mod server;
 mod session;
 mod webhooks;
@@ -21,7 +21,7 @@ pub use enums::*;
 pub use error::ConfigError;
 pub use ref_or::{RefOr, ResolveLeaf};
 pub use root::{Config, ConfigSrc};
-pub use secret::SecretString;
+pub use schema::generate_schema;
 
 #[cfg(test)]
 mod tests;

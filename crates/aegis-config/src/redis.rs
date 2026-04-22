@@ -23,12 +23,20 @@ fn default_redis_url() -> String {
     "redis://127.0.0.1:6379/0".to_owned()
 }
 
-fn default_redis_url_ref() -> RefOr<String> {
+fn default_redis_url_or() -> RefOr<String> {
     RefOr::Value(default_redis_url())
 }
 
 fn default_redis_max_connections() -> u32 {
     10
+}
+
+fn default_redis_max_connections_or() -> RefOr<u32> {
+    RefOr::Value(default_redis_max_connections())
+}
+
+fn default_redis_enabled_or() -> RefOr<bool> {
+    RefOr::Value(false)
 }
 
 impl Default for RedisConfig {
@@ -45,24 +53,24 @@ impl Default for RedisConfig {
 #[serde(deny_unknown_fields)]
 pub struct RedisConfigSrc {
     #[schemars(title = "Enabled", description = "Enable Redis for caching and rate limiting.")]
-    #[serde(default)]
-    pub enabled: bool,
+    #[serde(default = "default_redis_enabled_or")]
+    pub enabled: RefOr<bool>,
 
     #[schemars(title = "Redis URL", description = "Redis connection string.")]
-    #[serde(default = "default_redis_url_ref")]
+    #[serde(default = "default_redis_url_or")]
     pub url: RefOr<String>,
 
     #[schemars(title = "Max connections", description = "Maximum number of Redis connections.")]
-    #[serde(default = "default_redis_max_connections")]
-    pub max_connections: u32,
+    #[serde(default = "default_redis_max_connections_or")]
+    pub max_connections: RefOr<u32>,
 }
 
 impl Default for RedisConfigSrc {
     fn default() -> Self {
         Self {
-            enabled: false,
-            url: RefOr::Value(default_redis_url()),
-            max_connections: default_redis_max_connections(),
+            enabled: RefOr::Value(false),
+            url: default_redis_url_or(),
+            max_connections: default_redis_max_connections_or(),
         }
     }
 }
@@ -70,9 +78,9 @@ impl Default for RedisConfigSrc {
 impl RedisConfigSrc {
     pub fn resolve(&self) -> Result<RedisConfig, ConfigError> {
         Ok(RedisConfig {
-            enabled: self.enabled,
+            enabled: self.enabled.resolve()?,
             url: self.url.resolve()?,
-            max_connections: self.max_connections,
+            max_connections: self.max_connections.resolve()?,
         })
     }
 }

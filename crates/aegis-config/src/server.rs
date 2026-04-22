@@ -1,5 +1,6 @@
 use crate::enums::{LogFormat, LogLevel};
 use crate::error::ConfigError;
+use crate::ref_or::RefOr;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -7,49 +8,49 @@ use serde::{Deserialize, Serialize};
 #[serde(deny_unknown_fields)]
 pub struct ServerConfigSrc {
     #[schemars(title = "Bind host", description = "IP address to bind the server to.")]
-    #[serde(default = "default_host")]
-    pub host: String,
+    #[serde(default = "default_host_or")]
+    pub host: RefOr<String>,
 
     #[schemars(title = "Bind port", description = "TCP port to listen on.")]
-    #[serde(default = "default_port")]
-    pub port: u16,
+    #[serde(default = "default_port_or")]
+    pub port: RefOr<u16>,
 
     #[schemars(title = "Public URL", description = "External URL for this server (used for redirects, CORS, etc.).")]
     #[serde(default)]
-    pub public_url: Option<String>,
+    pub public_url: RefOr<Option<String>>,
 
     #[schemars(title = "TLS certificate", description = "Path to TLS certificate file.")]
     #[serde(default)]
-    pub tls_cert: Option<String>,
+    pub tls_cert: RefOr<Option<String>>,
 
     #[schemars(title = "TLS private key", description = "Path to TLS private key file.")]
     #[serde(default)]
-    pub tls_key: Option<String>,
+    pub tls_key: RefOr<Option<String>>,
 
     #[schemars(title = "Log level", description = "Server log verbosity.")]
     #[serde(default)]
-    pub log_level: LogLevel,
+    pub log_level: RefOr<LogLevel>,
 
     #[schemars(title = "Log format", description = "Structured or plain log output.")]
     #[serde(default)]
-    pub log_format: LogFormat,
+    pub log_format: RefOr<LogFormat>,
 
     #[schemars(title = "Log outputs", description = "List of log output destinations.")]
-    #[serde(default = "default_log_output")]
-    pub log_output: Vec<String>,
+    #[serde(default = "default_log_output_or")]
+    pub log_output: RefOr<Vec<String>>,
 }
 
 impl Default for ServerConfigSrc {
     fn default() -> Self {
         Self {
-            host: default_host(),
-            port: default_port(),
-            public_url: None,
-            tls_cert: None,
-            tls_key: None,
-            log_level: LogLevel::default(),
-            log_format: LogFormat::default(),
-            log_output: default_log_output(),
+            host: default_host_or(),
+            port: default_port_or(),
+            public_url: RefOr::default(),
+            tls_cert: RefOr::default(),
+            tls_key: RefOr::default(),
+            log_level: RefOr::default(),
+            log_format: RefOr::default(),
+            log_output: default_log_output_or(),
         }
     }
 }
@@ -57,14 +58,14 @@ impl Default for ServerConfigSrc {
 impl ServerConfigSrc {
     pub fn resolve(&self) -> Result<ServerConfig, ConfigError> {
         Ok(ServerConfig {
-            host: self.host.clone(),
-            port: self.port,
-            public_url: self.public_url.clone(),
-            tls_cert: self.tls_cert.clone(),
-            tls_key: self.tls_key.clone(),
-            log_level: self.log_level,
-            log_format: self.log_format,
-            log_output: self.log_output.clone(),
+            host: self.host.resolve()?,
+            port: self.port.resolve()?,
+            public_url: self.public_url.resolve()?,
+            tls_cert: self.tls_cert.resolve()?,
+            tls_key: self.tls_key.resolve()?,
+            log_level: self.log_level.resolve()?,
+            log_format: self.log_format.resolve()?,
+            log_output: self.log_output.resolve()?,
         })
     }
 }
@@ -115,6 +116,18 @@ fn default_port() -> u16 {
 
 fn default_log_output() -> Vec<String> {
     vec!["stdout".to_owned()]
+}
+
+fn default_host_or() -> RefOr<String> {
+    RefOr::Value(default_host())
+}
+
+fn default_port_or() -> RefOr<u16> {
+    RefOr::Value(default_port())
+}
+
+fn default_log_output_or() -> RefOr<Vec<String>> {
+    RefOr::Value(default_log_output())
 }
 
 impl Default for ServerConfig {
