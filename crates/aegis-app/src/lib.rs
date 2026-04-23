@@ -1,4 +1,5 @@
 mod app;
+mod crypto;
 mod convert;
 mod deps;
 mod dto;

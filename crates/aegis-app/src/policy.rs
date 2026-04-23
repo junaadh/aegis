@@ -8,6 +8,7 @@ use crate::error::AppError;
 pub struct AppPolicies {
     pub auth: AuthPolicy,
     pub email: EmailPolicy,
+    pub crypto: CryptoPolicy,
     pub compliance: CompliancePolicy,
     pub totp: TotpPolicy,
     pub recovery_codes: RecoveryCodePolicy,
@@ -32,6 +33,11 @@ pub struct EmailPolicy {
     pub enabled: bool,
     pub verification_token_ttl: Duration,
     pub password_reset_token_ttl: Duration,
+}
+
+#[derive(Debug, Clone)]
+pub struct CryptoPolicy {
+    pub master_key: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -98,6 +104,10 @@ impl AppPolicies {
             ),
         };
 
+        let crypto = CryptoPolicy {
+            master_key: cfg.crypto.master_key.clone(),
+        };
+
         let compliance = CompliancePolicy {
             guest_ttl: Duration::days(cfg.compliance.data_retention.guest_ttl_days as i64),
             deleted_user_anonymize_after: Duration::days(
@@ -142,6 +152,7 @@ impl AppPolicies {
         Ok(Self {
             auth,
             email,
+            crypto,
             compliance,
             totp,
             recovery_codes,

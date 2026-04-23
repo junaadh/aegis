@@ -4,9 +4,9 @@ use crate::dto::{HealthResult, LookupUserByEmailCommand, LookupUserCommand,
     RegisterWebhookCommand, SessionValidateResult, UserLookupResult};
 use crate::error::AppError;
 use crate::ports::{Cache, Clock, GuestRepo, Hasher, IdGenerator, Repos, RoleRepo, SessionRepo,
-    TokenGenerator, UserRepo, WebhookDispatcher};
+    TokenGenerator, UserRepo, WebAuthn, WebhookDispatcher};
 
-impl<R, C, H, T, W, K, I> AegisApp<R, C, H, T, W, K, I>
+impl<R, C, H, T, W, K, I, A> AegisApp<R, C, H, T, W, K, I, A>
 where
     R: Repos,
     C: Cache,
@@ -15,6 +15,7 @@ where
     W: WebhookDispatcher,
     K: Clock,
     I: IdGenerator,
+    A: WebAuthn,
 {
     pub async fn validate_session(
         &self,
@@ -33,6 +34,8 @@ where
                 guest_id: None,
                 status: None,
                 expires_at: None,
+                roles: None,
+                mfa_verified: false,
             });
         };
 
@@ -44,6 +47,8 @@ where
                 guest_id: None,
                 status: Some("expired".to_owned()),
                 expires_at: Some(session.expires_at),
+                roles: None,
+                mfa_verified: session.mfa_verified,
             });
         }
 
@@ -57,12 +62,26 @@ where
                         guest_id: None,
                         status: Some("missing_user".to_owned()),
                         expires_at: Some(session.expires_at),
+                        roles: None,
+                        mfa_verified: session.mfa_verified,
                     });
                 };
 
+                let roles = self
+                    .deps
+                    .repos
+                    .roles()
+                    .get_roles_by_user_id(user.id)
+                    .await?;
+                let role_names = roles.iter().map(|role| role.name.as_str().to_owned()).collect();
+
                 let status = match user.status {
-                    aegis_core::UserStatus::Active => "active",
-                    aegis_core::UserStatus::PendingVerification => "pending_verification",
+                    aegis_core::UserStatus::Active if session.mfa_verified => "active",
+                    aegis_core::UserStatus::Active => "mfa_required",
+                    aegis_core::UserStatus::PendingVerification if session.mfa_verified => {
+                        "pending_verification"
+                    }
+                    aegis_core::UserStatus::PendingVerification => "mfa_required",
                     aegis_core::UserStatus::Disabled => "disabled",
                     aegis_core::UserStatus::Deleted => "deleted",
                 }
@@ -73,11 +92,13 @@ where
                         user.status,
                         aegis_core::UserStatus::Active
                             | aegis_core::UserStatus::PendingVerification
-                    ),
+                    ) && session.mfa_verified,
                     user_id: Some(user.id),
                     guest_id: None,
                     status: Some(status),
                     expires_at: Some(session.expires_at),
+                    roles: Some(role_names),
+                    mfa_verified: session.mfa_verified,
                 })
             }
             aegis_core::SessionIdentity::Guest(guest_id) => {
@@ -89,6 +110,8 @@ where
                         guest_id: Some(guest_id),
                         status: Some("missing_guest".to_owned()),
                         expires_at: Some(session.expires_at),
+                        roles: None,
+                        mfa_verified: session.mfa_verified,
                     });
                 };
 
@@ -98,6 +121,8 @@ where
                     guest_id: Some(guest.id),
                     status: Some(format!("{:?}", guest.status).to_lowercase()),
                     expires_at: Some(session.expires_at),
+                    roles: None,
+                    mfa_verified: session.mfa_verified,
                 })
             }
         }

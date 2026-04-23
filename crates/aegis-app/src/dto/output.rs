@@ -64,6 +64,8 @@ pub struct SessionValidateResult {
     pub guest_id: Option<GuestId>,
     pub status: Option<String>,
     pub expires_at: Option<OffsetDateTime>,
+    pub roles: Option<Vec<String>>,
+    pub mfa_verified: bool,
 }
 
 #[derive(Debug)]

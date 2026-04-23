@@ -7,10 +7,10 @@ use crate::dto::{AuthResult, RequestContext, SignupCommand};
 use crate::error::AppError;
 use crate::jobs::JobPayload;
 use crate::ports::{AuditRepo, CredentialRepo, OutboxRepo, PendingTokenRepo, Repos, SessionRepo,
-    TransactionRepos, UserRepo, WebhookDispatcher, Cache, Clock, Hasher, IdGenerator,
+    TransactionRepos, UserRepo, WebAuthn, WebhookDispatcher, Cache, Clock, Hasher, IdGenerator,
     TokenGenerator};
 
-impl<R, C, H, T, W, K, I> AegisApp<R, C, H, T, W, K, I>
+impl<R, C, H, T, W, K, I, A> AegisApp<R, C, H, T, W, K, I, A>
 where
     R: Repos,
     C: Cache,
@@ -19,6 +19,7 @@ where
     W: WebhookDispatcher,
     K: Clock,
     I: IdGenerator,
+    A: WebAuthn,
 {
     pub async fn signup(
         &self,
@@ -74,7 +75,7 @@ where
         };
 
         let issued = self
-            .issue_session(SessionIdentity::User(user_id), false)
+            .issue_session(SessionIdentity::User(user_id), true)
             .await?;
 
         let pending_token_data = if self.policy().email.enabled {

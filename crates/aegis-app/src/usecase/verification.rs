@@ -5,9 +5,9 @@ use crate::dto::{ResendVerificationCommand, VerifyEmailCommand};
 use crate::error::AppError;
 use crate::jobs::JobPayload;
 use crate::ports::{AuditRepo, Cache, Clock, Hasher, IdGenerator, OutboxRepo, PendingTokenRepo,
-    Repos, TokenGenerator, TransactionRepos, UserRepo, WebhookDispatcher};
+    Repos, TokenGenerator, TransactionRepos, UserRepo, WebAuthn, WebhookDispatcher};
 
-impl<R, C, H, T, W, K, I> AegisApp<R, C, H, T, W, K, I>
+impl<R, C, H, T, W, K, I, A> AegisApp<R, C, H, T, W, K, I, A>
 where
     R: Repos,
     C: Cache,
@@ -16,6 +16,7 @@ where
     W: WebhookDispatcher,
     K: Clock,
     I: IdGenerator,
+    A: WebAuthn,
 {
     pub async fn verify_email(&self, cmd: VerifyEmailCommand) -> Result<(), AppError> {
         let token_hash = self.deps.tokens.hash_token(&cmd.token).await;

@@ -11,9 +11,9 @@ use crate::error::HttpError;
 use crate::mapping;
 use crate::state::AppState;
 
-pub async fn create_guest<R, C, H, T, W, K, I>(
-    State(state): State<AppState<R, C, H, T, W, K, I>>,
-    auth: OptionalAuth<R, C, H, T, W, K, I>,
+pub async fn create_guest<R, C, H, T, W, K, I, A>(
+    State(state): State<AppState<R, C, H, T, W, K, I, A>>,
+    auth: OptionalAuth<R, C, H, T, W, K, I, A>,
     headers: HeaderMap,
     _body: Json<GuestCreateRequest>,
 ) -> Result<(HeaderMap, Json<ApiResponse<serde_json::Value>>), HttpError>
@@ -25,6 +25,7 @@ where
     W: aegis_app::WebhookDispatcher,
     K: aegis_app::Clock,
     I: aegis_app::IdGenerator,
+    A: aegis_app::WebAuthn,
 {
     let existing_auth = auth.identity;
 
@@ -65,9 +66,9 @@ where
     ))
 }
 
-pub async fn associate_guest_email<R, C, H, T, W, K, I>(
-    State(state): State<AppState<R, C, H, T, W, K, I>>,
-    auth: RequiredAuth<R, C, H, T, W, K, I>,
+pub async fn associate_guest_email<R, C, H, T, W, K, I, A>(
+    State(state): State<AppState<R, C, H, T, W, K, I, A>>,
+    auth: RequiredAuth<R, C, H, T, W, K, I, A>,
     headers: HeaderMap,
     Json(body): Json<GuestEmailRequest>,
 ) -> Result<Json<ApiResponse<serde_json::Value>>, HttpError>
@@ -79,6 +80,7 @@ where
     W: aegis_app::WebhookDispatcher,
     K: aegis_app::Clock,
     I: aegis_app::IdGenerator,
+    A: aegis_app::WebAuthn,
 {
     let identity = auth.identity;
     let guest_id = identity.guest_id().map_err(HttpError::from)?;
@@ -101,9 +103,9 @@ where
     }))
 }
 
-pub async fn convert_guest<R, C, H, T, W, K, I>(
-    State(state): State<AppState<R, C, H, T, W, K, I>>,
-    auth: RequiredAuth<R, C, H, T, W, K, I>,
+pub async fn convert_guest<R, C, H, T, W, K, I, A>(
+    State(state): State<AppState<R, C, H, T, W, K, I, A>>,
+    auth: RequiredAuth<R, C, H, T, W, K, I, A>,
     headers: HeaderMap,
     Json(body): Json<GuestConvertRequest>,
 ) -> Result<(HeaderMap, Json<ApiResponse<serde_json::Value>>), HttpError>
@@ -115,6 +117,7 @@ where
     W: aegis_app::WebhookDispatcher,
     K: aegis_app::Clock,
     I: aegis_app::IdGenerator,
+    A: aegis_app::WebAuthn,
 {
     let identity = auth.identity;
     let guest_id = identity.guest_id().map_err(HttpError::from)?;

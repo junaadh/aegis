@@ -14,8 +14,8 @@ fn format_ts(ts: time::OffsetDateTime) -> String {
         .unwrap_or_default()
 }
 
-pub async fn health<R, C, H, T, W, K, I>(
-    State(state): State<AppState<R, C, H, T, W, K, I>>,
+pub async fn health<R, C, H, T, W, K, I, A>(
+    State(state): State<AppState<R, C, H, T, W, K, I, A>>,
 ) -> Result<Json<ApiResponse<serde_json::Value>>, HttpError>
 where
     R: aegis_app::Repos,
@@ -25,6 +25,7 @@ where
     W: aegis_app::WebhookDispatcher,
     K: aegis_app::Clock,
     I: aegis_app::IdGenerator,
+    A: aegis_app::WebAuthn,
 {
     let result = state.app.health().await?;
     let value = serde_json::to_value(HealthResponse {
@@ -41,8 +42,8 @@ where
     }))
 }
 
-pub async fn validate_session<R, C, H, T, W, K, I>(
-    State(state): State<AppState<R, C, H, T, W, K, I>>,
+pub async fn validate_session<R, C, H, T, W, K, I, A>(
+    State(state): State<AppState<R, C, H, T, W, K, I, A>>,
     Json(body): Json<SessionValidateRequest>,
 ) -> Result<Json<ApiResponse<serde_json::Value>>, HttpError>
 where
@@ -53,6 +54,7 @@ where
     W: aegis_app::WebhookDispatcher,
     K: aegis_app::Clock,
     I: aegis_app::IdGenerator,
+    A: aegis_app::WebAuthn,
 {
     let token_hash = state.app.deps().tokens.hash_token(&body.token).await;
     let result = state
@@ -66,6 +68,8 @@ where
         "guestId": result.guest_id.map(|id| id.to_string()),
         "status": result.status,
         "expiresAt": result.expires_at.map(format_ts),
+        "roles": result.roles,
+        "mfaVerified": result.mfa_verified,
     });
 
     Ok(Json(ApiResponse {
@@ -75,8 +79,8 @@ where
     }))
 }
 
-pub async fn lookup_user<R, C, H, T, W, K, I>(
-    State(state): State<AppState<R, C, H, T, W, K, I>>,
+pub async fn lookup_user<R, C, H, T, W, K, I, A>(
+    State(state): State<AppState<R, C, H, T, W, K, I, A>>,
     Json(body): Json<UserLookupRequest>,
 ) -> Result<Json<ApiResponse<serde_json::Value>>, HttpError>
 where
@@ -87,6 +91,7 @@ where
     W: aegis_app::WebhookDispatcher,
     K: aegis_app::Clock,
     I: aegis_app::IdGenerator,
+    A: aegis_app::WebAuthn,
 {
     let result = state
         .app
@@ -113,8 +118,8 @@ where
     }))
 }
 
-pub async fn lookup_user_by_email<R, C, H, T, W, K, I>(
-    State(state): State<AppState<R, C, H, T, W, K, I>>,
+pub async fn lookup_user_by_email<R, C, H, T, W, K, I, A>(
+    State(state): State<AppState<R, C, H, T, W, K, I, A>>,
     Json(body): Json<UserLookupByEmailRequest>,
 ) -> Result<Json<ApiResponse<serde_json::Value>>, HttpError>
 where
@@ -125,6 +130,7 @@ where
     W: aegis_app::WebhookDispatcher,
     K: aegis_app::Clock,
     I: aegis_app::IdGenerator,
+    A: aegis_app::WebAuthn,
 {
     let result = state
         .app

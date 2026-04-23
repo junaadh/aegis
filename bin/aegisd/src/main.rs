@@ -1,25 +1,20 @@
 use std::path::Path;
 use std::sync::Arc;
 
-use aegis_app::{
-    AppDeps, AppPolicies, EmailSender, OutboxEntry, OutboxRepo, Repos, TransactionRepos,
-};
+use aegis_app::{AppDeps, AppPolicies};
 use aegis_config::Config;
+use aegis_db::outbox::OutboxWorker;
 use aegis_db::repo::PgRepos;
-use aegis_http::{
-    app_router, request_id_middleware, AppHandle, AppState,
+use aegis_http::{app_router, request_id_middleware, AppHandle, AppState};
+use aegis_infra::{
+    Argon2Hasher, ConfiguredCache, EmailOutboxProcessor, NoopWebhookDispatcher, SmtpEmailSender,
+    SystemClock, SystemTokenGenerator, UuidV7IdGenerator, WebAuthnAdapter,
 };
 use axum::extract::State;
-use aegis_infra::{
-    Argon2Hasher, ConfiguredCache, NoopWebhookDispatcher, SmtpEmailSender, SystemClock,
-    SystemTokenGenerator, UuidV7IdGenerator,
-};
 use axum::middleware;
 use axum::response::Response;
 use axum::{body::Body, http::Request};
-use serde::Deserialize;
 use sqlx::postgres::PgPoolOptions;
-use time::{Duration, OffsetDateTime};
 use tower_http::cors::CorsLayer;
 
 #[tokio::main]
@@ -72,6 +67,14 @@ async fn run(config: Config) -> Result<(), String> {
     let webhooks = NoopWebhookDispatcher::new();
     let policies = AppPolicies::from_config(&config).map_err(app_error)?;
 
+    let webauthn = match WebAuthnAdapter::from_config(&config.credentials.passkeys) {
+        Ok(w) => w,
+        Err(e) => {
+            tracing::warn!(error = %e, "passkeys disabled: webauthn not configured");
+            return Err(format!("webauthn config error: {e}"))?;
+        }
+    };
+
     let app = aegis_app::AegisApp::new(
         AppDeps {
             repos,
@@ -81,6 +84,7 @@ async fn run(config: Config) -> Result<(), String> {
             webhooks,
             clock,
             ids,
+            webauthn,
         },
         policies,
     );
@@ -92,7 +96,9 @@ async fn run(config: Config) -> Result<(), String> {
 
     if config.email.enabled {
         let email_sender = SmtpEmailSender::from_config(&config).map_err(app_error)?;
-        tokio::spawn(run_outbox_worker(PgRepos::new(pool.clone()), email_sender));
+        let processor = EmailOutboxProcessor::new(email_sender);
+        let worker = OutboxWorker::new(pool.clone(), PgRepos::new(pool.clone()), processor);
+        tokio::spawn(worker.run());
     }
 
     let bind_addr = format!("{}:{}", config.server.host, config.server.port);
@@ -110,6 +116,7 @@ async fn run(config: Config) -> Result<(), String> {
         NoopWebhookDispatcher,
         SystemClock,
         UuidV7IdGenerator,
+        WebAuthnAdapter,
     >()
     .with_state(state.clone())
     .layer(CorsLayer::permissive())
@@ -137,6 +144,7 @@ type ServerState = AppState<
     NoopWebhookDispatcher,
     SystemClock,
     UuidV7IdGenerator,
+    WebAuthnAdapter,
 >;
 
 async fn auth_context_middleware_for_server(
@@ -164,101 +172,4 @@ async fn shutdown_signal() {
 
 fn app_error(err: aegis_app::AppError) -> String {
     err.to_string()
-}
-
-#[derive(Deserialize)]
-struct VerificationEmailPayload {
-    email: String,
-    token: String,
-}
-
-#[derive(Deserialize)]
-struct PasswordResetEmailPayload {
-    email: String,
-    token: String,
-}
-
-async fn run_outbox_worker(repos: PgRepos, email: SmtpEmailSender) {
-    let mut interval = tokio::time::interval(std::time::Duration::from_millis(500));
-
-    loop {
-        interval.tick().await;
-
-        let entries = match repos
-            .with_transaction(|mut tx| async move {
-                let result = tx.outbox().claim_pending(10).await;
-                (tx, result)
-            })
-            .await
-        {
-            Ok(entries) => entries,
-            Err(err) => {
-                tracing::error!(error = %err, "failed to claim outbox jobs");
-                continue;
-            }
-        };
-
-        for entry in entries {
-            process_outbox_entry(&repos, &email, entry).await;
-        }
-    }
-}
-
-async fn process_outbox_entry(repos: &PgRepos, email: &SmtpEmailSender, entry: OutboxEntry) {
-    let result = match entry.job_type.as_str() {
-        "send_verification_email" => {
-            let payload: Result<VerificationEmailPayload, _> = serde_json::from_str(&entry.payload);
-            match payload {
-                Ok(payload) => email.send_verification(&payload.email, &payload.token).await,
-                Err(err) => Err(aegis_app::AppError::Infrastructure(format!(
-                    "invalid verification outbox payload: {err}"
-                ))),
-            }
-        }
-        "send_password_reset_email" => {
-            let payload: Result<PasswordResetEmailPayload, _> = serde_json::from_str(&entry.payload);
-            match payload {
-                Ok(payload) => email.send_password_reset(&payload.email, &payload.token).await,
-                Err(err) => Err(aegis_app::AppError::Infrastructure(format!(
-                    "invalid password reset outbox payload: {err}"
-                ))),
-            }
-        }
-        other => {
-            tracing::warn!(job_type = other, "unsupported outbox job type");
-            Ok(())
-        }
-    };
-
-    let repo_result = match result {
-        Ok(()) => {
-            repos.with_transaction(|mut tx| async move {
-                let result = tx.outbox().mark_processed(entry.id).await;
-                (tx, result)
-            })
-            .await
-        }
-        Err(err) => {
-            tracing::error!(job_id = entry.id, error = %err, "outbox job failed");
-            let attempts = entry.attempts + 1;
-            if attempts >= entry.max_attempts {
-                repos.with_transaction(|mut tx| async move {
-                    let result = tx.outbox().mark_dead_lettered(entry.id).await;
-                    (tx, result)
-                })
-                .await
-            } else {
-                let next_retry_at = OffsetDateTime::now_utc() + Duration::minutes(1);
-                repos.with_transaction(|mut tx| async move {
-                    let result = tx.outbox().mark_retry(entry.id, next_retry_at).await;
-                    (tx, result)
-                })
-                .await
-            }
-        }
-    };
-
-    if let Err(err) = repo_result {
-        tracing::error!(job_id = entry.id, error = %err, "failed to update outbox job status");
-    }
 }

@@ -13,8 +13,8 @@ use crate::cookies;
 use crate::error::HttpError;
 use crate::state::AppState;
 
-pub async fn verify_email<R, C, H, T, W, K, I>(
-    State(state): State<AppState<R, C, H, T, W, K, I>>,
+pub async fn verify_email<R, C, H, T, W, K, I, A>(
+    State(state): State<AppState<R, C, H, T, W, K, I, A>>,
     headers: HeaderMap,
     Json(body): Json<VerifyEmailRequest>,
 ) -> Result<Json<ApiResponse<serde_json::Value>>, HttpError>
@@ -26,6 +26,7 @@ where
     W: aegis_app::WebhookDispatcher,
     K: aegis_app::Clock,
     I: aegis_app::IdGenerator,
+    A: aegis_app::WebAuthn,
 {
     let request_id = context::extract_or_generate_request_id(&headers);
 
@@ -40,8 +41,8 @@ where
     }))
 }
 
-pub async fn resend_verification<R, C, H, T, W, K, I>(
-    State(state): State<AppState<R, C, H, T, W, K, I>>,
+pub async fn resend_verification<R, C, H, T, W, K, I, A>(
+    State(state): State<AppState<R, C, H, T, W, K, I, A>>,
     headers: HeaderMap,
     Json(body): Json<ResendEmailRequest>,
 ) -> Result<Json<ApiResponse<serde_json::Value>>, HttpError>
@@ -53,6 +54,7 @@ where
     W: aegis_app::WebhookDispatcher,
     K: aegis_app::Clock,
     I: aegis_app::IdGenerator,
+    A: aegis_app::WebAuthn,
 {
     let request_id = context::extract_or_generate_request_id(&headers);
 
@@ -67,8 +69,8 @@ where
     }))
 }
 
-pub async fn forgot_password<R, C, H, T, W, K, I>(
-    State(state): State<AppState<R, C, H, T, W, K, I>>,
+pub async fn forgot_password<R, C, H, T, W, K, I, A>(
+    State(state): State<AppState<R, C, H, T, W, K, I, A>>,
     headers: HeaderMap,
     Json(body): Json<ForgotPasswordRequest>,
 ) -> Result<Json<ApiResponse<serde_json::Value>>, HttpError>
@@ -80,6 +82,7 @@ where
     W: aegis_app::WebhookDispatcher,
     K: aegis_app::Clock,
     I: aegis_app::IdGenerator,
+    A: aegis_app::WebAuthn,
 {
     let request_id = context::extract_or_generate_request_id(&headers);
 
@@ -94,8 +97,8 @@ where
     }))
 }
 
-pub async fn reset_password<R, C, H, T, W, K, I>(
-    State(state): State<AppState<R, C, H, T, W, K, I>>,
+pub async fn reset_password<R, C, H, T, W, K, I, A>(
+    State(state): State<AppState<R, C, H, T, W, K, I, A>>,
     headers: HeaderMap,
     Json(body): Json<ResetPasswordRequest>,
 ) -> Result<(HeaderMap, Json<ApiResponse<serde_json::Value>>), HttpError>
@@ -107,6 +110,7 @@ where
     W: aegis_app::WebhookDispatcher,
     K: aegis_app::Clock,
     I: aegis_app::IdGenerator,
+    A: aegis_app::WebAuthn,
 {
     let request_id = context::extract_or_generate_request_id(&headers);
 
@@ -133,9 +137,9 @@ where
     ))
 }
 
-pub async fn change_password<R, C, H, T, W, K, I>(
-    State(state): State<AppState<R, C, H, T, W, K, I>>,
-    auth: RequiredAuth<R, C, H, T, W, K, I>,
+pub async fn change_password<R, C, H, T, W, K, I, A>(
+    State(state): State<AppState<R, C, H, T, W, K, I, A>>,
+    auth: RequiredAuth<R, C, H, T, W, K, I, A>,
     headers: HeaderMap,
     Json(body): Json<PasswordChangeRequest>,
 ) -> Result<(HeaderMap, Json<ApiResponse<serde_json::Value>>), HttpError>
@@ -147,9 +151,10 @@ where
     W: aegis_app::WebhookDispatcher,
     K: aegis_app::Clock,
     I: aegis_app::IdGenerator,
+    A: aegis_app::WebAuthn,
 {
     let identity = auth.identity;
-    let user_id = identity.user_id().map_err(HttpError::from)?;
+    let user_id = identity.verified_user_id().map_err(HttpError::from)?;
 
     let request_id = context::extract_or_generate_request_id(&headers);
     let ctx = RequestContext {

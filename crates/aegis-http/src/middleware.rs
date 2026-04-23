@@ -1,4 +1,4 @@
-use aegis_app::{Cache, Clock, Hasher, IdGenerator, Repos, TokenGenerator, WebhookDispatcher};
+use aegis_app::{Cache, Clock, Hasher, IdGenerator, Repos, TokenGenerator, WebAuthn, WebhookDispatcher};
 use axum::body::Body;
 use axum::http::{header::AUTHORIZATION, HeaderName, HeaderValue, Request, StatusCode};
 use axum::middleware::Next;
@@ -34,8 +34,8 @@ pub async fn request_id_middleware(mut request: Request<Body>, next: Next) -> Re
     response
 }
 
-pub async fn auth_context_middleware<R, C, H, T, W, K, I>(
-    state: AppState<R, C, H, T, W, K, I>,
+pub async fn auth_context_middleware<R, C, H, T, W, K, I, A>(
+    state: AppState<R, C, H, T, W, K, I, A>,
     mut request: Request<Body>,
     next: Next,
 ) -> Response
@@ -47,6 +47,7 @@ where
     W: WebhookDispatcher,
     K: Clock,
     I: IdGenerator,
+    A: WebAuthn,
 {
     let identity = match context::extract_token(request.headers()) {
         Some(token) => resolve_auth_identity(&state, &token).await,
@@ -57,8 +58,8 @@ where
     next.run(request).await
 }
 
-pub async fn internal_auth_middleware<R, C, H, T, W, K, I>(
-    state: AppState<R, C, H, T, W, K, I>,
+pub async fn internal_auth_middleware<R, C, H, T, W, K, I, A>(
+    state: AppState<R, C, H, T, W, K, I, A>,
     request: Request<Body>,
     next: Next,
 ) -> Response
@@ -70,6 +71,7 @@ where
     W: WebhookDispatcher,
     K: Clock,
     I: IdGenerator,
+    A: WebAuthn,
 {
     if !request.uri().path().starts_with("/v1/internal") {
         return next.run(request).await;

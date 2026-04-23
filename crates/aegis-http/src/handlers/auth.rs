@@ -11,9 +11,9 @@ use crate::error::HttpError;
 use crate::mapping;
 use crate::state::AppState;
 
-pub async fn signup<R, C, H, T, W, K, I>(
-    State(state): State<AppState<R, C, H, T, W, K, I>>,
-    auth: OptionalAuth<R, C, H, T, W, K, I>,
+pub async fn signup<R, C, H, T, W, K, I, A>(
+    State(state): State<AppState<R, C, H, T, W, K, I, A>>,
+    auth: OptionalAuth<R, C, H, T, W, K, I, A>,
     headers: HeaderMap,
     Json(body): Json<SignupRequest>,
 ) -> Result<(HeaderMap, Json<ApiResponse<serde_json::Value>>), HttpError>
@@ -25,6 +25,7 @@ where
     W: aegis_app::WebhookDispatcher,
     K: aegis_app::Clock,
     I: aegis_app::IdGenerator,
+    A: aegis_app::WebAuthn,
 {
     let existing_auth = auth.identity;
 
@@ -71,8 +72,8 @@ where
     ))
 }
 
-pub async fn login<R, C, H, T, W, K, I>(
-    State(state): State<AppState<R, C, H, T, W, K, I>>,
+pub async fn login<R, C, H, T, W, K, I, A>(
+    State(state): State<AppState<R, C, H, T, W, K, I, A>>,
     headers: HeaderMap,
     Json(body): Json<LoginRequest>,
 ) -> Result<(HeaderMap, Json<ApiResponse<serde_json::Value>>), HttpError>
@@ -84,6 +85,7 @@ where
     W: aegis_app::WebhookDispatcher,
     K: aegis_app::Clock,
     I: aegis_app::IdGenerator,
+    A: aegis_app::WebAuthn,
 {
     let request_id = context::extract_or_generate_request_id(&headers);
     let ctx = RequestContext {
@@ -134,9 +136,9 @@ where
     ))
 }
 
-pub async fn logout<R, C, H, T, W, K, I>(
-    State(state): State<AppState<R, C, H, T, W, K, I>>,
-    auth: RequiredAuth<R, C, H, T, W, K, I>,
+pub async fn logout<R, C, H, T, W, K, I, A>(
+    State(state): State<AppState<R, C, H, T, W, K, I, A>>,
+    auth: RequiredAuth<R, C, H, T, W, K, I, A>,
     headers: HeaderMap,
 ) -> Result<(HeaderMap, Json<ApiResponse<serde_json::Value>>), HttpError>
 where
@@ -147,6 +149,7 @@ where
     W: aegis_app::WebhookDispatcher,
     K: aegis_app::Clock,
     I: aegis_app::IdGenerator,
+    A: aegis_app::WebAuthn,
 {
     let identity = auth.identity;
 
@@ -180,9 +183,9 @@ where
     ))
 }
 
-pub async fn me<R, C, H, T, W, K, I>(
-    State(state): State<AppState<R, C, H, T, W, K, I>>,
-    auth: RequiredAuth<R, C, H, T, W, K, I>,
+pub async fn me<R, C, H, T, W, K, I, A>(
+    State(state): State<AppState<R, C, H, T, W, K, I, A>>,
+    auth: RequiredAuth<R, C, H, T, W, K, I, A>,
     headers: HeaderMap,
 ) -> Result<Json<ApiResponse<serde_json::Value>>, HttpError>
 where
@@ -193,14 +196,15 @@ where
     W: aegis_app::WebhookDispatcher,
     K: aegis_app::Clock,
     I: aegis_app::IdGenerator,
+    A: aegis_app::WebAuthn,
 {
     let identity = auth.identity;
 
     let request_id = context::extract_or_generate_request_id(&headers);
 
     let result = match &identity.inner {
-        aegis_core::Identity::User(u) => {
-            state.app.get_current_identity(u.id).await?
+        aegis_core::Identity::User(_) => {
+            state.app.get_current_identity(identity.verified_user_id()?).await?
         }
         aegis_core::Identity::Guest(g) => {
             state.app.get_guest_identity(g.id).await?
@@ -218,9 +222,9 @@ where
     }))
 }
 
-pub async fn update_profile<R, C, H, T, W, K, I>(
-    State(state): State<AppState<R, C, H, T, W, K, I>>,
-    auth: RequiredAuth<R, C, H, T, W, K, I>,
+pub async fn update_profile<R, C, H, T, W, K, I, A>(
+    State(state): State<AppState<R, C, H, T, W, K, I, A>>,
+    auth: RequiredAuth<R, C, H, T, W, K, I, A>,
     headers: HeaderMap,
     Json(body): Json<aegis_types::UpdateProfileRequest>,
 ) -> Result<Json<ApiResponse<serde_json::Value>>, HttpError>
@@ -232,9 +236,10 @@ where
     W: aegis_app::WebhookDispatcher,
     K: aegis_app::Clock,
     I: aegis_app::IdGenerator,
+    A: aegis_app::WebAuthn,
 {
     let identity = auth.identity;
-    let user_id = identity.user_id().map_err(HttpError::from)?;
+    let user_id = identity.verified_user_id().map_err(HttpError::from)?;
 
     let request_id = context::extract_or_generate_request_id(&headers);
     let ctx = RequestContext {

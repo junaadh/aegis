@@ -1,8 +1,8 @@
 use crate::deps::AppDeps;
 use crate::policy::AppPolicies;
-use crate::ports::{Cache, Clock, Hasher, IdGenerator, Repos, TokenGenerator, WebhookDispatcher};
+use crate::ports::{Cache, Clock, Hasher, IdGenerator, Repos, TokenGenerator, WebAuthn, WebhookDispatcher};
 
-pub struct AegisApp<R, C, H, T, W, K, I>
+pub struct AegisApp<R, C, H, T, W, K, I, A>
 where
     R: Repos,
     C: Cache,
@@ -11,12 +11,13 @@ where
     W: WebhookDispatcher,
     K: Clock,
     I: IdGenerator,
+    A: WebAuthn,
 {
-    pub(crate) deps: AppDeps<R, C, H, T, W, K, I>,
+    pub(crate) deps: AppDeps<R, C, H, T, W, K, I, A>,
     pub(crate) policy: AppPolicies,
 }
 
-impl<R, C, H, T, W, K, I> AegisApp<R, C, H, T, W, K, I>
+impl<R, C, H, T, W, K, I, A> AegisApp<R, C, H, T, W, K, I, A>
 where
     R: Repos,
     C: Cache,
@@ -25,8 +26,9 @@ where
     W: WebhookDispatcher,
     K: Clock,
     I: IdGenerator,
+    A: WebAuthn,
 {
-    pub fn new(deps: AppDeps<R, C, H, T, W, K, I>, policy: AppPolicies) -> Self {
+    pub fn new(deps: AppDeps<R, C, H, T, W, K, I, A>, policy: AppPolicies) -> Self {
         Self { deps, policy }
     }
 
@@ -34,7 +36,7 @@ where
         &self.policy
     }
 
-    pub fn deps(&self) -> &AppDeps<R, C, H, T, W, K, I> {
+    pub fn deps(&self) -> &AppDeps<R, C, H, T, W, K, I, A> {
         &self.deps
     }
 }

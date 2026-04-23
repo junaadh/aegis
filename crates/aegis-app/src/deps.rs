@@ -1,6 +1,6 @@
-use crate::ports::{Cache, Clock, Hasher, IdGenerator, Repos, TokenGenerator, WebhookDispatcher};
+use crate::ports::{Cache, Clock, Hasher, IdGenerator, Repos, TokenGenerator, WebAuthn, WebhookDispatcher};
 
-pub struct AppDeps<R, C, H, T, W, K, I>
+pub struct AppDeps<R, C, H, T, W, K, I, A>
 where
     R: Repos,
     C: Cache,
@@ -9,6 +9,7 @@ where
     W: WebhookDispatcher,
     K: Clock,
     I: IdGenerator,
+    A: WebAuthn,
 {
     pub repos: R,
     pub cache: C,
@@ -17,4 +18,5 @@ where
     pub webhooks: W,
     pub clock: K,
     pub ids: I,
+    pub webauthn: A,
 }

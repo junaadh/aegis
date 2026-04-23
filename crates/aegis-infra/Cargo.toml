@@ -19,6 +19,9 @@ thiserror.workspace = true
 time.workspace = true
 tracing.workspace = true
 uuid.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+webauthn-rs.workspace = true
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }

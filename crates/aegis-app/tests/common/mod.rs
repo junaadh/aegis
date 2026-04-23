@@ -13,13 +13,15 @@ use aegis_core::{
 };
 use aegis_app::{
     AppDeps, AppError, AppPolicies, AuthPolicy, CompliancePolicy,
-    CredentialSummary, EmailPolicy,
+    CredentialSummary, CryptoPolicy, EmailPolicy,
     Hasher, JobPayload, OutboxEntry, PasswordHash,
     PasswordVerifyResult, RecoveryCodePolicy, TotpPolicy,
     PasskeyPolicy, Cache, Clock, IdGenerator, Repos, TokenGenerator, TransactionRepos,
-    WebhookDispatcher,
+    WebAuthn, WebhookDispatcher,
     GuestRepo, UserRepo, SessionRepo, CredentialRepo, RoleRepo, PendingTokenRepo, AuditRepo,
     OutboxRepo, AegisApp,
+    PasskeyRegisterStartResult, PasskeyRegisterFinishResult, PasskeyLoginStartResult,
+    PasskeyLoginFinishResult,
 };
 
 pub struct MockClock {
@@ -161,6 +163,59 @@ impl WebhookDispatcher for MockWebhook {
     async fn dispatch(&self, _event: &str, _payload: &str) -> Result<(), AppError> { Ok(()) }
 }
 
+pub struct MockWebAuthn;
+
+#[async_trait]
+impl WebAuthn for MockWebAuthn {
+    async fn start_registration(
+        &self,
+        _user_id: &str,
+        _user_name: &str,
+        _display_name: &str,
+        _exclude_credentials: Vec<String>,
+    ) -> Result<PasskeyRegisterStartResult, AppError> {
+        Ok(PasskeyRegisterStartResult {
+            public_key: serde_json::json!({}),
+            state: vec![],
+        })
+    }
+
+    async fn finish_registration(
+        &self,
+        _state: &[u8],
+        _response: &[u8],
+    ) -> Result<PasskeyRegisterFinishResult, AppError> {
+        Ok(PasskeyRegisterFinishResult {
+            credential_id: "mock-cred-id".to_owned(),
+            public_key: vec![],
+            backup_eligible: false,
+            backup_state: false,
+            transports: vec![],
+        })
+    }
+
+    async fn start_authentication(
+        &self,
+        _credentials: Vec<(String, Vec<u8>)>,
+    ) -> Result<PasskeyLoginStartResult, AppError> {
+        Ok(PasskeyLoginStartResult {
+            public_key: serde_json::json!({}),
+            state: vec![],
+        })
+    }
+
+    async fn finish_authentication(
+        &self,
+        _state: &[u8],
+        _response: &[u8],
+    ) -> Result<PasskeyLoginFinishResult, AppError> {
+        Ok(PasskeyLoginFinishResult {
+            credential_id: "mock-cred-id".to_owned(),
+            sign_count: 1,
+        })
+    }
+}
+
 #[derive(Default)]
 pub struct MockState {
     pub users: HashMap<Uuid, User>,
@@ -171,6 +226,7 @@ pub struct MockState {
     pub pending_tokens: Vec<PendingToken>,
     pub audits: Vec<NewAuditEntry>,
     pub outbox: Vec<JobPayload>,
+    pub recovery_codes: HashMap<String, RecoveryCode>,
 }
 
 macro_rules! make_repo {
@@ -229,6 +285,9 @@ impl GuestRepo for MockGuestRepo {
 
 #[async_trait]
 impl SessionRepo for MockSessionRepo {
+    async fn get_by_id(&self, id: SessionId) -> Result<Option<Session>, AppError> {
+        Ok(self.state.read().await.sessions.values().find(|session| session.id == id).cloned())
+    }
     async fn get_by_token_hash(&self, hash: &[u8; 32]) -> Result<Option<Session>, AppError> {
         Ok(self.state.read().await.sessions.get(hash).cloned())
     }
@@ -266,13 +325,21 @@ impl CredentialRepo for MockCredentialRepo {
                 last_used_at: p.last_used_at,
             });
         }
+        if let Some(t) = state.credentials_totp.get(&user_id.as_uuid()) {
+            summaries.push(CredentialSummary {
+                id: t.id.as_uuid(),
+                kind: aegis_core::CredentialKind::Totp,
+                created_at: t.created_at,
+                last_used_at: None,
+            });
+        }
         Ok(summaries)
     }
     async fn get_totp_by_user_id(&self, user_id: UserId) -> Result<Option<TotpCredential>, AppError> {
         Ok(self.state.read().await.credentials_totp.get(&user_id.as_uuid()).cloned())
     }
-    async fn get_recovery_code_by_hash(&self, _hash: &str) -> Result<Option<RecoveryCode>, AppError> {
-        Ok(None)
+    async fn get_recovery_code_by_hash(&self, hash: &str) -> Result<Option<RecoveryCode>, AppError> {
+        Ok(self.state.read().await.recovery_codes.get(hash).cloned())
     }
     async fn get_passkey_by_credential_id(&self, _cid: &str) -> Result<Option<PasskeyCredential>, AppError> {
         Ok(None)
@@ -294,9 +361,21 @@ impl CredentialRepo for MockCredentialRepo {
         self.state.write().await.credentials_totp.insert(cred.user_id.as_uuid(), cred.clone());
         Ok(())
     }
-    async fn insert_recovery_codes(&mut self, _codes: &[RecoveryCode]) -> Result<(), AppError> { Ok(()) }
-    async fn update_recovery_code(&mut self, _code: &RecoveryCode) -> Result<(), AppError> { Ok(()) }
-    async fn delete_recovery_codes_by_user_id(&mut self, _uid: UserId) -> Result<(), AppError> { Ok(()) }
+    async fn insert_recovery_codes(&mut self, codes: &[RecoveryCode]) -> Result<(), AppError> {
+        let mut state = self.state.write().await;
+        for code in codes {
+            state.recovery_codes.insert(code.code_hash.clone(), code.clone());
+        }
+        Ok(())
+    }
+    async fn update_recovery_code(&mut self, code: &RecoveryCode) -> Result<(), AppError> {
+        self.state.write().await.recovery_codes.insert(code.code_hash.clone(), code.clone());
+        Ok(())
+    }
+    async fn delete_recovery_codes_by_user_id(&mut self, uid: UserId) -> Result<(), AppError> {
+        self.state.write().await.recovery_codes.retain(|_, code| code.user_id != uid);
+        Ok(())
+    }
     async fn insert_passkey(&mut self, _cred: &PasskeyCredential) -> Result<(), AppError> { Ok(()) }
     async fn update_passkey(&mut self, _cred: &PasskeyCredential) -> Result<(), AppError> { Ok(()) }
 }
@@ -453,6 +532,9 @@ pub fn test_policies(email_enabled: bool) -> AppPolicies {
             verification_token_ttl: Duration::hours(24),
             password_reset_token_ttl: Duration::minutes(60),
         },
+        crypto: CryptoPolicy {
+            master_key: Some("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef".to_owned()),
+        },
         compliance: CompliancePolicy {
             guest_ttl: Duration::days(30),
             deleted_user_anonymize_after: Duration::days(90),
@@ -486,7 +568,7 @@ pub fn test_ctx() -> aegis_app::RequestContext {
     }
 }
 
-pub type TestApp = AegisApp<MockRepos, MockCache, MockHasher, MockTokenGen, MockWebhook, MockClock, MockIdGen>;
+pub type TestApp = AegisApp<MockRepos, MockCache, MockHasher, MockTokenGen, MockWebhook, MockClock, MockIdGen, MockWebAuthn>;
 
 pub fn make_app(clock: &MockClock, email_enabled: bool) -> (TestApp, Arc<RwLock<MockState>>) {
     let state = Arc::new(RwLock::new(MockState::default()));
@@ -508,6 +590,7 @@ pub fn make_app(clock: &MockClock, email_enabled: bool) -> (TestApp, Arc<RwLock<
         webhooks: MockWebhook,
         clock: MockClock { now: clock.handle() },
         ids: MockIdGen::new(),
+        webauthn: MockWebAuthn,
     };
     let app = AegisApp::new(deps, test_policies(email_enabled));
     (app, state)

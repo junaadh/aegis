@@ -39,7 +39,7 @@ async fn signup_creates_active_user_when_email_disabled() {
 
     assert_eq!(auth.user.status, UserStatus::Active);
     assert!(auth.session_token.starts_with("tok-"));
-    assert!(!auth.mfa_verified);
+    assert!(auth.mfa_verified);
 
     let s = state.read().await;
     assert_eq!(s.users.len(), 1);
@@ -71,6 +71,7 @@ async fn signup_creates_pending_user_when_email_enabled() {
 
     assert_eq!(auth.user.status, UserStatus::PendingVerification);
     assert!(!auth.user.is_email_verified());
+    assert!(auth.mfa_verified);
 
     let s = state.read().await;
     assert_eq!(s.pending_tokens.len(), 1);

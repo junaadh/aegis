@@ -104,6 +104,9 @@ burst = 10
 [api.internal]
 allowed_cidrs = []
 
+[crypto]
+master_key = "env:AEGIS_CRYPTO_MASTER_KEY"
+
 [crypto.jwt]
 enabled = false
 algorithm = "RS256"

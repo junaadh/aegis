@@ -9,9 +9,9 @@ use crate::error::AppError;
 use crate::jobs::JobPayload;
 use crate::ports::{AuditRepo, Cache, Clock, CredentialRepo, Hasher, IdGenerator, OutboxRepo,
     PendingTokenRepo, Repos, SessionRepo, TokenGenerator, TransactionRepos, UserRepo,
-    WebhookDispatcher};
+    WebAuthn, WebhookDispatcher};
 
-impl<R, C, H, T, W, K, I> AegisApp<R, C, H, T, W, K, I>
+impl<R, C, H, T, W, K, I, A> AegisApp<R, C, H, T, W, K, I, A>
 where
     R: Repos,
     C: Cache,
@@ -20,6 +20,7 @@ where
     W: WebhookDispatcher,
     K: Clock,
     I: IdGenerator,
+    A: WebAuthn,
 {
     pub async fn forgot_password(&self, cmd: ForgotPasswordCommand) -> Result<(), AppError> {
         let user = self.deps.repos.users().get_by_email(&cmd.email).await?;

@@ -5,5 +5,6 @@
 
 pub mod convert;
 pub mod error;
+pub mod outbox;
 pub mod repo;
 pub mod row;

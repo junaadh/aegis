@@ -59,6 +59,21 @@ where
     row.map(map_session).transpose()
 }
 
+async fn get_by_id_impl<'e, E>(executor: E, id: SessionId) -> Result<Option<Session>, AppError>
+where
+    E: Executor<'e, Database = Postgres>,
+{
+    let row = sqlx::query_as::<_, SessionRow>(
+        "SELECT id, token_hash, user_id, guest_id, expires_at, last_seen_at, mfa_verified, user_agent, ip_address, metadata FROM sessions WHERE id = $1",
+    )
+    .bind(id.as_uuid())
+    .fetch_optional(executor)
+    .await
+    .map_err(infra_error)?;
+
+    row.map(map_session).transpose()
+}
+
 async fn insert_impl<'e, E>(executor: E, session: &Session) -> Result<(), AppError>
 where
     E: Executor<'e, Database = Postgres>,
@@ -143,6 +158,10 @@ where
 
 #[async_trait::async_trait]
 impl SessionRepo for PgSessionRepo {
+    async fn get_by_id(&self, id: SessionId) -> Result<Option<Session>, AppError> {
+        get_by_id_impl(&self.pool, id).await
+    }
+
     async fn get_by_token_hash(&self, hash: &[u8; 32]) -> Result<Option<Session>, AppError> {
         get_by_token_hash_impl(&self.pool, hash).await
     }
@@ -166,6 +185,10 @@ impl SessionRepo for PgSessionRepo {
 
 #[async_trait::async_trait]
 impl SessionRepo for PgTxSessionRepo {
+    async fn get_by_id(&self, id: SessionId) -> Result<Option<Session>, AppError> {
+        get_by_id_impl(self.tx().as_mut(), id).await
+    }
+
     async fn get_by_token_hash(&self, hash: &[u8; 32]) -> Result<Option<Session>, AppError> {
         get_by_token_hash_impl(self.tx().as_mut(), hash).await
     }

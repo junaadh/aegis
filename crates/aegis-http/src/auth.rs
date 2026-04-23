@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use aegis_app::{Cache, Clock, GuestRepo, Hasher, IdGenerator, Repos, SessionRepo, TokenGenerator, UserRepo, WebhookDispatcher};
+use aegis_app::{Cache, Clock, GuestRepo, Hasher, IdGenerator, Repos, SessionRepo, TokenGenerator, UserRepo, WebAuthn, WebhookDispatcher};
 use aegis_core::{Identity, SessionIdentity, UserStatus};
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
@@ -12,22 +12,23 @@ use crate::state::AppState;
 pub struct AuthIdentity {
     pub inner: Identity,
     pub session_token_hash: [u8; 32],
+    pub mfa_verified: bool,
 }
 
 #[derive(Debug, Clone, Default)]
 pub struct AuthContext(pub Option<AuthIdentity>);
 
-pub struct OptionalAuth<R, C, H, T, W, K, I> {
+pub struct OptionalAuth<R, C, H, T, W, K, I, A> {
     pub identity: Option<AuthIdentity>,
-    _marker: PhantomData<(R, C, H, T, W, K, I)>,
+    _marker: PhantomData<(R, C, H, T, W, K, I, A)>,
 }
 
-pub struct RequiredAuth<R, C, H, T, W, K, I> {
+pub struct RequiredAuth<R, C, H, T, W, K, I, A> {
     pub identity: AuthIdentity,
-    _marker: PhantomData<(R, C, H, T, W, K, I)>,
+    _marker: PhantomData<(R, C, H, T, W, K, I, A)>,
 }
 
-impl<R, C, H, T, W, K, I> OptionalAuth<R, C, H, T, W, K, I> {
+impl<R, C, H, T, W, K, I, A> OptionalAuth<R, C, H, T, W, K, I, A> {
     fn new(identity: Option<AuthIdentity>) -> Self {
         Self {
             identity,
@@ -36,7 +37,7 @@ impl<R, C, H, T, W, K, I> OptionalAuth<R, C, H, T, W, K, I> {
     }
 }
 
-impl<R, C, H, T, W, K, I> RequiredAuth<R, C, H, T, W, K, I> {
+impl<R, C, H, T, W, K, I, A> RequiredAuth<R, C, H, T, W, K, I, A> {
     fn new(identity: AuthIdentity) -> Self {
         Self {
             identity,
@@ -45,7 +46,7 @@ impl<R, C, H, T, W, K, I> RequiredAuth<R, C, H, T, W, K, I> {
     }
 }
 
-impl<S, R, C, H, T, W, K, I> FromRequestParts<S> for OptionalAuth<R, C, H, T, W, K, I>
+impl<S, R, C, H, T, W, K, I, A> FromRequestParts<S> for OptionalAuth<R, C, H, T, W, K, I, A>
 where
     S: Send + Sync,
 {
@@ -64,7 +65,7 @@ where
     }
 }
 
-impl<S, R, C, H, T, W, K, I> FromRequestParts<S> for RequiredAuth<R, C, H, T, W, K, I>
+impl<S, R, C, H, T, W, K, I, A> FromRequestParts<S> for RequiredAuth<R, C, H, T, W, K, I, A>
 where
     S: Send + Sync,
 {
@@ -86,8 +87,8 @@ where
     }
 }
 
-pub async fn resolve_auth_identity<R, C, H, T, W, K, I>(
-    state: &AppState<R, C, H, T, W, K, I>,
+pub async fn resolve_auth_identity<R, C, H, T, W, K, I, A>(
+    state: &AppState<R, C, H, T, W, K, I, A>,
     token: &str,
 ) -> Option<AuthIdentity>
 where
@@ -98,6 +99,7 @@ where
     W: WebhookDispatcher,
     K: Clock,
     I: IdGenerator,
+    A: WebAuthn,
 {
     let deps = state.app.deps();
     let hash = deps.tokens.hash_token(token).await;
@@ -139,6 +141,7 @@ where
     Some(AuthIdentity {
         inner: identity,
         session_token_hash: hash,
+        mfa_verified: session.mfa_verified,
     })
 }
 
@@ -154,6 +157,15 @@ impl AuthIdentity {
         match &self.inner {
             Identity::Guest(guest) => Ok(guest.id),
             Identity::User(_) => Err(aegis_app::AppError::Forbidden),
+        }
+    }
+
+    pub fn verified_user_id(&self) -> Result<aegis_core::UserId, aegis_app::AppError> {
+        let user_id = self.user_id()?;
+        if self.mfa_verified {
+            Ok(user_id)
+        } else {
+            Err(aegis_app::AppError::MfaRequired)
         }
     }
 }

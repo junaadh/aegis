@@ -1,9 +1,33 @@
--- Enable uuid extension for uuid_generate_v7()
+-- Enable pgcrypto for gen_random_bytes()
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+-- UUIDv7 generator (pgcrypto-backed)
+-- Layout: [48-bit unix_ms][4-bit ver=7][12-bit rand][2-bit var=10][62-bit rand]
+CREATE OR REPLACE FUNCTION uuid_generate_v7() RETURNS uuid AS $$
+DECLARE
+    unix_ms bigint;
+    rnd bytea;
+    hi bigint;
+BEGIN
+    unix_ms := floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint;
+    rnd := gen_random_bytes(10);
+
+    hi := (unix_ms << 16)
+        | (7 << 12)
+        | ((get_byte(rnd, 0) << 4 | get_byte(rnd, 1) >> 4) & 4095);
+
+    RETURN (
+        lpad(to_hex(hi), 16, '0')
+        || to_hex(128 | (get_byte(rnd, 1) & 63))
+        || lpad(to_hex(get_byte(rnd, 2)), 2, '0')
+        || encode(substring(rnd, 4, 7), 'hex')
+    )::uuid;
+END
+$$ LANGUAGE plpgsql VOLATILE;
 
 -- Seed identity tables
 CREATE TABLE users (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
     email TEXT NOT NULL,
     email_verified_at TIMESTAMPTZ,
     display_name TEXT NOT NULL,
@@ -21,7 +45,7 @@ CREATE INDEX idx_users_deleted_at ON users (deleted_at) WHERE deleted_at IS NOT 
 CREATE INDEX idx_users_metadata_gin ON users USING GIN (metadata);
 
 CREATE TABLE guests (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
     email TEXT,
     metadata JSONB DEFAULT '{}'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -36,7 +60,7 @@ CREATE INDEX idx_guests_expires_at ON guests (expires_at);
 CREATE INDEX idx_guests_converted ON guests (converted_to) WHERE converted_to IS NOT NULL;
 
 CREATE TABLE sessions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
     token_hash BYTEA NOT NULL UNIQUE,
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     guest_id UUID REFERENCES guests(id) ON DELETE CASCADE,
@@ -62,7 +86,7 @@ CREATE INDEX idx_sessions_expires_at ON sessions (expires_at);
 
 -- Credential tables
 CREATE TABLE password_credentials (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     hash TEXT NOT NULL,
     algorithm_version INT NOT NULL DEFAULT 1,
@@ -76,7 +100,7 @@ CREATE TABLE password_credentials (
 CREATE INDEX idx_password_credentials_user ON password_credentials (user_id);
 
 CREATE TABLE passkey_credentials (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     credential_id TEXT NOT NULL,
     public_key BYTEA NOT NULL,
@@ -96,7 +120,7 @@ CREATE INDEX idx_passkey_credentials_user ON passkey_credentials (user_id);
 CREATE INDEX idx_passkey_credentials_lookup ON passkey_credentials (credential_id);
 
 CREATE TABLE totp_credentials (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     secret_encrypted BYTEA NOT NULL,
     nonce BYTEA NOT NULL,
@@ -113,7 +137,7 @@ CREATE TABLE totp_credentials (
 CREATE INDEX idx_totp_credentials_user ON totp_credentials (user_id);
 
 CREATE TABLE recovery_codes (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     code_hash TEXT NOT NULL,
     used_at TIMESTAMPTZ,
@@ -126,7 +150,7 @@ CREATE INDEX idx_recovery_codes_unused ON recovery_codes (user_id) WHERE used_at
 
 -- Access control tables
 CREATE TABLE roles (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
     name TEXT NOT NULL UNIQUE,
     description TEXT,
     permissions JSONB DEFAULT '[]'::jsonb,
@@ -137,7 +161,7 @@ CREATE TABLE roles (
 CREATE INDEX idx_roles_name ON roles (LOWER(name));
 
 CREATE TABLE user_role_assignments (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     role_id UUID NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
     granted_by UUID REFERENCES users(id),
@@ -172,7 +196,7 @@ CREATE INDEX idx_audit_logs_metadata_gin ON audit_logs USING GIN (metadata);
 
 -- Token tables (email verification + password reset)
 CREATE TABLE email_verification_tokens (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     token_hash BYTEA NOT NULL,
     expires_at TIMESTAMPTZ NOT NULL,
@@ -185,7 +209,7 @@ CREATE INDEX idx_email_verification_tokens_user ON email_verification_tokens (us
 CREATE INDEX idx_email_verification_tokens_expiry ON email_verification_tokens (expires_at);
 
 CREATE TABLE password_reset_tokens (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     token_hash BYTEA NOT NULL,
     expires_at TIMESTAMPTZ NOT NULL,

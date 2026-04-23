@@ -32,6 +32,7 @@ pub trait GuestRepo: Send + Sync {
 
 #[async_trait]
 pub trait SessionRepo: Send + Sync {
+    async fn get_by_id(&self, id: SessionId) -> Result<Option<Session>, AppError>;
     async fn get_by_token_hash(&self, hash: &[u8; 32]) -> Result<Option<Session>, AppError>;
     async fn insert(&mut self, session: &Session) -> Result<(), AppError>;
     async fn update(&mut self, session: &Session) -> Result<(), AppError>;
