@@ -9,6 +9,7 @@ aegis-app.workspace = true
 aegis-types.workspace = true
 aegis-core.workspace = true
 aegis-config.workspace = true
+async-trait.workspace = true
 axum.workspace = true
 serde.workspace = true
 serde_json.workspace = true

@@ -86,6 +86,7 @@ dependencies = [
  "aegis-config",
  "aegis-core",
  "aegis-types",
+ "async-trait",
  "axum",
  "serde",
  "serde_json",
@@ -138,9 +139,18 @@ dependencies = [
 name = "aegisd"
 version = "0.1.0"
 dependencies = [
+ "aegis-app",
  "aegis-config",
+ "aegis-db",
+ "aegis-http",
+ "aegis-infra",
  "axum",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "time",
  "tokio",
+ "tower-http",
  "tracing",
  "tracing-subscriber",
 ]

@@ -24,6 +24,7 @@ pub use ref_or::{RefOr, ResolveLeaf};
 pub use redis::*;
 pub use root::{Config, ConfigSrc};
 pub use schema::generate_schema;
+pub use session::*;
 
 #[cfg(test)]
 mod tests;

@@ -6,13 +6,13 @@ use crate::state::AppState;
 
 fn auth_routes<R, C, H, T, W, K, I>() -> Router<AppState<R, C, H, T, W, K, I>>
 where
-    R: aegis_app::Repos + Clone + 'static,
-    C: aegis_app::Cache + Clone + 'static,
-    H: aegis_app::Hasher + Clone + 'static,
-    T: aegis_app::TokenGenerator + Clone + 'static,
-    W: aegis_app::WebhookDispatcher + Clone + 'static,
-    K: aegis_app::Clock + Clone + 'static,
-    I: aegis_app::IdGenerator + Clone + 'static,
+    R: aegis_app::Repos + 'static,
+    C: aegis_app::Cache + 'static,
+    H: aegis_app::Hasher + 'static,
+    T: aegis_app::TokenGenerator + 'static,
+    W: aegis_app::WebhookDispatcher + 'static,
+    K: aegis_app::Clock + 'static,
+    I: aegis_app::IdGenerator + 'static,
 {
     Router::new()
         .route("/signup", post(handlers::signup))
@@ -26,13 +26,13 @@ where
 
 fn guest_routes<R, C, H, T, W, K, I>() -> Router<AppState<R, C, H, T, W, K, I>>
 where
-    R: aegis_app::Repos + Clone + 'static,
-    C: aegis_app::Cache + Clone + 'static,
-    H: aegis_app::Hasher + Clone + 'static,
-    T: aegis_app::TokenGenerator + Clone + 'static,
-    W: aegis_app::WebhookDispatcher + Clone + 'static,
-    K: aegis_app::Clock + Clone + 'static,
-    I: aegis_app::IdGenerator + Clone + 'static,
+    R: aegis_app::Repos + 'static,
+    C: aegis_app::Cache + 'static,
+    H: aegis_app::Hasher + 'static,
+    T: aegis_app::TokenGenerator + 'static,
+    W: aegis_app::WebhookDispatcher + 'static,
+    K: aegis_app::Clock + 'static,
+    I: aegis_app::IdGenerator + 'static,
 {
     Router::new()
         .route("/", post(handlers::create_guest))
@@ -42,13 +42,13 @@ where
 
 fn email_routes<R, C, H, T, W, K, I>() -> Router<AppState<R, C, H, T, W, K, I>>
 where
-    R: aegis_app::Repos + Clone + 'static,
-    C: aegis_app::Cache + Clone + 'static,
-    H: aegis_app::Hasher + Clone + 'static,
-    T: aegis_app::TokenGenerator + Clone + 'static,
-    W: aegis_app::WebhookDispatcher + Clone + 'static,
-    K: aegis_app::Clock + Clone + 'static,
-    I: aegis_app::IdGenerator + Clone + 'static,
+    R: aegis_app::Repos + 'static,
+    C: aegis_app::Cache + 'static,
+    H: aegis_app::Hasher + 'static,
+    T: aegis_app::TokenGenerator + 'static,
+    W: aegis_app::WebhookDispatcher + 'static,
+    K: aegis_app::Clock + 'static,
+    I: aegis_app::IdGenerator + 'static,
 {
     Router::new()
         .route("/verify", post(handlers::verify_email))
@@ -57,13 +57,13 @@ where
 
 fn password_routes<R, C, H, T, W, K, I>() -> Router<AppState<R, C, H, T, W, K, I>>
 where
-    R: aegis_app::Repos + Clone + 'static,
-    C: aegis_app::Cache + Clone + 'static,
-    H: aegis_app::Hasher + Clone + 'static,
-    T: aegis_app::TokenGenerator + Clone + 'static,
-    W: aegis_app::WebhookDispatcher + Clone + 'static,
-    K: aegis_app::Clock + Clone + 'static,
-    I: aegis_app::IdGenerator + Clone + 'static,
+    R: aegis_app::Repos + 'static,
+    C: aegis_app::Cache + 'static,
+    H: aegis_app::Hasher + 'static,
+    T: aegis_app::TokenGenerator + 'static,
+    W: aegis_app::WebhookDispatcher + 'static,
+    K: aegis_app::Clock + 'static,
+    I: aegis_app::IdGenerator + 'static,
 {
     Router::new()
         .route("/forgot", post(handlers::forgot_password))
@@ -71,28 +71,47 @@ where
         .route("/change", post(handlers::change_password))
 }
 
+fn internal_routes<R, C, H, T, W, K, I>() -> Router<AppState<R, C, H, T, W, K, I>>
+where
+    R: aegis_app::Repos + 'static,
+    C: aegis_app::Cache + 'static,
+    H: aegis_app::Hasher + 'static,
+    T: aegis_app::TokenGenerator + 'static,
+    W: aegis_app::WebhookDispatcher + 'static,
+    K: aegis_app::Clock + 'static,
+    I: aegis_app::IdGenerator + 'static,
+{
+    Router::new()
+        .route("/health", get(handlers::health))
+        .route("/session/validate", post(handlers::validate_session))
+        .route("/user/lookup", post(handlers::lookup_user))
+        .route("/user/lookup-by-email", post(handlers::lookup_user_by_email))
+}
+
 pub fn v1_router<R, C, H, T, W, K, I>() -> Router<AppState<R, C, H, T, W, K, I>>
 where
-    R: aegis_app::Repos + Clone + 'static,
-    C: aegis_app::Cache + Clone + 'static,
-    H: aegis_app::Hasher + Clone + 'static,
-    T: aegis_app::TokenGenerator + Clone + 'static,
-    W: aegis_app::WebhookDispatcher + Clone + 'static,
-    K: aegis_app::Clock + Clone + 'static,
-    I: aegis_app::IdGenerator + Clone + 'static,
+    R: aegis_app::Repos + 'static,
+    C: aegis_app::Cache + 'static,
+    H: aegis_app::Hasher + 'static,
+    T: aegis_app::TokenGenerator + 'static,
+    W: aegis_app::WebhookDispatcher + 'static,
+    K: aegis_app::Clock + 'static,
+    I: aegis_app::IdGenerator + 'static,
 {
-    Router::new().nest("/auth", auth_routes::<R, C, H, T, W, K, I>())
+    Router::new()
+        .nest("/auth", auth_routes::<R, C, H, T, W, K, I>())
+        .nest("/internal", internal_routes::<R, C, H, T, W, K, I>())
 }
 
 pub fn app_router<R, C, H, T, W, K, I>() -> Router<AppState<R, C, H, T, W, K, I>>
 where
-    R: aegis_app::Repos + Clone + 'static,
-    C: aegis_app::Cache + Clone + 'static,
-    H: aegis_app::Hasher + Clone + 'static,
-    T: aegis_app::TokenGenerator + Clone + 'static,
-    W: aegis_app::WebhookDispatcher + Clone + 'static,
-    K: aegis_app::Clock + Clone + 'static,
-    I: aegis_app::IdGenerator + Clone + 'static,
+    R: aegis_app::Repos + 'static,
+    C: aegis_app::Cache + 'static,
+    H: aegis_app::Hasher + 'static,
+    T: aegis_app::TokenGenerator + 'static,
+    W: aegis_app::WebhookDispatcher + 'static,
+    K: aegis_app::Clock + 'static,
+    I: aegis_app::IdGenerator + 'static,
 {
     Router::new().nest("/v1", v1_router::<R, C, H, T, W, K, I>())
 }

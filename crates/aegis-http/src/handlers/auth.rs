@@ -4,7 +4,7 @@ use axum::Json;
 use aegis_app::{LoginCommand, RequestContext, SignupCommand};
 use aegis_types::{ApiResponse, LoginRequest, SignupRequest};
 
-use crate::auth;
+use crate::auth::{OptionalAuth, RequiredAuth};
 use crate::context;
 use crate::cookies;
 use crate::error::HttpError;
@@ -13,6 +13,7 @@ use crate::state::AppState;
 
 pub async fn signup<R, C, H, T, W, K, I>(
     State(state): State<AppState<R, C, H, T, W, K, I>>,
+    auth: OptionalAuth<R, C, H, T, W, K, I>,
     headers: HeaderMap,
     Json(body): Json<SignupRequest>,
 ) -> Result<(HeaderMap, Json<ApiResponse<serde_json::Value>>), HttpError>
@@ -25,7 +26,7 @@ where
     K: aegis_app::Clock,
     I: aegis_app::IdGenerator,
 {
-    let existing_auth = auth::extract_optional_auth(&state, &headers).await;
+    let existing_auth = auth.identity;
 
     let request_id = context::extract_or_generate_request_id(&headers);
     let ctx = RequestContext {
@@ -51,6 +52,7 @@ where
     }
     cookies::set_session_cookie(
         &mut response_headers,
+        &state.config.session.as_ref().expect("session config is required").cookie,
         &result.session_token,
         state.app.policy().auth.session_max_age,
     );
@@ -103,6 +105,7 @@ where
         aegis_app::LoginOutcome::Authenticated(result) => {
             cookies::set_session_cookie(
                 &mut response_headers,
+                &state.config.session.as_ref().expect("session config is required").cookie,
                 &result.session_token,
                 state.app.policy().auth.session_max_age,
             );
@@ -110,6 +113,7 @@ where
         aegis_app::LoginOutcome::RequiresMfa { session_token, .. } => {
             cookies::set_session_cookie(
                 &mut response_headers,
+                &state.config.session.as_ref().expect("session config is required").cookie,
                 session_token,
                 state.app.policy().auth.session_max_age,
             );
@@ -132,6 +136,7 @@ where
 
 pub async fn logout<R, C, H, T, W, K, I>(
     State(state): State<AppState<R, C, H, T, W, K, I>>,
+    auth: RequiredAuth<R, C, H, T, W, K, I>,
     headers: HeaderMap,
 ) -> Result<(HeaderMap, Json<ApiResponse<serde_json::Value>>), HttpError>
 where
@@ -143,7 +148,7 @@ where
     K: aegis_app::Clock,
     I: aegis_app::IdGenerator,
 {
-    let identity = auth::extract_required_auth(&state, &headers).await?;
+    let identity = auth.identity;
 
     let request_id = context::extract_or_generate_request_id(&headers);
     let ctx = RequestContext {
@@ -159,7 +164,10 @@ where
     state.app.logout(cmd, &ctx).await?;
 
     let mut response_headers = HeaderMap::new();
-    cookies::clear_session_cookie(&mut response_headers);
+    cookies::clear_session_cookie(
+        &mut response_headers,
+        &state.config.session.as_ref().expect("session config is required").cookie,
+    );
 
     let meta = aegis_types::ResponseMeta::new(request_id.to_string());
     Ok((
@@ -174,6 +182,7 @@ where
 
 pub async fn me<R, C, H, T, W, K, I>(
     State(state): State<AppState<R, C, H, T, W, K, I>>,
+    auth: RequiredAuth<R, C, H, T, W, K, I>,
     headers: HeaderMap,
 ) -> Result<Json<ApiResponse<serde_json::Value>>, HttpError>
 where
@@ -185,7 +194,7 @@ where
     K: aegis_app::Clock,
     I: aegis_app::IdGenerator,
 {
-    let identity = auth::extract_required_auth(&state, &headers).await?;
+    let identity = auth.identity;
 
     let request_id = context::extract_or_generate_request_id(&headers);
 
@@ -211,6 +220,7 @@ where
 
 pub async fn update_profile<R, C, H, T, W, K, I>(
     State(state): State<AppState<R, C, H, T, W, K, I>>,
+    auth: RequiredAuth<R, C, H, T, W, K, I>,
     headers: HeaderMap,
     Json(body): Json<aegis_types::UpdateProfileRequest>,
 ) -> Result<Json<ApiResponse<serde_json::Value>>, HttpError>
@@ -223,7 +233,7 @@ where
     K: aegis_app::Clock,
     I: aegis_app::IdGenerator,
 {
-    let identity = auth::extract_required_auth(&state, &headers).await?;
+    let identity = auth.identity;
     let user_id = identity.user_id().map_err(HttpError::from)?;
 
     let request_id = context::extract_or_generate_request_id(&headers);

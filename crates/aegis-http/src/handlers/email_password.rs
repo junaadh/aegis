@@ -7,7 +7,7 @@ use aegis_app::{
 };
 use aegis_types::{ApiResponse, ForgotPasswordRequest, PasswordChangeRequest, ResetPasswordRequest, VerifyEmailRequest};
 
-use crate::auth;
+use crate::auth::RequiredAuth;
 use crate::context;
 use crate::cookies;
 use crate::error::HttpError;
@@ -117,7 +117,10 @@ where
     state.app.reset_password(cmd).await?;
 
     let mut response_headers = HeaderMap::new();
-    cookies::clear_session_cookie(&mut response_headers);
+    cookies::clear_session_cookie(
+        &mut response_headers,
+        &state.config.session.as_ref().expect("session config is required").cookie,
+    );
 
     let meta = aegis_types::ResponseMeta::new(request_id.to_string());
     Ok((
@@ -132,6 +135,7 @@ where
 
 pub async fn change_password<R, C, H, T, W, K, I>(
     State(state): State<AppState<R, C, H, T, W, K, I>>,
+    auth: RequiredAuth<R, C, H, T, W, K, I>,
     headers: HeaderMap,
     Json(body): Json<PasswordChangeRequest>,
 ) -> Result<(HeaderMap, Json<ApiResponse<serde_json::Value>>), HttpError>
@@ -144,7 +148,7 @@ where
     K: aegis_app::Clock,
     I: aegis_app::IdGenerator,
 {
-    let identity = auth::extract_required_auth(&state, &headers).await?;
+    let identity = auth.identity;
     let user_id = identity.user_id().map_err(HttpError::from)?;
 
     let request_id = context::extract_or_generate_request_id(&headers);
@@ -161,7 +165,10 @@ where
     state.app.change_password(user_id, cmd, &ctx).await?;
 
     let mut response_headers = HeaderMap::new();
-    cookies::clear_session_cookie(&mut response_headers);
+    cookies::clear_session_cookie(
+        &mut response_headers,
+        &state.config.session.as_ref().expect("session config is required").cookie,
+    );
 
     let meta = aegis_types::ResponseMeta::new(request_id.to_string());
     Ok((

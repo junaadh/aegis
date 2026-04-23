@@ -4,7 +4,7 @@ use axum::Json;
 use aegis_app::{CreateGuestCommand, GuestConvertCommand, GuestEmailCommand, RequestContext};
 use aegis_types::{ApiResponse, GuestConvertRequest, GuestCreateRequest, GuestEmailRequest};
 
-use crate::auth;
+use crate::auth::{OptionalAuth, RequiredAuth};
 use crate::context;
 use crate::cookies;
 use crate::error::HttpError;
@@ -13,6 +13,7 @@ use crate::state::AppState;
 
 pub async fn create_guest<R, C, H, T, W, K, I>(
     State(state): State<AppState<R, C, H, T, W, K, I>>,
+    auth: OptionalAuth<R, C, H, T, W, K, I>,
     headers: HeaderMap,
     _body: Json<GuestCreateRequest>,
 ) -> Result<(HeaderMap, Json<ApiResponse<serde_json::Value>>), HttpError>
@@ -25,7 +26,7 @@ where
     K: aegis_app::Clock,
     I: aegis_app::IdGenerator,
 {
-    let existing_auth = auth::extract_optional_auth(&state, &headers).await;
+    let existing_auth = auth.identity;
 
     let request_id = context::extract_or_generate_request_id(&headers);
     let ctx = RequestContext {
@@ -45,6 +46,7 @@ where
     }
     cookies::set_session_cookie(
         &mut response_headers,
+        &state.config.session.as_ref().expect("session config is required").cookie,
         &result.session_token,
         state.app.policy().compliance.guest_ttl,
     );
@@ -65,6 +67,7 @@ where
 
 pub async fn associate_guest_email<R, C, H, T, W, K, I>(
     State(state): State<AppState<R, C, H, T, W, K, I>>,
+    auth: RequiredAuth<R, C, H, T, W, K, I>,
     headers: HeaderMap,
     Json(body): Json<GuestEmailRequest>,
 ) -> Result<Json<ApiResponse<serde_json::Value>>, HttpError>
@@ -77,7 +80,7 @@ where
     K: aegis_app::Clock,
     I: aegis_app::IdGenerator,
 {
-    let identity = auth::extract_required_auth(&state, &headers).await?;
+    let identity = auth.identity;
     let guest_id = identity.guest_id().map_err(HttpError::from)?;
 
     let request_id = context::extract_or_generate_request_id(&headers);
@@ -100,6 +103,7 @@ where
 
 pub async fn convert_guest<R, C, H, T, W, K, I>(
     State(state): State<AppState<R, C, H, T, W, K, I>>,
+    auth: RequiredAuth<R, C, H, T, W, K, I>,
     headers: HeaderMap,
     Json(body): Json<GuestConvertRequest>,
 ) -> Result<(HeaderMap, Json<ApiResponse<serde_json::Value>>), HttpError>
@@ -112,7 +116,7 @@ where
     K: aegis_app::Clock,
     I: aegis_app::IdGenerator,
 {
-    let identity = auth::extract_required_auth(&state, &headers).await?;
+    let identity = auth.identity;
     let guest_id = identity.guest_id().map_err(HttpError::from)?;
 
     let request_id = context::extract_or_generate_request_id(&headers);
@@ -133,6 +137,7 @@ where
     let mut response_headers = HeaderMap::new();
     cookies::set_session_cookie(
         &mut response_headers,
+        &state.config.session.as_ref().expect("session config is required").cookie,
         &result.session_token,
         state.app.policy().auth.session_max_age,
     );

@@ -1,11 +1,11 @@
-use aegis_app::{
-    AppError, Cache, Clock, GuestRepo, Hasher, IdGenerator, Repos, SessionRepo, TokenGenerator,
-    UserRepo, WebhookDispatcher,
-};
-use aegis_core::{Identity, SessionIdentity};
-use axum::http::HeaderMap;
+use std::marker::PhantomData;
 
-use crate::context;
+use aegis_app::{Cache, Clock, GuestRepo, Hasher, IdGenerator, Repos, SessionRepo, TokenGenerator, UserRepo, WebhookDispatcher};
+use aegis_core::{Identity, SessionIdentity, UserStatus};
+use axum::extract::FromRequestParts;
+use axum::http::request::Parts;
+
+use crate::error::HttpError;
 use crate::state::AppState;
 
 #[derive(Debug, Clone)]
@@ -14,43 +14,79 @@ pub struct AuthIdentity {
     pub session_token_hash: [u8; 32],
 }
 
-pub async fn extract_required_auth<R, C, H, T, W, K, I>(
-    state: &AppState<R, C, H, T, W, K, I>,
-    headers: &HeaderMap,
-) -> Result<AuthIdentity, AppError>
-where
-    R: Repos,
-    C: Cache,
-    H: Hasher,
-    T: TokenGenerator,
-    W: WebhookDispatcher,
-    K: Clock,
-    I: IdGenerator,
-{
-    let token = context::extract_token(headers).ok_or(AppError::Unauthorized)?;
-    resolve_auth_inner(state, &token)
-        .await
-        .ok_or(AppError::Unauthorized)
+#[derive(Debug, Clone, Default)]
+pub struct AuthContext(pub Option<AuthIdentity>);
+
+pub struct OptionalAuth<R, C, H, T, W, K, I> {
+    pub identity: Option<AuthIdentity>,
+    _marker: PhantomData<(R, C, H, T, W, K, I)>,
 }
 
-pub async fn extract_optional_auth<R, C, H, T, W, K, I>(
-    state: &AppState<R, C, H, T, W, K, I>,
-    headers: &HeaderMap,
-) -> Option<AuthIdentity>
-where
-    R: Repos,
-    C: Cache,
-    H: Hasher,
-    T: TokenGenerator,
-    W: WebhookDispatcher,
-    K: Clock,
-    I: IdGenerator,
-{
-    let token = context::extract_token(headers)?;
-    resolve_auth_inner(state, &token).await
+pub struct RequiredAuth<R, C, H, T, W, K, I> {
+    pub identity: AuthIdentity,
+    _marker: PhantomData<(R, C, H, T, W, K, I)>,
 }
 
-async fn resolve_auth_inner<R, C, H, T, W, K, I>(
+impl<R, C, H, T, W, K, I> OptionalAuth<R, C, H, T, W, K, I> {
+    fn new(identity: Option<AuthIdentity>) -> Self {
+        Self {
+            identity,
+            _marker: PhantomData,
+        }
+    }
+}
+
+impl<R, C, H, T, W, K, I> RequiredAuth<R, C, H, T, W, K, I> {
+    fn new(identity: AuthIdentity) -> Self {
+        Self {
+            identity,
+            _marker: PhantomData,
+        }
+    }
+}
+
+impl<S, R, C, H, T, W, K, I> FromRequestParts<S> for OptionalAuth<R, C, H, T, W, K, I>
+where
+    S: Send + Sync,
+{
+    type Rejection = HttpError;
+
+    fn from_request_parts(
+        parts: &mut Parts,
+        _state: &S,
+    ) -> impl std::future::Future<Output = Result<Self, Self::Rejection>> + Send {
+        let identity = parts
+            .extensions
+            .get::<AuthContext>()
+            .and_then(|ctx| ctx.0.clone());
+
+        async move { Ok(Self::new(identity)) }
+    }
+}
+
+impl<S, R, C, H, T, W, K, I> FromRequestParts<S> for RequiredAuth<R, C, H, T, W, K, I>
+where
+    S: Send + Sync,
+{
+    type Rejection = HttpError;
+
+    fn from_request_parts(
+        parts: &mut Parts,
+        _state: &S,
+    ) -> impl std::future::Future<Output = Result<Self, Self::Rejection>> + Send {
+        let identity = parts
+            .extensions
+            .get::<AuthContext>()
+            .and_then(|ctx| ctx.0.clone());
+
+        async move {
+            let identity = identity.ok_or_else(|| HttpError(aegis_app::AppError::Unauthorized))?;
+            Ok(Self::new(identity))
+        }
+    }
+}
+
+pub async fn resolve_auth_identity<R, C, H, T, W, K, I>(
     state: &AppState<R, C, H, T, W, K, I>,
     token: &str,
 ) -> Option<AuthIdentity>
@@ -65,12 +101,7 @@ where
 {
     let deps = state.app.deps();
     let hash = deps.tokens.hash_token(token).await;
-    let session = deps
-        .repos
-        .sessions()
-        .get_by_token_hash(&hash)
-        .await
-        .ok()??;
+    let session = deps.repos.sessions().get_by_token_hash(&hash).await.ok()??;
 
     let now = deps.clock.now();
     if session.is_expired_at(now) {
@@ -81,8 +112,7 @@ where
         SessionIdentity::User(id) => {
             let user = deps.repos.users().get_by_id(id).await.ok()??;
             match user.status {
-                aegis_core::UserStatus::Active
-                | aegis_core::UserStatus::PendingVerification => {
+                UserStatus::Active | UserStatus::PendingVerification => {
                     Identity::User(aegis_core::UserIdentity {
                         id: user.id,
                         status: user.status,
@@ -113,17 +143,17 @@ where
 }
 
 impl AuthIdentity {
-    pub fn user_id(&self) -> Result<aegis_core::UserId, AppError> {
+    pub fn user_id(&self) -> Result<aegis_core::UserId, aegis_app::AppError> {
         match &self.inner {
-            Identity::User(u) => Ok(u.id),
-            Identity::Guest(_) => Err(AppError::Forbidden),
+            Identity::User(user) => Ok(user.id),
+            Identity::Guest(_) => Err(aegis_app::AppError::Forbidden),
         }
     }
 
-    pub fn guest_id(&self) -> Result<aegis_core::GuestId, AppError> {
+    pub fn guest_id(&self) -> Result<aegis_core::GuestId, aegis_app::AppError> {
         match &self.inner {
-            Identity::Guest(g) => Ok(g.id),
-            Identity::User(_) => Err(AppError::Forbidden),
+            Identity::Guest(guest) => Ok(guest.id),
+            Identity::User(_) => Err(aegis_app::AppError::Forbidden),
         }
     }
 }
