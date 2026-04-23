@@ -82,10 +82,10 @@ verification_token_ttl_hours = 24
 password_reset_token_ttl_minutes = 60
 
 [email.smtp]
-host = "localhost"
-port = 1025
-username = ""
-password = ""
+host = "env:AEGIS_EMAIL_SMTP_HOST"
+port = "env:AEGIS_EMAIL_SMTP_PORT"
+username = "env:AEGIS_EMAIL_SMTP_USERNAME"
+password = "env:AEGIS_EMAIL_SMTP_PASSWORD"
 starttls = false
 timeout_seconds = 30
 

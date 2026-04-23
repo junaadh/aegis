@@ -11,10 +11,10 @@ CREATE TABLE users (
     metadata JSONB DEFAULT '{}'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    deleted_at TIMESTAMPTZ,
-
-    CONSTRAINT email_unique_case_insensitive UNIQUE (LOWER(email))
+    deleted_at TIMESTAMPTZ
 );
+
+CREATE UNIQUE INDEX idx_users_email_unique ON users (LOWER(email));
 
 CREATE INDEX idx_users_status_active ON users (status) WHERE status = 'active';
 CREATE INDEX idx_users_deleted_at ON users (deleted_at) WHERE deleted_at IS NOT NULL;
@@ -55,10 +55,10 @@ CREATE TABLE sessions (
 
 CREATE INDEX idx_sessions_token_hash ON sessions (token_hash);
 CREATE INDEX idx_sessions_user_active ON sessions (user_id, expires_at)
-    WHERE expires_at > NOW() AND user_id IS NOT NULL;
+    WHERE user_id IS NOT NULL;
 CREATE INDEX idx_sessions_guest_active ON sessions (guest_id, expires_at)
-    WHERE expires_at > NOW() AND guest_id IS NOT NULL;
-CREATE INDEX idx_sessions_cleanup ON sessions (expires_at) WHERE expires_at < NOW();
+    WHERE guest_id IS NOT NULL;
+CREATE INDEX idx_sessions_expires_at ON sessions (expires_at);
 
 -- Credential tables
 CREATE TABLE password_credentials (
@@ -182,7 +182,7 @@ CREATE TABLE email_verification_tokens (
 );
 
 CREATE INDEX idx_email_verification_tokens_user ON email_verification_tokens (user_id);
-CREATE INDEX idx_email_verification_tokens_expiry ON email_verification_tokens (expires_at) WHERE expires_at < NOW();
+CREATE INDEX idx_email_verification_tokens_expiry ON email_verification_tokens (expires_at);
 
 CREATE TABLE password_reset_tokens (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -195,4 +195,4 @@ CREATE TABLE password_reset_tokens (
 );
 
 CREATE INDEX idx_password_reset_tokens_user ON password_reset_tokens (user_id);
-CREATE INDEX idx_password_reset_tokens_expiry ON password_reset_tokens (expires_at) WHERE expires_at < NOW();
+CREATE INDEX idx_password_reset_tokens_expiry ON password_reset_tokens (expires_at);

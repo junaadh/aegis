@@ -42,6 +42,7 @@ dependencies = [
 name = "aegis-config"
 version = "0.1.0"
 dependencies = [
+ "dotenvy",
  "schemars",
  "serde",
  "serde_json",
@@ -62,12 +63,18 @@ dependencies = [
 name = "aegis-db"
 version = "0.1.0"
 dependencies = [
+ "aegis-app",
  "aegis-core",
+ "aegis-migrate",
+ "async-trait",
+ "dotenvy",
  "serde",
  "serde_json",
  "sqlx",
  "thiserror",
  "time",
+ "tokio",
+ "tracing",
  "uuid",
 ]
 
@@ -94,8 +101,6 @@ name = "aegis-migrate"
 version = "0.1.0"
 dependencies = [
  "sqlx",
- "thiserror",
- "tracing",
 ]
 
 [[package]]

@@ -187,9 +187,9 @@ fn run_migrate(
             let runner = aegis_migrate::MigrationRunner::new(pool, "migrations");
             let status = runner.status().await?;
 
-            for (migration, applied) in &status {
+            for (desc, applied) in &status {
                 let marker = if *applied { "applied" } else { "pending" };
-                println!("  [{marker}] {} — {}", migration.version, migration.name);
+                println!("  [{marker}] {desc}");
             }
 
             Ok(())

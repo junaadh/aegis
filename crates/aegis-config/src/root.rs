@@ -159,6 +159,7 @@ const DEFAULT_HEADER: &[&str] = &[
 
 impl Config {
     pub fn load(path: Option<&Path>) -> Result<Self, ConfigError> {
+        let _ = dotenvy::dotenv();
         let resolved = path.unwrap_or(Path::new(DEFAULT_FILENAME));
         Self::from_file(resolved)
     }
