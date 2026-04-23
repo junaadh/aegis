@@ -16,10 +16,12 @@ mod session;
 mod webhooks;
 
 pub use dump::{dump, dump_env_resolved, DumpMode, DumpOptions, DumpTarget};
+pub use credentials::*;
 pub use email::*;
 pub use enums::*;
 pub use error::ConfigError;
 pub use ref_or::{RefOr, ResolveLeaf};
+pub use redis::*;
 pub use root::{Config, ConfigSrc};
 pub use schema::generate_schema;
 

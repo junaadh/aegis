@@ -6,6 +6,7 @@ members = [
   "crates/aegis-types",
   "crates/aegis-config",
   "crates/aegis-db",
+  "crates/aegis-infra",
   "crates/aegis-migrate",
   "crates/aegis-app",
   "crates/aegis-http",
@@ -39,6 +40,11 @@ axum = { version = "0.8", features = ["macros"] }
 tower-http = { version = "0.6", features = ["cors", "trace"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 dotenvy = "0.15"
+argon2 = "0.5"
+base64 = "0.22"
+sha2 = "0.10"
+rand = "0.8"
+lettre = { version = "0.11", default-features = false, features = ["builder", "smtp-transport", "tokio1-rustls-tls"] }
 
 aegis-core = { path = "crates/aegis-core" }
 aegis-types = { path = "crates/aegis-types" }
@@ -48,3 +54,4 @@ aegis-cache = { path = "crates/aegis-cache" }
 aegis-app = { path = "crates/aegis-app" }
 aegis-http = { path = "crates/aegis-http" }
 aegis-migrate = { path = "crates/aegis-migrate" }
+aegis-infra = { path = "crates/aegis-infra" }
