@@ -1,13 +1,13 @@
-use axum::extract::State;
-use axum::http::HeaderMap;
-use axum::Json;
 use aegis_app::RequestContext;
 use aegis_types::ApiResponse;
+use axum::Json;
+use axum::extract::State;
+use axum::http::HeaderMap;
 
 use crate::auth::RequiredAuth;
 use crate::context;
 use crate::cookies;
-use crate::error::HttpError;
+use crate::error::{ApiJson, HttpError};
 use crate::mapping;
 use crate::state::AppState;
 
@@ -30,7 +30,9 @@ mod base64_bytes {
     use base64::Engine;
     use serde::{self, Deserialize, Deserializer};
 
-    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<u8>, D::Error> {
+    pub fn deserialize<'de, D: Deserializer<'de>>(
+        d: D,
+    ) -> Result<Vec<u8>, D::Error> {
         let s = String::deserialize(d)?;
         base64::engine::general_purpose::STANDARD
             .decode(&s)
@@ -69,7 +71,7 @@ pub async fn passkey_register_finish<R, C, H, T, W, K, I, A>(
     State(state): State<AppState<R, C, H, T, W, K, I, A>>,
     auth: RequiredAuth<R, C, H, T, W, K, I, A>,
     headers: HeaderMap,
-    Json(body): Json<PasskeyRegisterFinishRequest>,
+    ApiJson(body): ApiJson<PasskeyRegisterFinishRequest>,
 ) -> Result<Json<ApiResponse<serde_json::Value>>, HttpError>
 where
     R: aegis_app::Repos,
@@ -131,7 +133,7 @@ where
 pub async fn passkey_login_finish<R, C, H, T, W, K, I, A>(
     State(state): State<AppState<R, C, H, T, W, K, I, A>>,
     headers: HeaderMap,
-    Json(body): Json<PasskeyLoginFinishRequest>,
+    ApiJson(body): ApiJson<PasskeyLoginFinishRequest>,
 ) -> Result<(HeaderMap, Json<ApiResponse<serde_json::Value>>), HttpError>
 where
     R: aegis_app::Repos,
@@ -150,8 +152,11 @@ where
         request_id: Some(request_id),
     };
 
-    let user_id = uuid::Uuid::parse_str(&body.user_id)
-        .map_err(|_| HttpError(aegis_app::AppError::Validation("invalid user_id".to_owned())))?;
+    let user_id = uuid::Uuid::parse_str(&body.user_id).map_err(|_| {
+        HttpError::from(aegis_app::AppError::Validation(
+            "invalid user_id".to_owned(),
+        ))
+    })?;
     let user_id = aegis_core::UserId::from_uuid(user_id);
 
     let result = state
@@ -162,7 +167,12 @@ where
     let mut response_headers = HeaderMap::new();
     cookies::set_session_cookie(
         &mut response_headers,
-        &state.config.session.as_ref().expect("session config is required").cookie,
+        &state
+            .config
+            .session
+            .as_ref()
+            .expect("session config is required")
+            .cookie,
         &result.session_token,
         state.app.policy().auth.session_max_age,
     );

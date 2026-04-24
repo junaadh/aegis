@@ -1,11 +1,16 @@
-use aegis_core::{Actor, AuditTarget, Metadata, NewAuditEntry, PendingTokenPurpose};
+use aegis_core::{
+    Actor, AuditTarget, Metadata, NewAuditEntry, PendingTokenPurpose,
+};
 
 use crate::app::AegisApp;
 use crate::dto::{ResendVerificationCommand, VerifyEmailCommand};
 use crate::error::AppError;
 use crate::jobs::JobPayload;
-use crate::ports::{AuditRepo, Cache, Clock, Hasher, IdGenerator, OutboxRepo, PendingTokenRepo,
-    Repos, TokenGenerator, TransactionRepos, UserRepo, WebAuthn, WebhookDispatcher};
+use crate::ports::{
+    AuditRepo, Cache, Clock, Hasher, IdGenerator, OutboxRepo, PendingTokenRepo,
+    Repos, TokenGenerator, TransactionRepos, UserRepo, WebAuthn,
+    WebhookDispatcher,
+};
 
 impl<R, C, H, T, W, K, I, A> AegisApp<R, C, H, T, W, K, I, A>
 where
@@ -18,7 +23,10 @@ where
     I: IdGenerator,
     A: WebAuthn,
 {
-    pub async fn verify_email(&self, cmd: VerifyEmailCommand) -> Result<(), AppError> {
+    pub async fn verify_email(
+        &self,
+        cmd: VerifyEmailCommand,
+    ) -> Result<(), AppError> {
         let token_hash = self.deps.tokens.hash_token(&cmd.token).await;
 
         let pending = self
@@ -138,39 +146,37 @@ where
 
         self.deps
             .repos
-            .with_transaction(|mut tx| {
-                async move {
-                    let result = async {
-                        tx.tokens().insert(&pending).await?;
+            .with_transaction(|mut tx| async move {
+                let result = async {
+                    tx.tokens().insert(&pending).await?;
 
-                        let job = JobPayload::SendVerificationEmail {
-                            user_id: user_id.as_uuid(),
-                            email,
-                            token: raw_token,
-                        };
-                        tx.outbox().enqueue(&job).await?;
+                    let job = JobPayload::SendVerificationEmail {
+                        user_id: user_id.as_uuid(),
+                        email,
+                        token: raw_token,
+                    };
+                    tx.outbox().enqueue(&job).await?;
 
-                        let audit = NewAuditEntry {
-                            event_type: "user.resend_verification".to_owned(),
-                            actor: Actor::User(user_id),
-                            target: Some(AuditTarget {
-                                target_type: "user".to_owned(),
-                                target_id: Some(user_id.as_uuid()),
-                            }),
-                            ip_address: None,
-                            user_agent: None,
-                            request_id: None,
-                            metadata: Metadata::empty(),
-                            created_at: now,
-                        };
-                        tx.audit().insert(&audit).await?;
+                    let audit = NewAuditEntry {
+                        event_type: "user.resend_verification".to_owned(),
+                        actor: Actor::User(user_id),
+                        target: Some(AuditTarget {
+                            target_type: "user".to_owned(),
+                            target_id: Some(user_id.as_uuid()),
+                        }),
+                        ip_address: None,
+                        user_agent: None,
+                        request_id: None,
+                        metadata: Metadata::empty(),
+                        created_at: now,
+                    };
+                    tx.audit().insert(&audit).await?;
 
-                        Ok::<_, AppError>(())
-                    }
-                    .await;
-
-                    (tx, result)
+                    Ok::<_, AppError>(())
                 }
+                .await;
+
+                (tx, result)
             })
             .await
     }

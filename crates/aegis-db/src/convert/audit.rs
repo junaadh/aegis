@@ -1,6 +1,8 @@
 use std::str::FromStr;
 
-use aegis_core::{GuestId, UserId, Actor, ActorType, AuditEntry, AuditTarget, Metadata};
+use aegis_core::{
+    Actor, ActorType, AuditEntry, AuditTarget, GuestId, Metadata, UserId,
+};
 
 use crate::error::ConversionError;
 use crate::row::AuditLogRow;
@@ -9,20 +11,20 @@ impl TryFrom<AuditLogRow> for AuditEntry {
     type Error = ConversionError;
 
     fn try_from(row: AuditLogRow) -> Result<Self, Self::Error> {
-        let actor_type = ActorType::from_str(&row.actor_type)
-            .map_err(|_| ConversionError::InvalidActorType(row.actor_type.clone()))?;
+        let actor_type =
+            ActorType::from_str(&row.actor_type).map_err(|_| {
+                ConversionError::InvalidActorType(row.actor_type.clone())
+            })?;
 
         let actor = match actor_type {
-            ActorType::User => Actor::User(UserId::from_uuid(
-                row.actor_id.unwrap_or_default(),
-            )),
+            ActorType::User => {
+                Actor::User(UserId::from_uuid(row.actor_id.unwrap_or_default()))
+            }
             ActorType::Guest => Actor::Guest(GuestId::from_uuid(
                 row.actor_id.unwrap_or_default(),
             )),
             ActorType::Service => Actor::Service(
-                row.actor_id
-                    .map(|id| id.to_string())
-                    .unwrap_or_default(),
+                row.actor_id.map(|id| id.to_string()).unwrap_or_default(),
             ),
             ActorType::System => Actor::System,
         };
@@ -32,7 +34,9 @@ impl TryFrom<AuditLogRow> for AuditEntry {
             target_id: row.target_id,
         });
 
-        let metadata = Metadata::new(serde_json::to_string(&row.metadata).unwrap_or_default());
+        let metadata = Metadata::new(
+            serde_json::to_string(&row.metadata).unwrap_or_default(),
+        );
 
         Ok(Self {
             id: row.id,

@@ -1,10 +1,14 @@
-use aegis_core::{Actor, AuditTarget, Metadata, NewAuditEntry, SessionIdentity};
+use aegis_core::{
+    Actor, AuditTarget, Metadata, NewAuditEntry, SessionIdentity,
+};
 
 use crate::app::AegisApp;
 use crate::dto::{LogoutCommand, RequestContext};
 use crate::error::AppError;
-use crate::ports::{AuditRepo, Cache, Clock, Hasher, IdGenerator, Repos, SessionRepo,
-    TokenGenerator, TransactionRepos, WebAuthn, WebhookDispatcher};
+use crate::ports::{
+    AuditRepo, Cache, Clock, Hasher, IdGenerator, Repos, SessionRepo,
+    TokenGenerator, TransactionRepos, WebAuthn, WebhookDispatcher,
+};
 
 impl<R, C, H, T, W, K, I, A> AegisApp<R, C, H, T, W, K, I, A>
 where

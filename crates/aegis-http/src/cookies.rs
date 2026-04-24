@@ -1,6 +1,6 @@
+use aegis_config::{CookieConfig, SameSite};
 use axum::http::header::SET_COOKIE;
 use axum::http::{HeaderMap, HeaderValue};
-use aegis_config::{CookieConfig, SameSite};
 use time::Duration;
 
 pub fn set_session_cookie(

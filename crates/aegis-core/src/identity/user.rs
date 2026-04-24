@@ -42,7 +42,11 @@ pub struct UserBuilder {
 }
 
 impl UserBuilder {
-    pub fn new(id: UserId, email: EmailAddress, display_name: DisplayName) -> Self {
+    pub fn new(
+        id: UserId,
+        email: EmailAddress,
+        display_name: DisplayName,
+    ) -> Self {
         let now = OffsetDateTime::now_utc();
         Self {
             id,
@@ -424,9 +428,15 @@ impl fmt::Display for UserError {
             Self::DeletedUserCannotTransition => {
                 f.write_str("deleted user cannot transition state")
             }
-            Self::UserNotDeleted => f.write_str("user must be deleted before anonymization"),
-            Self::AlreadyAnonymized => f.write_str("user is already anonymized"),
-            Self::AnonymizeEmailFailed(e) => write!(f, "email anonymization failed: {e}"),
+            Self::UserNotDeleted => {
+                f.write_str("user must be deleted before anonymization")
+            }
+            Self::AlreadyAnonymized => {
+                f.write_str("user is already anonymized")
+            }
+            Self::AnonymizeEmailFailed(e) => {
+                write!(f, "email anonymization failed: {e}")
+            }
             Self::AnonymizeDisplayNameFailed(e) => {
                 write!(f, "display name anonymization failed: {e}")
             }

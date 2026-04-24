@@ -1,12 +1,14 @@
 use time::OffsetDateTime;
 use uuid::Uuid;
 
-use aegis_core::{Actor, PendingTokenPurpose, RecoveryCodeState, TotpAlgorithm};
 use crate::error::ConversionError;
 use crate::row::{
     AuditLogRow, EmailVerificationTokenRow, GuestRow, PasswordCredentialRow,
-    PasswordResetTokenRow, RecoveryCodeRow, SessionRow, TotpCredentialRow, UserRoleAssignmentRow,
-    UserRow,
+    PasswordResetTokenRow, RecoveryCodeRow, SessionRow, TotpCredentialRow,
+    UserRoleAssignmentRow, UserRow,
+};
+use aegis_core::{
+    Actor, PendingTokenPurpose, RecoveryCodeState, TotpAlgorithm,
 };
 
 fn uuid(i: u8) -> Uuid {
@@ -172,7 +174,10 @@ fn session_row_user_identity() {
     };
 
     let session: aegis_core::Session = row.try_into().unwrap();
-    assert_eq!(session.user_id(), Some(aegis_core::UserId::from_uuid(uuid(1))));
+    assert_eq!(
+        session.user_id(),
+        Some(aegis_core::UserId::from_uuid(uuid(1)))
+    );
     assert!(session.guest_id().is_none());
     assert!(!session.mfa_verified);
 }
@@ -195,7 +200,10 @@ fn session_row_guest_identity() {
 
     let session: aegis_core::Session = row.try_into().unwrap();
     assert!(session.user_id().is_none());
-    assert_eq!(session.guest_id(), Some(aegis_core::GuestId::from_uuid(uuid(10))));
+    assert_eq!(
+        session.guest_id(),
+        Some(aegis_core::GuestId::from_uuid(uuid(10)))
+    );
 }
 
 #[test]
@@ -215,7 +223,10 @@ fn session_row_missing_identity_fails() {
     };
 
     let result: Result<aegis_core::Session, ConversionError> = row.try_into();
-    assert!(matches!(result.unwrap_err(), ConversionError::SessionMissingIdentity));
+    assert!(matches!(
+        result.unwrap_err(),
+        ConversionError::SessionMissingIdentity
+    ));
 }
 
 #[test]
@@ -235,7 +246,10 @@ fn session_row_both_identities_fails() {
     };
 
     let result: Result<aegis_core::Session, ConversionError> = row.try_into();
-    assert!(matches!(result.unwrap_err(), ConversionError::SessionMissingIdentity));
+    assert!(matches!(
+        result.unwrap_err(),
+        ConversionError::SessionMissingIdentity
+    ));
 }
 
 #[test]
@@ -256,7 +270,10 @@ fn session_row_invalid_token_hash_length() {
     let result: Result<aegis_core::Session, ConversionError> = row.try_into();
     assert!(matches!(
         result.unwrap_err(),
-        ConversionError::InvalidTokenHashLength { expected: 32, actual: 16 }
+        ConversionError::InvalidTokenHashLength {
+            expected: 32,
+            actual: 16
+        }
     ));
 }
 
@@ -317,8 +334,12 @@ fn totp_credential_row_invalid_algorithm() {
         updated_at: now(),
     };
 
-    let result: Result<aegis_core::TotpCredential, ConversionError> = row.try_into();
-    assert!(matches!(result.unwrap_err(), ConversionError::InvalidTotpAlgorithm(_)));
+    let result: Result<aegis_core::TotpCredential, ConversionError> =
+        row.try_into();
+    assert!(matches!(
+        result.unwrap_err(),
+        ConversionError::InvalidTotpAlgorithm(_)
+    ));
 }
 
 #[test]
@@ -389,10 +410,14 @@ fn token_row_invalid_hash_length() {
         created_at: now(),
     };
 
-    let result: Result<aegis_core::PendingToken, ConversionError> = row.try_into();
+    let result: Result<aegis_core::PendingToken, ConversionError> =
+        row.try_into();
     assert!(matches!(
         result.unwrap_err(),
-        ConversionError::InvalidTokenHashLength { expected: 32, actual: 16 }
+        ConversionError::InvalidTokenHashLength {
+            expected: 32,
+            actual: 16
+        }
     ));
 }
 
@@ -476,8 +501,12 @@ fn audit_log_row_invalid_actor_type() {
         created_at: now(),
     };
 
-    let result: Result<aegis_core::AuditEntry, ConversionError> = row.try_into();
-    assert!(matches!(result.unwrap_err(), ConversionError::InvalidActorType(_)));
+    let result: Result<aegis_core::AuditEntry, ConversionError> =
+        row.try_into();
+    assert!(matches!(
+        result.unwrap_err(),
+        ConversionError::InvalidActorType(_)
+    ));
 }
 
 #[test]

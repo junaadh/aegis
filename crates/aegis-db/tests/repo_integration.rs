@@ -1,15 +1,16 @@
 use std::{env, path::PathBuf, sync::OnceLock};
 
 use aegis_app::{
-    AppError, AuditRepo, CredentialRepo, GuestRepo, OutboxRepo, PendingTokenRepo, Repos,
-    RoleRepo, SessionRepo, TransactionRepos, UserRepo,
+    AppError, AuditRepo, CredentialRepo, GuestRepo, OutboxRepo,
+    PendingTokenRepo, Repos, RoleRepo, SessionRepo, TransactionRepos, UserRepo,
 };
 use aegis_core::{
-    Actor, AuditTarget, DisplayName, EmailAddress, Guest, GuestId, Metadata, NewAuditEntry,
-    PasskeyCredential, PasskeyCredentialId, PasswordCredential, PasswordCredentialId,
-    PendingToken, PendingTokenPurpose, RecoveryCode, RecoveryCodeId, RecoveryCodeState,
-    Session, SessionId, SessionIdentity, TotpAlgorithm, TotpCredential, TotpCredentialId,
-    User, UserId, UserStatus, ALL_VALID_PERMISSIONS,
+    ALL_VALID_PERMISSIONS, Actor, AuditTarget, DisplayName, EmailAddress,
+    Guest, GuestId, Metadata, NewAuditEntry, PasskeyCredential,
+    PasskeyCredentialId, PasswordCredential, PasswordCredentialId,
+    PendingToken, PendingTokenPurpose, RecoveryCode, RecoveryCodeId,
+    RecoveryCodeState, Session, SessionId, SessionIdentity, TotpAlgorithm,
+    TotpCredential, TotpCredentialId, User, UserId, UserStatus,
 };
 use aegis_db::repo::PgRepos;
 use aegis_migrate::MigrationRunner;
@@ -29,7 +30,8 @@ fn migrations_dir() -> PathBuf {
 
 async fn test_pool() -> PgPool {
     dotenvy::dotenv().ok();
-    let url = env::var("AEGIS_DATABASE_URL").expect("AEGIS_DATABASE_URL must be set");
+    let url =
+        env::var("AEGIS_DATABASE_URL").expect("AEGIS_DATABASE_URL must be set");
     let pool = PgPool::connect(&url).await.expect("connect postgres");
     MigrationRunner::new(pool.clone(), migrations_dir())
         .up()
@@ -99,33 +101,49 @@ async fn user_repo_roundtrip_and_transaction_rollback() {
     let user = make_user("user@example.com");
     let user_for_insert = user.clone();
 
-    repos.with_transaction(|mut tx| async move {
-        let result = async {
-            tx.users().insert(&user_for_insert).await?;
-            Ok(())
-        }
-        .await;
-        (tx, result)
-    })
-    .await
-    .unwrap();
+    repos
+        .with_transaction(|mut tx| async move {
+            let result = async {
+                tx.users().insert(&user_for_insert).await?;
+                Ok(())
+            }
+            .await;
+            (tx, result)
+        })
+        .await
+        .unwrap();
 
-    let fetched = repos.users().get_by_email("USER@example.com").await.unwrap().unwrap();
+    let fetched = repos
+        .users()
+        .get_by_email("USER@example.com")
+        .await
+        .unwrap()
+        .unwrap();
     assert_eq!(fetched.email.as_str(), "user@example.com");
-    assert!(repos.users().email_exists("user@example.com").await.unwrap());
+    assert!(
+        repos
+            .users()
+            .email_exists("user@example.com")
+            .await
+            .unwrap()
+    );
 
     let mut updated = fetched.clone();
-    updated.change_display_name_at(DisplayName::parse("Alice Updated").unwrap(), OffsetDateTime::now_utc());
-    repos.with_transaction(|mut tx| async move {
-        let result = async {
-            tx.users().update(&updated).await?;
-            Ok(())
-        }
-        .await;
-        (tx, result)
-    })
-    .await
-    .unwrap();
+    updated.change_display_name_at(
+        DisplayName::parse("Alice Updated").unwrap(),
+        OffsetDateTime::now_utc(),
+    );
+    repos
+        .with_transaction(|mut tx| async move {
+            let result = async {
+                tx.users().update(&updated).await?;
+                Ok(())
+            }
+            .await;
+            (tx, result)
+        })
+        .await
+        .unwrap();
 
     let fetched = repos.users().get_by_id(user.id).await.unwrap().unwrap();
     assert_eq!(fetched.display_name.as_str(), "Alice Updated");
@@ -153,7 +171,14 @@ async fn user_repo_roundtrip_and_transaction_rollback() {
         .await
         .unwrap_err();
     assert!(matches!(rollback_err, AppError::Validation(_)));
-    assert!(repos.users().get_by_email("rollback@example.com").await.unwrap().is_none());
+    assert!(
+        repos
+            .users()
+            .get_by_email("rollback@example.com")
+            .await
+            .unwrap()
+            .is_none()
+    );
 }
 
 #[tokio::test]
@@ -166,16 +191,17 @@ async fn guest_repo_roundtrip() {
     let guest = make_guest();
     let guest_for_insert = guest.clone();
 
-    repos.with_transaction(|mut tx| async move {
-        let result = async {
-            tx.guests().insert(&guest_for_insert).await?;
-            Ok(())
-        }
-        .await;
-        (tx, result)
-    })
-    .await
-    .unwrap();
+    repos
+        .with_transaction(|mut tx| async move {
+            let result = async {
+                tx.guests().insert(&guest_for_insert).await?;
+                Ok(())
+            }
+            .await;
+            (tx, result)
+        })
+        .await
+        .unwrap();
 
     let fetched = repos.guests().get_by_id(guest.id).await.unwrap().unwrap();
     assert_eq!(fetched.email.unwrap().as_str(), "guest@example.com");
@@ -193,33 +219,47 @@ async fn session_repo_roundtrip_and_delete() {
     let user_for_insert = user.clone();
     let session_for_insert = session.clone();
 
-    repos.with_transaction(|mut tx| async move {
-        let result = async {
-            tx.users().insert(&user_for_insert).await?;
-            tx.sessions().insert(&session_for_insert).await?;
-            Ok(())
-        }
-        .await;
-        (tx, result)
-    })
-    .await
-    .unwrap();
+    repos
+        .with_transaction(|mut tx| async move {
+            let result = async {
+                tx.users().insert(&user_for_insert).await?;
+                tx.sessions().insert(&session_for_insert).await?;
+                Ok(())
+            }
+            .await;
+            (tx, result)
+        })
+        .await
+        .unwrap();
 
-    let fetched = repos.sessions().get_by_token_hash(&session.token_hash).await.unwrap().unwrap();
+    let fetched = repos
+        .sessions()
+        .get_by_token_hash(&session.token_hash)
+        .await
+        .unwrap()
+        .unwrap();
     assert_eq!(fetched.id.as_uuid(), session.id.as_uuid());
 
-    repos.with_transaction(|mut tx| async move {
-        let result = async {
-            tx.sessions().delete_by_user_id(user.id).await?;
-            Ok(())
-        }
-        .await;
-        (tx, result)
-    })
-    .await
-    .unwrap();
+    repos
+        .with_transaction(|mut tx| async move {
+            let result = async {
+                tx.sessions().delete_by_user_id(user.id).await?;
+                Ok(())
+            }
+            .await;
+            (tx, result)
+        })
+        .await
+        .unwrap();
 
-    assert!(repos.sessions().get_by_token_hash(&session.token_hash).await.unwrap().is_none());
+    assert!(
+        repos
+            .sessions()
+            .get_by_token_hash(&session.token_hash)
+            .await
+            .unwrap()
+            .is_none()
+    );
 }
 
 #[tokio::test]
@@ -280,45 +320,101 @@ async fn credential_repo_roundtrip() {
     let passkey_for_insert = passkey.clone();
     let recovery_code_for_insert = recovery_code.clone();
 
-    repos.with_transaction(|mut tx| async move {
-        let result = async {
-            tx.users().insert(&user_for_insert).await?;
-            tx.credentials().insert_password(&password_for_insert).await?;
-            tx.credentials().insert_totp(&totp_for_insert).await?;
-            tx.credentials().insert_passkey(&passkey_for_insert).await?;
-            tx.credentials()
-                .insert_recovery_codes(std::slice::from_ref(&recovery_code_for_insert))
-                .await?;
-            Ok(())
-        }
-        .await;
-        (tx, result)
-    })
-    .await
-    .unwrap();
+    repos
+        .with_transaction(|mut tx| async move {
+            let result = async {
+                tx.users().insert(&user_for_insert).await?;
+                tx.credentials()
+                    .insert_password(&password_for_insert)
+                    .await?;
+                tx.credentials().insert_totp(&totp_for_insert).await?;
+                tx.credentials().insert_passkey(&passkey_for_insert).await?;
+                tx.credentials()
+                    .insert_recovery_codes(std::slice::from_ref(
+                        &recovery_code_for_insert,
+                    ))
+                    .await?;
+                Ok(())
+            }
+            .await;
+            (tx, result)
+        })
+        .await
+        .unwrap();
 
-    assert!(repos.credentials().get_password_by_user_id(user_id).await.unwrap().is_some());
-    assert!(repos.credentials().get_totp_by_user_id(user_id).await.unwrap().is_some());
-    assert!(repos.credentials().get_passkey_by_credential_id("cred-1").await.unwrap().is_some());
-    assert!(repos.credentials().get_recovery_code_by_hash("recovery-hash").await.unwrap().is_some());
-    assert_eq!(repos.credentials().list_by_user_id(user_id).await.unwrap().len(), 3);
+    assert!(
+        repos
+            .credentials()
+            .get_password_by_user_id(user_id)
+            .await
+            .unwrap()
+            .is_some()
+    );
+    assert!(
+        repos
+            .credentials()
+            .get_totp_by_user_id(user_id)
+            .await
+            .unwrap()
+            .is_some()
+    );
+    assert!(
+        repos
+            .credentials()
+            .get_passkey_by_credential_id("cred-1")
+            .await
+            .unwrap()
+            .is_some()
+    );
+    assert!(
+        repos
+            .credentials()
+            .get_recovery_code_by_hash("recovery-hash")
+            .await
+            .unwrap()
+            .is_some()
+    );
+    assert_eq!(
+        repos
+            .credentials()
+            .list_by_user_id(user_id)
+            .await
+            .unwrap()
+            .len(),
+        3
+    );
 
-    repos.with_transaction(|mut tx| async move {
-        let result = async {
-            tx.credentials().delete_by_id(passkey.id.as_uuid()).await?;
-            tx.credentials()
-                .delete_recovery_codes_by_user_id(user.id)
-                .await?;
-            Ok(())
-        }
-        .await;
-        (tx, result)
-    })
-    .await
-    .unwrap();
+    repos
+        .with_transaction(|mut tx| async move {
+            let result = async {
+                tx.credentials().delete_by_id(passkey.id.as_uuid()).await?;
+                tx.credentials()
+                    .delete_recovery_codes_by_user_id(user.id)
+                    .await?;
+                Ok(())
+            }
+            .await;
+            (tx, result)
+        })
+        .await
+        .unwrap();
 
-    assert!(repos.credentials().get_passkey_by_credential_id("cred-1").await.unwrap().is_none());
-    assert!(repos.credentials().get_recovery_code_by_hash("recovery-hash").await.unwrap().is_none());
+    assert!(
+        repos
+            .credentials()
+            .get_passkey_by_credential_id("cred-1")
+            .await
+            .unwrap()
+            .is_none()
+    );
+    assert!(
+        repos
+            .credentials()
+            .get_recovery_code_by_hash("recovery-hash")
+            .await
+            .unwrap()
+            .is_none()
+    );
 }
 
 #[tokio::test]
@@ -334,16 +430,17 @@ async fn role_repo_reads_assignments() {
     let role_id = Uuid::now_v7();
     let permission = ALL_VALID_PERMISSIONS[0].to_string();
 
-    repos.with_transaction(|mut tx| async move {
-        let result = async {
-            tx.users().insert(&user_for_insert).await?;
-            Ok(())
-        }
-        .await;
-        (tx, result)
-    })
-    .await
-    .unwrap();
+    repos
+        .with_transaction(|mut tx| async move {
+            let result = async {
+                tx.users().insert(&user_for_insert).await?;
+                Ok(())
+            }
+            .await;
+            (tx, result)
+        })
+        .await
+        .unwrap();
 
     sqlx::query(
         "INSERT INTO roles (id, name, description, permissions, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6)",
@@ -370,7 +467,11 @@ async fn role_repo_reads_assignments() {
     .unwrap();
 
     let roles = repos.roles().get_roles_by_user_id(user_id).await.unwrap();
-    let assignments = repos.roles().get_assignments_by_user_id(user_id).await.unwrap();
+    let assignments = repos
+        .roles()
+        .get_assignments_by_user_id(user_id)
+        .await
+        .unwrap();
     assert_eq!(roles.len(), 1);
     assert_eq!(assignments.len(), 1);
 }
@@ -393,32 +494,48 @@ async fn pending_token_repo_roundtrip() {
     let user_for_insert = user.clone();
     let token_for_insert = token.clone();
 
-    repos.with_transaction(|mut tx| async move {
-        let result = async {
-            tx.users().insert(&user_for_insert).await?;
-            tx.tokens().insert(&token_for_insert).await?;
-            Ok(())
-        }
-        .await;
-        (tx, result)
-    })
-    .await
-    .unwrap();
+    repos
+        .with_transaction(|mut tx| async move {
+            let result = async {
+                tx.users().insert(&user_for_insert).await?;
+                tx.tokens().insert(&token_for_insert).await?;
+                Ok(())
+            }
+            .await;
+            (tx, result)
+        })
+        .await
+        .unwrap();
 
-    assert!(repos.tokens().get_by_hash(&token.token_hash, token.purpose).await.unwrap().is_some());
+    assert!(
+        repos
+            .tokens()
+            .get_by_hash(&token.token_hash, token.purpose)
+            .await
+            .unwrap()
+            .is_some()
+    );
 
-    repos.with_transaction(|mut tx| async move {
-        let result = async {
-            tx.tokens().delete_by_hash(&token.token_hash).await?;
-            Ok(())
-        }
-        .await;
-        (tx, result)
-    })
-    .await
-    .unwrap();
+    repos
+        .with_transaction(|mut tx| async move {
+            let result = async {
+                tx.tokens().delete_by_hash(&token.token_hash).await?;
+                Ok(())
+            }
+            .await;
+            (tx, result)
+        })
+        .await
+        .unwrap();
 
-    assert!(repos.tokens().get_by_hash(&token.token_hash, token.purpose).await.unwrap().is_none());
+    assert!(
+        repos
+            .tokens()
+            .get_by_hash(&token.token_hash, token.purpose)
+            .await
+            .unwrap()
+            .is_none()
+    );
 }
 
 #[tokio::test]
@@ -431,43 +548,45 @@ async fn audit_and_outbox_repos_roundtrip() {
     let user = make_user("audit-user@example.com");
     let user_for_insert = user.clone();
 
-    repos.with_transaction(|mut tx| async move {
-        let result = async {
-            tx.users().insert(&user_for_insert).await?;
-            tx.audit()
-                .insert(&NewAuditEntry {
-                    event_type: "user.login.success".into(),
-                    actor: Actor::User(user.id),
-                    target: Some(AuditTarget {
-                        target_type: "user".into(),
-                        target_id: Some(user.id.as_uuid()),
-                    }),
-                    ip_address: Some("127.0.0.1".into()),
-                    user_agent: Some("integration-test".into()),
-                    request_id: Some(Uuid::now_v7()),
-                    metadata: Metadata::new(r#"{"ok":true}"#),
-                    created_at: OffsetDateTime::now_utc(),
-                })
-                .await?;
-            tx.outbox()
-                .enqueue(&aegis_app::JobPayload::SendVerificationEmail {
-                    user_id: user.id.as_uuid(),
-                    email: user.email.as_str().into(),
-                    token: "verify-token".into(),
-                })
-                .await?;
-            Ok(())
-        }
-        .await;
-        (tx, result)
-    })
-    .await
-    .unwrap();
-
-    let audit_count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM audit_logs")
-        .fetch_one(&pool)
+    repos
+        .with_transaction(|mut tx| async move {
+            let result = async {
+                tx.users().insert(&user_for_insert).await?;
+                tx.audit()
+                    .insert(&NewAuditEntry {
+                        event_type: "user.login.success".into(),
+                        actor: Actor::User(user.id),
+                        target: Some(AuditTarget {
+                            target_type: "user".into(),
+                            target_id: Some(user.id.as_uuid()),
+                        }),
+                        ip_address: Some("127.0.0.1".into()),
+                        user_agent: Some("integration-test".into()),
+                        request_id: Some(Uuid::now_v7()),
+                        metadata: Metadata::new(r#"{"ok":true}"#),
+                        created_at: OffsetDateTime::now_utc(),
+                    })
+                    .await?;
+                tx.outbox()
+                    .enqueue(&aegis_app::JobPayload::SendVerificationEmail {
+                        user_id: user.id.as_uuid(),
+                        email: user.email.as_str().into(),
+                        token: "verify-token".into(),
+                    })
+                    .await?;
+                Ok(())
+            }
+            .await;
+            (tx, result)
+        })
         .await
         .unwrap();
+
+    let audit_count: i64 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM audit_logs")
+            .fetch_one(&pool)
+            .await
+            .unwrap();
     assert_eq!(audit_count, 1);
 
     let claimed = repos
@@ -484,10 +603,11 @@ async fn audit_and_outbox_repos_roundtrip() {
         .unwrap();
     assert_eq!(claimed.len(), 1);
 
-    let status: String = sqlx::query_scalar("SELECT status FROM outbox WHERE id = $1")
-        .bind(claimed[0].id)
-        .fetch_one(&pool)
-        .await
-        .unwrap();
+    let status: String =
+        sqlx::query_scalar("SELECT status FROM outbox WHERE id = $1")
+            .bind(claimed[0].id)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
     assert_eq!(status, "completed");
 }

@@ -1,6 +1,6 @@
 use aegis_core::{
-    GuestId, PasskeyCredentialId, PasswordCredentialId, RecoveryCodeId, RoleId, SessionId,
-    TotpCredentialId, UserId, WebhookId,
+    GuestId, PasskeyCredentialId, PasswordCredentialId, RecoveryCodeId, RoleId,
+    SessionId, TotpCredentialId, UserId, WebhookId,
 };
 
 pub trait IdGenerator: Send + Sync {

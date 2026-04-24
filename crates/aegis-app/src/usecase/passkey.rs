@@ -1,13 +1,15 @@
 use aegis_core::{
-    Actor, AuditTarget, Metadata, NewAuditEntry, PasskeyCredential, SessionIdentity,
+    Actor, AuditTarget, Metadata, NewAuditEntry, PasskeyCredential,
+    SessionIdentity,
 };
 
 use crate::app::AegisApp;
 use crate::dto::{AuthResult, RequestContext};
 use crate::error::AppError;
 use crate::ports::{
-    AuditRepo, Cache, Clock, CredentialRepo, Hasher, IdGenerator, Repos, SessionRepo,
-    TokenGenerator, TransactionRepos, UserRepo, WebAuthn, WebhookDispatcher,
+    AuditRepo, Cache, Clock, CredentialRepo, Hasher, IdGenerator, Repos,
+    SessionRepo, TokenGenerator, TransactionRepos, UserRepo, WebAuthn,
+    WebhookDispatcher,
 };
 
 impl<R, C, H, T, W, K, I, A> AegisApp<R, C, H, T, W, K, I, A>
@@ -57,7 +59,9 @@ where
             .await?;
 
         let cache_key = format!("pk:reg:{}", user_id);
-        let ttl = time::Duration::seconds(self.policy().passkeys.timeout_seconds as i64);
+        let ttl = time::Duration::seconds(
+            self.policy().passkeys.timeout_seconds as i64,
+        );
         self.deps.cache.set(&cache_key, result.state, ttl).await?;
 
         Ok(result.public_key)
@@ -113,7 +117,8 @@ where
 
                         tx.audit()
                             .insert(&NewAuditEntry {
-                                event_type: "user.passkey.registered".to_owned(),
+                                event_type: "user.passkey.registered"
+                                    .to_owned(),
                                 actor: Actor::User(user_id),
                                 target: Some(AuditTarget {
                                     target_type: "credential".to_owned(),
@@ -152,7 +157,10 @@ where
             .await?;
 
         let mut passkey_data = Vec::new();
-        for c in credentials.iter().filter(|c| c.kind == aegis_core::CredentialKind::Passkey) {
+        for c in credentials
+            .iter()
+            .filter(|c| c.kind == aegis_core::CredentialKind::Passkey)
+        {
             let pk = self
                 .deps
                 .repos
@@ -175,7 +183,9 @@ where
             .await?;
 
         let cache_key = format!("pk:auth:{}", user_id);
-        let ttl = time::Duration::seconds(self.policy().passkeys.timeout_seconds as i64);
+        let ttl = time::Duration::seconds(
+            self.policy().passkeys.timeout_seconds as i64,
+        );
         self.deps.cache.set(&cache_key, result.state, ttl).await?;
 
         Ok(result.public_key)
@@ -204,8 +214,9 @@ where
             .ok_or(AppError::NotFound("user"))?;
 
         match user.status {
-            aegis_core::UserStatus::Deleted | aegis_core::UserStatus::Disabled => {
-                return Err(AppError::Unauthorized)
+            aegis_core::UserStatus::Deleted
+            | aegis_core::UserStatus::Disabled => {
+                return Err(AppError::Unauthorized);
             }
             aegis_core::UserStatus::PendingVerification => {
                 if !self.policy().auth.allow_unverified_login {

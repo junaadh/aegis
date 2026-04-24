@@ -1,10 +1,14 @@
-use crate::enums::{HashingAlgorithm, ResidentKey, TotpAlgorithm, UserVerification};
+use crate::enums::{
+    HashingAlgorithm, ResidentKey, TotpAlgorithm, UserVerification,
+};
 use crate::error::ConfigError;
 use crate::ref_or::RefOr;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema, Default)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema, Default,
+)]
 #[serde(deny_unknown_fields)]
 pub struct CredentialsConfig {
     #[serde(default)]
@@ -15,10 +19,15 @@ pub struct CredentialsConfig {
     pub mfa: MfaConfig,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema, Default)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema, Default,
+)]
 #[serde(deny_unknown_fields)]
 pub struct PasswordConfig {
-    #[schemars(title = "Hashing algorithm", description = "Password hashing algorithm.")]
+    #[schemars(
+        title = "Hashing algorithm",
+        description = "Password hashing algorithm."
+    )]
     #[serde(default)]
     pub hashing_algorithm: HashingAlgorithm,
 
@@ -32,15 +41,24 @@ pub struct PasswordConfig {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Argon2Config {
-    #[schemars(title = "Time cost", description = "Argon2 time cost parameter.")]
+    #[schemars(
+        title = "Time cost",
+        description = "Argon2 time cost parameter."
+    )]
     #[serde(default = "default_argon2_time")]
     pub time_cost: u32,
 
-    #[schemars(title = "Memory cost", description = "Argon2 memory cost in KiB.")]
+    #[schemars(
+        title = "Memory cost",
+        description = "Argon2 memory cost in KiB."
+    )]
     #[serde(default = "default_argon2_memory")]
     pub memory_cost: u32,
 
-    #[schemars(title = "Parallelism", description = "Argon2 parallelism parameter.")]
+    #[schemars(
+        title = "Parallelism",
+        description = "Argon2 parallelism parameter."
+    )]
     #[serde(default = "default_argon2_parallelism")]
     pub parallelism: u32,
 }
@@ -48,27 +66,45 @@ pub struct Argon2Config {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct PasswordPolicyConfig {
-    #[schemars(title = "Minimum length", description = "Minimum password length.")]
+    #[schemars(
+        title = "Minimum length",
+        description = "Minimum password length."
+    )]
     #[serde(default = "default_min_length")]
     pub min_length: usize,
 
-    #[schemars(title = "Require uppercase", description = "Require at least one uppercase letter.")]
+    #[schemars(
+        title = "Require uppercase",
+        description = "Require at least one uppercase letter."
+    )]
     #[serde(default = "default_true")]
     pub require_uppercase: bool,
 
-    #[schemars(title = "Require lowercase", description = "Require at least one lowercase letter.")]
+    #[schemars(
+        title = "Require lowercase",
+        description = "Require at least one lowercase letter."
+    )]
     #[serde(default = "default_true")]
     pub require_lowercase: bool,
 
-    #[schemars(title = "Require digit", description = "Require at least one digit.")]
+    #[schemars(
+        title = "Require digit",
+        description = "Require at least one digit."
+    )]
     #[serde(default = "default_true")]
     pub require_digit: bool,
 
-    #[schemars(title = "Require symbol", description = "Require at least one symbol.")]
+    #[schemars(
+        title = "Require symbol",
+        description = "Require at least one symbol."
+    )]
     #[serde(default = "default_true")]
     pub require_symbol: bool,
 
-    #[schemars(title = "Disallow common", description = "Disallow commonly used passwords.")]
+    #[schemars(
+        title = "Disallow common",
+        description = "Disallow commonly used passwords."
+    )]
     #[serde(default = "default_true")]
     pub disallow_common: bool,
 }
@@ -76,32 +112,52 @@ pub struct PasswordPolicyConfig {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct PasskeysConfig {
-    #[schemars(title = "Relying party ID", description = "WebAuthn relying party identifier.")]
+    #[schemars(
+        title = "Relying party ID",
+        description = "WebAuthn relying party identifier."
+    )]
     #[serde(default)]
     pub rp_id: String,
 
-    #[schemars(title = "Relying party name", description = "Human-readable relying party name.")]
+    #[schemars(
+        title = "Relying party name",
+        description = "Human-readable relying party name."
+    )]
     #[serde(default)]
     pub rp_name: String,
 
-    #[schemars(title = "Origins", description = "Allowed origins for WebAuthn.")]
+    #[schemars(
+        title = "Origins",
+        description = "Allowed origins for WebAuthn."
+    )]
     #[serde(default)]
     pub origins: Vec<String>,
 
-    #[schemars(title = "User verification", description = "WebAuthn user verification requirement.")]
+    #[schemars(
+        title = "User verification",
+        description = "WebAuthn user verification requirement."
+    )]
     #[serde(default)]
     pub user_verification: UserVerification,
 
-    #[schemars(title = "Resident key", description = "WebAuthn resident key requirement.")]
+    #[schemars(
+        title = "Resident key",
+        description = "WebAuthn resident key requirement."
+    )]
     #[serde(default)]
     pub resident_key: ResidentKey,
 
-    #[schemars(title = "Timeout", description = "WebAuthn ceremony timeout in seconds.")]
+    #[schemars(
+        title = "Timeout",
+        description = "WebAuthn ceremony timeout in seconds."
+    )]
     #[serde(default = "default_passkey_timeout")]
     pub timeout_seconds: u64,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema, Default)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema, Default,
+)]
 #[serde(deny_unknown_fields)]
 pub struct MfaConfig {
     #[serde(default)]
@@ -111,7 +167,10 @@ pub struct MfaConfig {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct TotpConfig {
-    #[schemars(title = "Issuer", description = "TOTP issuer name shown in authenticator apps.")]
+    #[schemars(
+        title = "Issuer",
+        description = "TOTP issuer name shown in authenticator apps."
+    )]
     #[serde(default)]
     pub issuer: String,
 
@@ -127,7 +186,10 @@ pub struct TotpConfig {
     #[serde(default)]
     pub algorithm: TotpAlgorithm,
 
-    #[schemars(title = "Skew", description = "Allowed TOTP time skew (periods before/after).")]
+    #[schemars(
+        title = "Skew",
+        description = "Allowed TOTP time skew (periods before/after)."
+    )]
     #[serde(default = "default_totp_skew")]
     pub skew: u32,
 
@@ -138,11 +200,17 @@ pub struct TotpConfig {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct RecoveryCodesConfig {
-    #[schemars(title = "Count", description = "Number of recovery codes to generate.")]
+    #[schemars(
+        title = "Count",
+        description = "Number of recovery codes to generate."
+    )]
     #[serde(default = "default_recovery_code_count")]
     pub count: u32,
 
-    #[schemars(title = "Code length", description = "Length of each recovery code.")]
+    #[schemars(
+        title = "Code length",
+        description = "Length of each recovery code."
+    )]
     #[serde(default = "default_recovery_code_length")]
     pub code_length: u32,
 }
@@ -169,12 +237,14 @@ impl CredentialsConfigSrc {
     }
 }
 
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 #[derive(Default)]
 pub struct PasswordConfigSrc {
-    #[schemars(title = "Hashing algorithm", description = "Password hashing algorithm.")]
+    #[schemars(
+        title = "Hashing algorithm",
+        description = "Password hashing algorithm."
+    )]
     #[serde(default)]
     pub hashing_algorithm: RefOr<HashingAlgorithm>,
 
@@ -195,19 +265,27 @@ impl PasswordConfigSrc {
     }
 }
 
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Argon2ConfigSrc {
-    #[schemars(title = "Time cost", description = "Argon2 time cost parameter.")]
+    #[schemars(
+        title = "Time cost",
+        description = "Argon2 time cost parameter."
+    )]
     #[serde(default = "default_argon2_time_or")]
     pub time_cost: RefOr<u32>,
 
-    #[schemars(title = "Memory cost", description = "Argon2 memory cost in KiB.")]
+    #[schemars(
+        title = "Memory cost",
+        description = "Argon2 memory cost in KiB."
+    )]
     #[serde(default = "default_argon2_memory_or")]
     pub memory_cost: RefOr<u32>,
 
-    #[schemars(title = "Parallelism", description = "Argon2 parallelism parameter.")]
+    #[schemars(
+        title = "Parallelism",
+        description = "Argon2 parallelism parameter."
+    )]
     #[serde(default = "default_argon2_parallelism_or")]
     pub parallelism: RefOr<u32>,
 }
@@ -235,27 +313,45 @@ impl Default for Argon2ConfigSrc {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct PasswordPolicyConfigSrc {
-    #[schemars(title = "Minimum length", description = "Minimum password length.")]
+    #[schemars(
+        title = "Minimum length",
+        description = "Minimum password length."
+    )]
     #[serde(default = "default_min_length_or")]
     pub min_length: RefOr<usize>,
 
-    #[schemars(title = "Require uppercase", description = "Require at least one uppercase letter.")]
+    #[schemars(
+        title = "Require uppercase",
+        description = "Require at least one uppercase letter."
+    )]
     #[serde(default = "default_true_or")]
     pub require_uppercase: RefOr<bool>,
 
-    #[schemars(title = "Require lowercase", description = "Require at least one lowercase letter.")]
+    #[schemars(
+        title = "Require lowercase",
+        description = "Require at least one lowercase letter."
+    )]
     #[serde(default = "default_true_or")]
     pub require_lowercase: RefOr<bool>,
 
-    #[schemars(title = "Require digit", description = "Require at least one digit.")]
+    #[schemars(
+        title = "Require digit",
+        description = "Require at least one digit."
+    )]
     #[serde(default = "default_true_or")]
     pub require_digit: RefOr<bool>,
 
-    #[schemars(title = "Require symbol", description = "Require at least one symbol.")]
+    #[schemars(
+        title = "Require symbol",
+        description = "Require at least one symbol."
+    )]
     #[serde(default = "default_true_or")]
     pub require_symbol: RefOr<bool>,
 
-    #[schemars(title = "Disallow common", description = "Disallow commonly used passwords.")]
+    #[schemars(
+        title = "Disallow common",
+        description = "Disallow commonly used passwords."
+    )]
     #[serde(default = "default_true_or")]
     pub disallow_common: RefOr<bool>,
 }
@@ -289,27 +385,45 @@ impl Default for PasswordPolicyConfigSrc {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct PasskeysConfigSrc {
-    #[schemars(title = "Relying party ID", description = "WebAuthn relying party identifier.")]
+    #[schemars(
+        title = "Relying party ID",
+        description = "WebAuthn relying party identifier."
+    )]
     #[serde(default)]
     pub rp_id: RefOr<String>,
 
-    #[schemars(title = "Relying party name", description = "Human-readable relying party name.")]
+    #[schemars(
+        title = "Relying party name",
+        description = "Human-readable relying party name."
+    )]
     #[serde(default)]
     pub rp_name: RefOr<String>,
 
-    #[schemars(title = "Origins", description = "Allowed origins for WebAuthn.")]
+    #[schemars(
+        title = "Origins",
+        description = "Allowed origins for WebAuthn."
+    )]
     #[serde(default)]
     pub origins: RefOr<Vec<String>>,
 
-    #[schemars(title = "User verification", description = "WebAuthn user verification requirement.")]
+    #[schemars(
+        title = "User verification",
+        description = "WebAuthn user verification requirement."
+    )]
     #[serde(default)]
     pub user_verification: RefOr<UserVerification>,
 
-    #[schemars(title = "Resident key", description = "WebAuthn resident key requirement.")]
+    #[schemars(
+        title = "Resident key",
+        description = "WebAuthn resident key requirement."
+    )]
     #[serde(default)]
     pub resident_key: RefOr<ResidentKey>,
 
-    #[schemars(title = "Timeout", description = "WebAuthn ceremony timeout in seconds.")]
+    #[schemars(
+        title = "Timeout",
+        description = "WebAuthn ceremony timeout in seconds."
+    )]
     #[serde(default = "default_passkey_timeout_or")]
     pub timeout_seconds: RefOr<u64>,
 }
@@ -356,11 +470,13 @@ impl MfaConfigSrc {
     }
 }
 
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct TotpConfigSrc {
-    #[schemars(title = "Issuer", description = "TOTP issuer name shown in authenticator apps.")]
+    #[schemars(
+        title = "Issuer",
+        description = "TOTP issuer name shown in authenticator apps."
+    )]
     #[serde(default)]
     pub issuer: RefOr<String>,
 
@@ -376,7 +492,10 @@ pub struct TotpConfigSrc {
     #[serde(default)]
     pub algorithm: RefOr<TotpAlgorithm>,
 
-    #[schemars(title = "Skew", description = "Allowed TOTP time skew (periods before/after).")]
+    #[schemars(
+        title = "Skew",
+        description = "Allowed TOTP time skew (periods before/after)."
+    )]
     #[serde(default = "default_totp_skew_or")]
     pub skew: RefOr<u32>,
 
@@ -392,7 +511,9 @@ impl TotpConfigSrc {
             digits: self.digits.resolve()?,
             algorithm: self.algorithm.resolve()?,
             skew: self.skew.resolve()?,
-            recovery_codes: self.recovery_codes.resolve_nested(|s| s.resolve())?,
+            recovery_codes: self
+                .recovery_codes
+                .resolve_nested(|s| s.resolve())?,
         })
     }
 }
@@ -413,11 +534,17 @@ impl Default for TotpConfigSrc {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct RecoveryCodesConfigSrc {
-    #[schemars(title = "Count", description = "Number of recovery codes to generate.")]
+    #[schemars(
+        title = "Count",
+        description = "Number of recovery codes to generate."
+    )]
     #[serde(default = "default_recovery_code_count_or")]
     pub count: RefOr<u32>,
 
-    #[schemars(title = "Code length", description = "Length of each recovery code.")]
+    #[schemars(
+        title = "Code length",
+        description = "Length of each recovery code."
+    )]
     #[serde(default = "default_recovery_code_length_or")]
     pub code_length: RefOr<u32>,
 }

@@ -7,7 +7,10 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ServerConfigSrc {
-    #[schemars(title = "Bind host", description = "IP address to bind the server to.")]
+    #[schemars(
+        title = "Bind host",
+        description = "IP address to bind the server to."
+    )]
     #[serde(default = "default_host_or")]
     pub host: RefOr<String>,
 
@@ -15,15 +18,24 @@ pub struct ServerConfigSrc {
     #[serde(default = "default_port_or")]
     pub port: RefOr<u16>,
 
-    #[schemars(title = "Public URL", description = "External URL for this server (used for redirects, CORS, etc.).")]
+    #[schemars(
+        title = "Public URL",
+        description = "External URL for this server (used for redirects, CORS, etc.)."
+    )]
     #[serde(default)]
     pub public_url: RefOr<Option<String>>,
 
-    #[schemars(title = "TLS certificate", description = "Path to TLS certificate file.")]
+    #[schemars(
+        title = "TLS certificate",
+        description = "Path to TLS certificate file."
+    )]
     #[serde(default)]
     pub tls_cert: RefOr<Option<String>>,
 
-    #[schemars(title = "TLS private key", description = "Path to TLS private key file.")]
+    #[schemars(
+        title = "TLS private key",
+        description = "Path to TLS private key file."
+    )]
     #[serde(default)]
     pub tls_key: RefOr<Option<String>>,
 
@@ -31,11 +43,17 @@ pub struct ServerConfigSrc {
     #[serde(default)]
     pub log_level: RefOr<LogLevel>,
 
-    #[schemars(title = "Log format", description = "Structured or plain log output.")]
+    #[schemars(
+        title = "Log format",
+        description = "Structured or plain log output."
+    )]
     #[serde(default)]
     pub log_format: RefOr<LogFormat>,
 
-    #[schemars(title = "Log outputs", description = "List of log output destinations.")]
+    #[schemars(
+        title = "Log outputs",
+        description = "List of log output destinations."
+    )]
     #[serde(default = "default_log_output_or")]
     pub log_output: RefOr<Vec<String>>,
 }
@@ -73,7 +91,10 @@ impl ServerConfigSrc {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ServerConfig {
-    #[schemars(title = "Bind host", description = "IP address to bind the server to.")]
+    #[schemars(
+        title = "Bind host",
+        description = "IP address to bind the server to."
+    )]
     #[serde(default = "default_host")]
     pub host: String,
 
@@ -81,15 +102,24 @@ pub struct ServerConfig {
     #[serde(default = "default_port")]
     pub port: u16,
 
-    #[schemars(title = "Public URL", description = "External URL for this server (used for redirects, CORS, etc.).")]
+    #[schemars(
+        title = "Public URL",
+        description = "External URL for this server (used for redirects, CORS, etc.)."
+    )]
     #[serde(default)]
     pub public_url: Option<String>,
 
-    #[schemars(title = "TLS certificate", description = "Path to TLS certificate file.")]
+    #[schemars(
+        title = "TLS certificate",
+        description = "Path to TLS certificate file."
+    )]
     #[serde(default)]
     pub tls_cert: Option<String>,
 
-    #[schemars(title = "TLS private key", description = "Path to TLS private key file.")]
+    #[schemars(
+        title = "TLS private key",
+        description = "Path to TLS private key file."
+    )]
     #[serde(default)]
     pub tls_key: Option<String>,
 
@@ -97,11 +127,17 @@ pub struct ServerConfig {
     #[serde(default)]
     pub log_level: LogLevel,
 
-    #[schemars(title = "Log format", description = "Structured or plain log output.")]
+    #[schemars(
+        title = "Log format",
+        description = "Structured or plain log output."
+    )]
     #[serde(default)]
     pub log_format: LogFormat,
 
-    #[schemars(title = "Log outputs", description = "List of log output destinations.")]
+    #[schemars(
+        title = "Log outputs",
+        description = "List of log output destinations."
+    )]
     #[serde(default = "default_log_output")]
     pub log_output: Vec<String>,
 }

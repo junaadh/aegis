@@ -1,7 +1,7 @@
 use aegis_app::IdGenerator;
 use aegis_core::{
-    GuestId, PasskeyCredentialId, PasswordCredentialId, RecoveryCodeId, RoleId, SessionId,
-    TotpCredentialId, UserId, WebhookId,
+    GuestId, PasskeyCredentialId, PasswordCredentialId, RecoveryCodeId, RoleId,
+    SessionId, TotpCredentialId, UserId, WebhookId,
 };
 
 pub struct UuidV7IdGenerator;

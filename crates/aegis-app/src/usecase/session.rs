@@ -4,8 +4,8 @@ use crate::app::AegisApp;
 use crate::dto::{RequestContext, SessionRevokeCommand};
 use crate::error::AppError;
 use crate::ports::{
-    AuditRepo, Cache, Clock, Hasher, IdGenerator, Repos, SessionRepo, TokenGenerator,
-    TransactionRepos, WebAuthn, WebhookDispatcher,
+    AuditRepo, Cache, Clock, Hasher, IdGenerator, Repos, SessionRepo,
+    TokenGenerator, TransactionRepos, WebAuthn, WebhookDispatcher,
 };
 
 impl<R, C, H, T, W, K, I, A> AegisApp<R, C, H, T, W, K, I, A>
@@ -28,7 +28,9 @@ where
         let session_id = cmd
             .session_id
             .map(aegis_core::SessionId::from_uuid)
-            .ok_or_else(|| AppError::Validation("session_id is required".to_owned()))?;
+            .ok_or_else(|| {
+            AppError::Validation("session_id is required".to_owned())
+        })?;
 
         let session = self
             .deps

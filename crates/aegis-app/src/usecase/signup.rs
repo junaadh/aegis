@@ -1,14 +1,17 @@
 use aegis_core::{
-    Actor, AuditTarget, Metadata, NewAuditEntry, PasswordCredential, SessionIdentity, User,
+    Actor, AuditTarget, Metadata, NewAuditEntry, PasswordCredential,
+    SessionIdentity, User,
 };
 
 use crate::app::AegisApp;
 use crate::dto::{AuthResult, RequestContext, SignupCommand};
 use crate::error::AppError;
 use crate::jobs::JobPayload;
-use crate::ports::{AuditRepo, CredentialRepo, OutboxRepo, PendingTokenRepo, Repos, SessionRepo,
-    TransactionRepos, UserRepo, WebAuthn, WebhookDispatcher, Cache, Clock, Hasher, IdGenerator,
-    TokenGenerator};
+use crate::ports::{
+    AuditRepo, Cache, Clock, CredentialRepo, Hasher, IdGenerator, OutboxRepo,
+    PendingTokenRepo, Repos, SessionRepo, TokenGenerator, TransactionRepos,
+    UserRepo, WebAuthn, WebhookDispatcher,
+};
 
 impl<R, C, H, T, W, K, I, A> AegisApp<R, C, H, T, W, K, I, A>
 where
@@ -84,8 +87,10 @@ where
                 .tokens
                 .generate_opaque(self.policy().auth.bearer_token_length)
                 .await?;
-            let verification_expires = now + self.policy().email.verification_token_ttl;
-            let token_hash = self.deps.tokens.hash_token(&verification_token.0).await;
+            let verification_expires =
+                now + self.policy().email.verification_token_ttl;
+            let token_hash =
+                self.deps.tokens.hash_token(&verification_token.0).await;
 
             let pending_token = aegis_core::PendingToken {
                 token_hash,
@@ -117,7 +122,9 @@ where
                         tx.credentials().insert_password(&credential).await?;
                         tx.sessions().insert(&issued_session).await?;
 
-                        if let Some((pending_token, raw_token, email)) = pending_token_data {
+                        if let Some((pending_token, raw_token, email)) =
+                            pending_token_data
+                        {
                             tx.tokens().insert(&pending_token).await?;
                             let job = JobPayload::SendVerificationEmail {
                                 user_id: user_id.as_uuid(),
@@ -154,7 +161,8 @@ where
         match result {
             Ok(()) => Ok(self.assemble_auth_result(user, issued)),
             Err(AppError::Infrastructure(msg))
-                if msg.contains("duplicate key") || msg.contains("unique constraint") =>
+                if msg.contains("duplicate key")
+                    || msg.contains("unique constraint") =>
             {
                 Err(AppError::EmailAlreadyExists)
             }

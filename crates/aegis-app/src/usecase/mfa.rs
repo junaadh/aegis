@@ -1,20 +1,24 @@
-use rand::{distributions::Alphanumeric, rngs::OsRng, Rng};
+use rand::{Rng, distributions::Alphanumeric, rngs::OsRng};
 use sha2::{Digest, Sha256};
 use totp_rs::{Algorithm, Secret, TOTP};
 
 use aegis_core::{
-    Actor, AuditTarget, Metadata, NewAuditEntry, RecoveryCode, RecoveryCodeState, TotpCredential,
-    UserId,
+    Actor, AuditTarget, Metadata, NewAuditEntry, RecoveryCode,
+    RecoveryCodeState, TotpCredential, UserId,
 };
 
 use crate::app::AegisApp;
 use crate::crypto::{decrypt_totp_secret, encrypt_totp_secret};
-use crate::dto::{RequestContext, TotpEnrollFinishCommand, TotpEnrollResult, TotpVerifyCommand};
+use crate::dto::{
+    RequestContext, TotpEnrollFinishCommand, TotpEnrollResult,
+    TotpVerifyCommand,
+};
 use crate::error::AppError;
 use crate::jobs::JobPayload;
 use crate::ports::{
-    AuditRepo, Cache, Clock, CredentialRepo, Hasher, IdGenerator, OutboxRepo, Repos,
-    SessionRepo, TokenGenerator, TransactionRepos, UserRepo, WebAuthn, WebhookDispatcher,
+    AuditRepo, Cache, Clock, CredentialRepo, Hasher, IdGenerator, OutboxRepo,
+    Repos, SessionRepo, TokenGenerator, TransactionRepos, UserRepo, WebAuthn,
+    WebhookDispatcher,
 };
 
 impl<R, C, H, T, W, K, I, A> AegisApp<R, C, H, T, W, K, I, A>
@@ -42,15 +46,24 @@ where
         let now = self.deps.clock.now();
         let secret = Secret::generate_secret();
         let secret_encoded = secret.to_encoded().to_string();
-        let secret_bytes = secret
-            .to_bytes()
-            .map_err(|e| AppError::Infrastructure(format!("invalid generated totp secret: {e}")))?;
-        let (secret_encrypted, nonce) = encrypt_totp_secret(self.policy(), &secret_bytes)?;
+        let secret_bytes = secret.to_bytes().map_err(|e| {
+            AppError::Infrastructure(format!(
+                "invalid generated totp secret: {e}"
+            ))
+        })?;
+        let (secret_encrypted, nonce) =
+            encrypt_totp_secret(self.policy(), &secret_bytes)?;
 
         let totp = build_totp(self, &secret_bytes, user.email.as_str())?;
         let qr_code_url = totp.get_url();
 
-        let credential = match self.deps.repos.credentials().get_totp_by_user_id(user_id).await? {
+        let credential = match self
+            .deps
+            .repos
+            .credentials()
+            .get_totp_by_user_id(user_id)
+            .await?
+        {
             Some(mut existing) => {
                 existing.rotate_secret_at(secret_encrypted, nonce, now);
                 existing.disable_at(now);
@@ -76,7 +89,12 @@ where
                 let credential = credential.clone();
                 async move {
                     let result = async {
-                        if tx.credentials().get_totp_by_user_id(user_id).await?.is_some() {
+                        if tx
+                            .credentials()
+                            .get_totp_by_user_id(user_id)
+                            .await?
+                            .is_some()
+                        {
                             tx.credentials().update_totp(&credential).await?;
                         } else {
                             tx.credentials().insert_totp(&credential).await?;
@@ -123,10 +141,9 @@ where
             .await?
             .ok_or(AppError::NotFound("user"))?;
         let totp = build_totp(self, &secret, user.email.as_str())?;
-        if !totp
-            .check_current(&cmd.code)
-            .map_err(|e| AppError::Infrastructure(format!("failed to verify totp code: {e}")))?
-        {
+        if !totp.check_current(&cmd.code).map_err(|e| {
+            AppError::Infrastructure(format!("failed to verify totp code: {e}"))
+        })? {
             return Err(AppError::InvalidCredentials);
         }
 
@@ -146,8 +163,12 @@ where
                 async move {
                     let result = async {
                         tx.credentials().update_totp(&credential).await?;
-                        tx.credentials().delete_recovery_codes_by_user_id(user_id).await?;
-                        tx.credentials().insert_recovery_codes(&recovery_codes.0).await?;
+                        tx.credentials()
+                            .delete_recovery_codes_by_user_id(user_id)
+                            .await?;
+                        tx.credentials()
+                            .insert_recovery_codes(&recovery_codes.0)
+                            .await?;
                         tx.outbox()
                             .enqueue(&JobPayload::SendMfaEnrolledNotification {
                                 user_id: user_id.as_uuid(),
@@ -164,7 +185,10 @@ where
                                 ip_address: ctx.ip_address.clone(),
                                 user_agent: ctx.user_agent.clone(),
                                 request_id: ctx.request_id,
-                                metadata: Metadata::new(&format!(r#"{{"email":"{}"}}"#, email)),
+                                metadata: Metadata::new(&format!(
+                                    r#"{{"email":"{}"}}"#,
+                                    email
+                                )),
                                 created_at: now,
                             })
                             .await?;
@@ -221,9 +245,9 @@ where
             .await?
             .ok_or(AppError::NotFound("user"))?;
         let totp = build_totp(self, &secret, user.email.as_str())?;
-        let valid_totp = totp
-            .check_current(&cmd.code)
-            .map_err(|e| AppError::Infrastructure(format!("failed to verify totp code: {e}")))?;
+        let valid_totp = totp.check_current(&cmd.code).map_err(|e| {
+            AppError::Infrastructure(format!("failed to verify totp code: {e}"))
+        })?;
 
         let now = self.deps.clock.now();
         let redeemed_recovery_code = if valid_totp {
@@ -261,7 +285,9 @@ where
                     let result = async {
                         tx.sessions().update(&session).await?;
                         if let Some(code) = redeemed_recovery_code {
-                            tx.credentials().update_recovery_code(&code).await?;
+                            tx.credentials()
+                                .update_recovery_code(&code)
+                                .await?;
                         }
                         tx.audit()
                             .insert(&NewAuditEntry {
@@ -314,11 +340,17 @@ where
                 let ctx = ctx.clone();
                 async move {
                     let result = async {
-                        tx.credentials().delete_recovery_codes_by_user_id(user_id).await?;
-                        tx.credentials().insert_recovery_codes(&recovery_codes.0).await?;
+                        tx.credentials()
+                            .delete_recovery_codes_by_user_id(user_id)
+                            .await?;
+                        tx.credentials()
+                            .insert_recovery_codes(&recovery_codes.0)
+                            .await?;
                         tx.audit()
                             .insert(&NewAuditEntry {
-                                event_type: "user.totp.recovery_codes_regenerated".to_owned(),
+                                event_type:
+                                    "user.totp.recovery_codes_regenerated"
+                                        .to_owned(),
                                 actor: Actor::User(user_id),
                                 target: Some(AuditTarget {
                                     target_type: "user".to_owned(),

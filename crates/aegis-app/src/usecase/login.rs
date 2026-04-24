@@ -1,11 +1,15 @@
-use aegis_core::{Actor, AuditTarget, Metadata, NewAuditEntry, SessionIdentity};
+use aegis_core::{
+    Actor, AuditTarget, Metadata, NewAuditEntry, SessionIdentity,
+};
 
 use crate::app::AegisApp;
 use crate::dto::{LoginCommand, LoginOutcome, RequestContext};
 use crate::error::AppError;
-use crate::ports::{AuditRepo, Cache, Clock, CredentialRepo, Hasher, IdGenerator,
-    PasswordVerifyResult, Repos, SessionRepo, TokenGenerator, TransactionRepos, UserRepo,
-    WebAuthn, WebhookDispatcher};
+use crate::ports::{
+    AuditRepo, Cache, Clock, CredentialRepo, Hasher, IdGenerator,
+    PasswordVerifyResult, Repos, SessionRepo, TokenGenerator, TransactionRepos,
+    UserRepo, WebAuthn, WebhookDispatcher,
+};
 
 impl<R, C, H, T, W, K, I, A> AegisApp<R, C, H, T, W, K, I, A>
 where
@@ -35,8 +39,9 @@ where
             .ok_or(AppError::InvalidCredentials)?;
 
         match user.status {
-            aegis_core::UserStatus::Deleted | aegis_core::UserStatus::Disabled => {
-                return Err(AppError::Unauthorized)
+            aegis_core::UserStatus::Deleted
+            | aegis_core::UserStatus::Disabled => {
+                return Err(AppError::Unauthorized);
             }
             aegis_core::UserStatus::PendingVerification => {
                 if !self.policy().auth.allow_unverified_login {
@@ -65,13 +70,17 @@ where
             .await?;
 
         match verify_result {
-            PasswordVerifyResult::Invalid => return Err(AppError::InvalidCredentials),
-            PasswordVerifyResult::Valid | PasswordVerifyResult::ValidButRehashNeeded { .. } => {}
+            PasswordVerifyResult::Invalid => {
+                return Err(AppError::InvalidCredentials);
+            }
+            PasswordVerifyResult::Valid
+            | PasswordVerifyResult::ValidButRehashNeeded { .. } => {}
         }
 
         let rehash = match &verify_result {
             PasswordVerifyResult::ValidButRehashNeeded { .. } => {
-                let hashed = self.deps.hasher.hash_password(&cmd.password).await?;
+                let hashed =
+                    self.deps.hasher.hash_password(&cmd.password).await?;
                 Some((hashed.hash, hashed.algorithm_version))
             }
             _ => None,
@@ -112,7 +121,11 @@ where
 
                         if let Some((new_hash, new_version)) = rehash {
                             let mut cred = password_cred;
-                            cred.update_hash_at(new_hash, new_version as i32, now);
+                            cred.update_hash_at(
+                                new_hash,
+                                new_version as i32,
+                                now,
+                            );
                             tx.credentials().update_password(&cred).await?;
                         }
 
@@ -133,7 +146,8 @@ where
 
                         if !mfa_verified {
                             let mfa_audit = NewAuditEntry {
-                                event_type: "user.login.mfa_required".to_owned(),
+                                event_type: "user.login.mfa_required"
+                                    .to_owned(),
                                 actor: Actor::User(user_id),
                                 target: Some(AuditTarget {
                                     target_type: "session".to_owned(),

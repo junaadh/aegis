@@ -1,6 +1,6 @@
 mod app;
-mod crypto;
 mod convert;
+mod crypto;
 mod deps;
 mod dto;
 mod error;

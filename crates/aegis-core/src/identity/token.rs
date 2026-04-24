@@ -32,7 +32,9 @@ impl std::str::FromStr for PendingTokenPurpose {
         match s {
             "email_verification" => Ok(Self::EmailVerification),
             "password_reset" => Ok(Self::PasswordReset),
-            other => Err(PendingTokenPurposeParseError::Unknown(other.to_owned())),
+            other => {
+                Err(PendingTokenPurposeParseError::Unknown(other.to_owned()))
+            }
         }
     }
 }

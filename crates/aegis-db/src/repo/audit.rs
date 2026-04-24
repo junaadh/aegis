@@ -27,7 +27,12 @@ impl PgTxAuditRepo {
     }
 
     fn tx(&self) -> &mut Transaction<'static, Postgres> {
-        unsafe { self.tx.as_ptr().as_mut().expect("transaction pointer must be valid") }
+        unsafe {
+            self.tx
+                .as_ptr()
+                .as_mut()
+                .expect("transaction pointer must be valid")
+        }
     }
 }
 
@@ -35,11 +40,16 @@ fn infra_error(err: impl std::fmt::Display) -> AppError {
     AppError::Infrastructure(err.to_string())
 }
 
-fn metadata_json(metadata: &aegis_core::Metadata) -> Result<serde_json::Value, AppError> {
+fn metadata_json(
+    metadata: &aegis_core::Metadata,
+) -> Result<serde_json::Value, AppError> {
     serde_json::from_str(metadata.as_str()).map_err(infra_error)
 }
 
-async fn insert_impl<'e, E>(executor: E, entry: &NewAuditEntry) -> Result<(), AppError>
+async fn insert_impl<'e, E>(
+    executor: E,
+    entry: &NewAuditEntry,
+) -> Result<(), AppError>
 where
     E: Executor<'e, Database = Postgres>,
 {

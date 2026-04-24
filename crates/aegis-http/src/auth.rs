@@ -1,7 +1,13 @@
 use std::marker::PhantomData;
 
-use aegis_app::{Cache, Clock, GuestRepo, Hasher, IdGenerator, Repos, SessionRepo, TokenGenerator, UserRepo, WebAuthn, WebhookDispatcher};
-use aegis_core::{Identity, SessionIdentity, UserStatus};
+use aegis_app::{
+    Cache, Clock, GuestRepo, Hasher, IdGenerator, Repos, SessionRepo,
+    TokenGenerator, UserRepo, WebAuthn, WebhookDispatcher,
+};
+use aegis_core::{
+    EffectivePermissions, Identity, NamedPermission, ServicePrincipal,
+    SessionIdentity, UserStatus,
+};
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
 
@@ -18,6 +24,16 @@ pub struct AuthIdentity {
 #[derive(Debug, Clone, Default)]
 pub struct AuthContext(pub Option<AuthIdentity>);
 
+#[derive(Debug, Clone, Default)]
+pub struct InternalAuthContext(pub Option<InternalPrincipal>);
+
+#[derive(Debug, Clone)]
+pub struct InternalPrincipal {
+    #[allow(dead_code)]
+    pub subject: String,
+    pub permissions: EffectivePermissions,
+}
+
 pub struct OptionalAuth<R, C, H, T, W, K, I, A> {
     pub identity: Option<AuthIdentity>,
     _marker: PhantomData<(R, C, H, T, W, K, I, A)>,
@@ -26,6 +42,10 @@ pub struct OptionalAuth<R, C, H, T, W, K, I, A> {
 pub struct RequiredAuth<R, C, H, T, W, K, I, A> {
     pub identity: AuthIdentity,
     _marker: PhantomData<(R, C, H, T, W, K, I, A)>,
+}
+
+pub struct RequiredInternal {
+    pub principal: InternalPrincipal,
 }
 
 impl<R, C, H, T, W, K, I, A> OptionalAuth<R, C, H, T, W, K, I, A> {
@@ -46,7 +66,27 @@ impl<R, C, H, T, W, K, I, A> RequiredAuth<R, C, H, T, W, K, I, A> {
     }
 }
 
-impl<S, R, C, H, T, W, K, I, A> FromRequestParts<S> for OptionalAuth<R, C, H, T, W, K, I, A>
+impl From<ServicePrincipal> for InternalPrincipal {
+    fn from(value: ServicePrincipal) -> Self {
+        Self {
+            subject: value.subject,
+            permissions: value.permissions,
+        }
+    }
+}
+
+impl InternalPrincipal {
+    pub fn require_permission<P: NamedPermission>(
+        &self,
+    ) -> Result<(), aegis_app::AppError> {
+        self.permissions
+            .require_named::<P>()
+            .map_err(|_| aegis_app::AppError::Forbidden)
+    }
+}
+
+impl<S, R, C, H, T, W, K, I, A> FromRequestParts<S>
+    for OptionalAuth<R, C, H, T, W, K, I, A>
 where
     S: Send + Sync,
 {
@@ -55,7 +95,8 @@ where
     fn from_request_parts(
         parts: &mut Parts,
         _state: &S,
-    ) -> impl std::future::Future<Output = Result<Self, Self::Rejection>> + Send {
+    ) -> impl std::future::Future<Output = Result<Self, Self::Rejection>> + Send
+    {
         let identity = parts
             .extensions
             .get::<AuthContext>()
@@ -65,7 +106,8 @@ where
     }
 }
 
-impl<S, R, C, H, T, W, K, I, A> FromRequestParts<S> for RequiredAuth<R, C, H, T, W, K, I, A>
+impl<S, R, C, H, T, W, K, I, A> FromRequestParts<S>
+    for RequiredAuth<R, C, H, T, W, K, I, A>
 where
     S: Send + Sync,
 {
@@ -74,15 +116,43 @@ where
     fn from_request_parts(
         parts: &mut Parts,
         _state: &S,
-    ) -> impl std::future::Future<Output = Result<Self, Self::Rejection>> + Send {
+    ) -> impl std::future::Future<Output = Result<Self, Self::Rejection>> + Send
+    {
         let identity = parts
             .extensions
             .get::<AuthContext>()
             .and_then(|ctx| ctx.0.clone());
 
         async move {
-            let identity = identity.ok_or_else(|| HttpError(aegis_app::AppError::Unauthorized))?;
+            let identity = identity.ok_or_else(|| {
+                HttpError::from(aegis_app::AppError::Unauthorized)
+            })?;
             Ok(Self::new(identity))
+        }
+    }
+}
+
+impl<S> FromRequestParts<S> for RequiredInternal
+where
+    S: Send + Sync,
+{
+    type Rejection = HttpError;
+
+    fn from_request_parts(
+        parts: &mut Parts,
+        _state: &S,
+    ) -> impl std::future::Future<Output = Result<Self, Self::Rejection>> + Send
+    {
+        let principal = parts
+            .extensions
+            .get::<InternalAuthContext>()
+            .and_then(|ctx| ctx.0.clone());
+
+        async move {
+            let principal = principal.ok_or_else(|| {
+                HttpError::from(aegis_app::AppError::Unauthorized)
+            })?;
+            Ok(Self { principal })
         }
     }
 }
@@ -103,7 +173,12 @@ where
 {
     let deps = state.app.deps();
     let hash = deps.tokens.hash_token(token).await;
-    let session = deps.repos.sessions().get_by_token_hash(&hash).await.ok()??;
+    let session = deps
+        .repos
+        .sessions()
+        .get_by_token_hash(&hash)
+        .await
+        .ok()??;
 
     let now = deps.clock.now();
     if session.is_expired_at(now) {
@@ -160,7 +235,9 @@ impl AuthIdentity {
         }
     }
 
-    pub fn verified_user_id(&self) -> Result<aegis_core::UserId, aegis_app::AppError> {
+    pub fn verified_user_id(
+        &self,
+    ) -> Result<aegis_core::UserId, aegis_app::AppError> {
         let user_id = self.user_id()?;
         if self.mfa_verified {
             Ok(user_id)

@@ -1,22 +1,25 @@
+use aegis_app::{
+    ChangePasswordCommand, ForgotPasswordCommand, RequestContext,
+    ResendVerificationCommand, ResetPasswordCommand, VerifyEmailCommand,
+};
+use aegis_types::{
+    ApiResponse, ForgotPasswordRequest, PasswordChangeRequest,
+    ResetPasswordRequest, VerifyEmailRequest,
+};
+use axum::Json;
 use axum::extract::State;
 use axum::http::HeaderMap;
-use axum::Json;
-use aegis_app::{
-    ChangePasswordCommand, ForgotPasswordCommand, RequestContext, ResendVerificationCommand,
-    ResetPasswordCommand, VerifyEmailCommand,
-};
-use aegis_types::{ApiResponse, ForgotPasswordRequest, PasswordChangeRequest, ResetPasswordRequest, VerifyEmailRequest};
 
 use crate::auth::RequiredAuth;
 use crate::context;
 use crate::cookies;
-use crate::error::HttpError;
+use crate::error::{ApiJson, HttpError};
 use crate::state::AppState;
 
 pub async fn verify_email<R, C, H, T, W, K, I, A>(
     State(state): State<AppState<R, C, H, T, W, K, I, A>>,
     headers: HeaderMap,
-    Json(body): Json<VerifyEmailRequest>,
+    ApiJson(body): ApiJson<VerifyEmailRequest>,
 ) -> Result<Json<ApiResponse<serde_json::Value>>, HttpError>
 where
     R: aegis_app::Repos,
@@ -44,7 +47,7 @@ where
 pub async fn resend_verification<R, C, H, T, W, K, I, A>(
     State(state): State<AppState<R, C, H, T, W, K, I, A>>,
     headers: HeaderMap,
-    Json(body): Json<ResendEmailRequest>,
+    ApiJson(body): ApiJson<ResendEmailRequest>,
 ) -> Result<Json<ApiResponse<serde_json::Value>>, HttpError>
 where
     R: aegis_app::Repos,
@@ -72,7 +75,7 @@ where
 pub async fn forgot_password<R, C, H, T, W, K, I, A>(
     State(state): State<AppState<R, C, H, T, W, K, I, A>>,
     headers: HeaderMap,
-    Json(body): Json<ForgotPasswordRequest>,
+    ApiJson(body): ApiJson<ForgotPasswordRequest>,
 ) -> Result<Json<ApiResponse<serde_json::Value>>, HttpError>
 where
     R: aegis_app::Repos,
@@ -100,7 +103,7 @@ where
 pub async fn reset_password<R, C, H, T, W, K, I, A>(
     State(state): State<AppState<R, C, H, T, W, K, I, A>>,
     headers: HeaderMap,
-    Json(body): Json<ResetPasswordRequest>,
+    ApiJson(body): ApiJson<ResetPasswordRequest>,
 ) -> Result<(HeaderMap, Json<ApiResponse<serde_json::Value>>), HttpError>
 where
     R: aegis_app::Repos,
@@ -123,7 +126,12 @@ where
     let mut response_headers = HeaderMap::new();
     cookies::clear_session_cookie(
         &mut response_headers,
-        &state.config.session.as_ref().expect("session config is required").cookie,
+        &state
+            .config
+            .session
+            .as_ref()
+            .expect("session config is required")
+            .cookie,
     );
 
     let meta = aegis_types::ResponseMeta::new(request_id.to_string());
@@ -141,7 +149,7 @@ pub async fn change_password<R, C, H, T, W, K, I, A>(
     State(state): State<AppState<R, C, H, T, W, K, I, A>>,
     auth: RequiredAuth<R, C, H, T, W, K, I, A>,
     headers: HeaderMap,
-    Json(body): Json<PasswordChangeRequest>,
+    ApiJson(body): ApiJson<PasswordChangeRequest>,
 ) -> Result<(HeaderMap, Json<ApiResponse<serde_json::Value>>), HttpError>
 where
     R: aegis_app::Repos,
@@ -172,7 +180,12 @@ where
     let mut response_headers = HeaderMap::new();
     cookies::clear_session_cookie(
         &mut response_headers,
-        &state.config.session.as_ref().expect("session config is required").cookie,
+        &state
+            .config
+            .session
+            .as_ref()
+            .expect("session config is required")
+            .cookie,
     );
 
     let meta = aegis_types::ResponseMeta::new(request_id.to_string());

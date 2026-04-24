@@ -1,9 +1,16 @@
 use std::path::PathBuf;
 
+use aegis_core::ServiceTokenScope;
+use aegis_infra::JwtIssuer;
 use clap::{Parser, Subcommand};
+use time::Duration;
 
 #[derive(Parser)]
-#[command(name = "aegis", version, about = "Aegis Authentication & Identity Platform CLI")]
+#[command(
+    name = "aegis",
+    version,
+    about = "Aegis Authentication & Identity Platform CLI"
+)]
 struct Cli {
     #[arg(long, global = true, default_value = "aegis.toml")]
     config: PathBuf,
@@ -26,6 +33,10 @@ enum Commands {
         #[arg(long)]
         out: Option<PathBuf>,
     },
+    Token {
+        #[command(subcommand)]
+        action: TokenAction,
+    },
 }
 
 #[derive(Subcommand)]
@@ -43,9 +54,15 @@ enum ConfigAction {
         endpoint: Option<String>,
     },
     Dump {
-        #[arg(long, default_value = "default", help = "Dump mode: default or current")]
+        #[arg(
+            long,
+            default_value = "default",
+            help = "Dump mode: default or current"
+        )]
         mode: String,
-        #[arg(help = "Target path, or \"-\" for stdout [default: ./aegis.toml]")]
+        #[arg(
+            help = "Target path, or \"-\" for stdout [default: ./aegis.toml]"
+        )]
         target: Option<String>,
     },
 }
@@ -54,8 +71,18 @@ enum ConfigAction {
 enum MigrateAction {
     Up,
     Status,
-    Create {
-        name: String,
+    Create { name: String },
+}
+
+#[derive(Subcommand)]
+enum TokenAction {
+    Issue {
+        #[arg(long)]
+        subject: String,
+        #[arg(long = "scope", required = true)]
+        scopes: Vec<String>,
+        #[arg(long, default_value = "7d")]
+        ttl: String,
     },
 }
 
@@ -73,6 +100,7 @@ fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
         Commands::Config { action } => run_config(action, &cli.config),
         Commands::Migrate { action } => run_migrate(action, &cli.config),
         Commands::Schema { out } => run_schema(out),
+        Commands::Token { action } => run_token(action, &cli.config),
     }
 }
 
@@ -105,9 +133,8 @@ fn run_config(
         }
         ConfigAction::EnvExport { out } => {
             let config = aegis_config::Config::load(Some(config_path))?;
-            let env_path = out
-                .as_deref()
-                .unwrap_or(std::path::Path::new(".env.aegis"));
+            let env_path =
+                out.as_deref().unwrap_or(std::path::Path::new(".env.aegis"));
             aegis_config::dump_env_resolved(&config, env_path)?;
             println!("env written to {}", env_path.display());
         }
@@ -123,7 +150,9 @@ fn run_config(
                 "default" => aegis_config::DumpMode::Default,
                 "current" => aegis_config::DumpMode::Current,
                 other => {
-                    eprintln!("unknown mode: {other} (expected: default, current)");
+                    eprintln!(
+                        "unknown mode: {other} (expected: default, current)"
+                    );
                     std::process::exit(1);
                 }
             };
@@ -134,7 +163,8 @@ fn run_config(
                 None => aegis_config::DumpTarget::DefaultFile,
             };
 
-            let source = if matches!(dump_mode, aegis_config::DumpMode::Current) {
+            let source = if matches!(dump_mode, aegis_config::DumpMode::Current)
+            {
                 Some(aegis_config::ConfigSrc::from_file(config_path)?)
             } else {
                 None
@@ -169,7 +199,8 @@ fn run_migrate(
                 .clone();
 
             let pool = sqlx::PgPool::connect(&db_url).await?;
-            let runner = aegis_migrate::MigrationRunner::new(pool, "migrations");
+            let runner =
+                aegis_migrate::MigrationRunner::new(pool, "migrations");
             runner.up().await?;
             println!("migrations applied");
             Ok(())
@@ -184,7 +215,8 @@ fn run_migrate(
                 .clone();
 
             let pool = sqlx::PgPool::connect(&db_url).await?;
-            let runner = aegis_migrate::MigrationRunner::new(pool, "migrations");
+            let runner =
+                aegis_migrate::MigrationRunner::new(pool, "migrations");
             let status = runner.status().await?;
 
             for (desc, applied) in &status {
@@ -219,4 +251,57 @@ fn run_schema(out: Option<PathBuf>) -> Result<(), Box<dyn std::error::Error>> {
     }
 
     Ok(())
+}
+
+fn run_token(
+    action: TokenAction,
+    config_path: &std::path::Path,
+) -> Result<(), Box<dyn std::error::Error>> {
+    match action {
+        TokenAction::Issue {
+            subject,
+            scopes,
+            ttl,
+        } => {
+            let config = aegis_config::Config::load(Some(config_path))?;
+            let issuer = JwtIssuer::from_config(&config)?
+                .ok_or("jwt is not enabled in config")?;
+            let ttl = parse_ttl(&ttl)?;
+            let scopes = scopes
+                .into_iter()
+                .map(|scope| scope.parse::<ServiceTokenScope>())
+                .collect::<Result<Vec<_>, _>>()?;
+
+            let token = issuer.issue_service_token(
+                subject,
+                scopes,
+                ttl,
+                time::OffsetDateTime::now_utc(),
+            )?;
+            println!("{token}");
+            Ok(())
+        }
+    }
+}
+
+fn parse_ttl(input: &str) -> Result<Duration, Box<dyn std::error::Error>> {
+    if input.len() < 2 {
+        return Err("ttl must be formatted like 15m, 24h, or 7d".into());
+    }
+
+    let (value, unit) = input.split_at(input.len() - 1);
+    let value: i64 = value.parse()?;
+    let duration = match unit {
+        "s" => Duration::seconds(value),
+        "m" => Duration::minutes(value),
+        "h" => Duration::hours(value),
+        "d" => Duration::days(value),
+        _ => return Err("unsupported ttl unit; use s, m, h, or d".into()),
+    };
+
+    if duration.is_zero() || duration.is_negative() {
+        return Err("ttl must be greater than zero".into());
+    }
+
+    Ok(duration)
 }

@@ -25,20 +25,28 @@ impl<E> EmailOutboxProcessor<E> {
 
 #[async_trait]
 impl<E: EmailSender> OutboxProcessor for EmailOutboxProcessor<E> {
-    async fn process(&self, job_type: &str, payload: &str) -> Result<(), AppError> {
+    async fn process(
+        &self,
+        job_type: &str,
+        payload: &str,
+    ) -> Result<(), AppError> {
         match job_type {
             "send_verification_email" => {
                 let p: VerificationEmailPayload = serde_json::from_str(payload)
-                    .map_err(|e| AppError::Infrastructure(format!(
-                        "invalid verification outbox payload: {e}"
-                    )))?;
+                    .map_err(|e| {
+                        AppError::Infrastructure(format!(
+                            "invalid verification outbox payload: {e}"
+                        ))
+                    })?;
                 self.sender.send_verification(&p.email, &p.token).await
             }
             "send_password_reset_email" => {
-                let p: PasswordResetEmailPayload = serde_json::from_str(payload)
-                    .map_err(|e| AppError::Infrastructure(format!(
-                        "invalid password reset outbox payload: {e}"
-                    )))?;
+                let p: PasswordResetEmailPayload =
+                    serde_json::from_str(payload).map_err(|e| {
+                        AppError::Infrastructure(format!(
+                            "invalid password reset outbox payload: {e}"
+                        ))
+                    })?;
                 self.sender.send_password_reset(&p.email, &p.token).await
             }
             other => {

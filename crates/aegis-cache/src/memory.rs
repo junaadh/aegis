@@ -1,8 +1,4 @@
-use std::{
-    collections::HashMap,
-    sync::Mutex,
-    time::Instant,
-};
+use std::{collections::HashMap, sync::Mutex, time::Instant};
 
 use time::Duration;
 
@@ -33,11 +29,16 @@ impl Default for InMemoryCache {
 
 impl Cache for InMemoryCache {
     async fn get(&self, key: &str) -> Result<Option<Vec<u8>>, CacheError> {
-        let store = self.store.lock().map_err(|e| CacheError::Backend(e.to_string()))?;
+        let store = self
+            .store
+            .lock()
+            .map_err(|e| CacheError::Backend(e.to_string()))?;
         let now = Instant::now();
 
         match store.get(key) {
-            Some(entry) if entry.expires_at > now => Ok(Some(entry.value.clone())),
+            Some(entry) if entry.expires_at > now => {
+                Ok(Some(entry.value.clone()))
+            }
             _ => Ok(None),
         }
     }
@@ -48,7 +49,10 @@ impl Cache for InMemoryCache {
         value: Vec<u8>,
         ttl: Duration,
     ) -> Result<(), CacheError> {
-        let mut store = self.store.lock().map_err(|e| CacheError::Backend(e.to_string()))?;
+        let mut store = self
+            .store
+            .lock()
+            .map_err(|e| CacheError::Backend(e.to_string()))?;
 
         let duration_std = ttl.unsigned_abs();
         let expires_at = Instant::now() + duration_std;
@@ -58,7 +62,10 @@ impl Cache for InMemoryCache {
     }
 
     async fn delete(&self, key: &str) -> Result<(), CacheError> {
-        let mut store = self.store.lock().map_err(|e| CacheError::Backend(e.to_string()))?;
+        let mut store = self
+            .store
+            .lock()
+            .map_err(|e| CacheError::Backend(e.to_string()))?;
         store.remove(key);
         Ok(())
     }

@@ -3,13 +3,17 @@ use aegis_core::{
 };
 
 use crate::app::AegisApp;
-use crate::dto::{ChangePasswordCommand, ForgotPasswordCommand, ResetPasswordCommand,
-    RequestContext};
+use crate::dto::{
+    ChangePasswordCommand, ForgotPasswordCommand, RequestContext,
+    ResetPasswordCommand,
+};
 use crate::error::AppError;
 use crate::jobs::JobPayload;
-use crate::ports::{AuditRepo, Cache, Clock, CredentialRepo, Hasher, IdGenerator, OutboxRepo,
-    PendingTokenRepo, Repos, SessionRepo, TokenGenerator, TransactionRepos, UserRepo,
-    WebAuthn, WebhookDispatcher};
+use crate::ports::{
+    AuditRepo, Cache, Clock, CredentialRepo, Hasher, IdGenerator, OutboxRepo,
+    PendingTokenRepo, Repos, SessionRepo, TokenGenerator, TransactionRepos,
+    UserRepo, WebAuthn, WebhookDispatcher,
+};
 
 impl<R, C, H, T, W, K, I, A> AegisApp<R, C, H, T, W, K, I, A>
 where
@@ -22,11 +26,19 @@ where
     I: IdGenerator,
     A: WebAuthn,
 {
-    pub async fn forgot_password(&self, cmd: ForgotPasswordCommand) -> Result<(), AppError> {
+    pub async fn forgot_password(
+        &self,
+        cmd: ForgotPasswordCommand,
+    ) -> Result<(), AppError> {
         let user = self.deps.repos.users().get_by_email(&cmd.email).await?;
 
         let user = match user {
-            Some(u) if u.status.is_active() || u.status.is_pending_verification() => u,
+            Some(u)
+                if u.status.is_active()
+                    || u.status.is_pending_verification() =>
+            {
+                u
+            }
             _ => return Ok(()),
         };
 
@@ -52,46 +64,47 @@ where
 
         self.deps
             .repos
-            .with_transaction(|mut tx| {
-                async move {
-                    let result = async {
-                        tx.tokens().insert(&pending).await?;
+            .with_transaction(|mut tx| async move {
+                let result = async {
+                    tx.tokens().insert(&pending).await?;
 
-                        let job = JobPayload::SendPasswordResetEmail {
-                            user_id: user_id.as_uuid(),
-                            email,
-                            token: raw_token,
-                        };
-                        tx.outbox().enqueue(&job).await?;
+                    let job = JobPayload::SendPasswordResetEmail {
+                        user_id: user_id.as_uuid(),
+                        email,
+                        token: raw_token,
+                    };
+                    tx.outbox().enqueue(&job).await?;
 
-                        let audit = NewAuditEntry {
-                            event_type: "user.forgot_password".to_owned(),
-                            actor: Actor::User(user_id),
-                            target: Some(AuditTarget {
-                                target_type: "user".to_owned(),
-                                target_id: Some(user_id.as_uuid()),
-                            }),
-                            ip_address: None,
-                            user_agent: None,
-                            request_id: None,
-                            metadata: Metadata::empty(),
-                            created_at: now,
-                        };
-                        tx.audit().insert(&audit).await?;
+                    let audit = NewAuditEntry {
+                        event_type: "user.forgot_password".to_owned(),
+                        actor: Actor::User(user_id),
+                        target: Some(AuditTarget {
+                            target_type: "user".to_owned(),
+                            target_id: Some(user_id.as_uuid()),
+                        }),
+                        ip_address: None,
+                        user_agent: None,
+                        request_id: None,
+                        metadata: Metadata::empty(),
+                        created_at: now,
+                    };
+                    tx.audit().insert(&audit).await?;
 
-                        Ok::<_, AppError>(())
-                    }
-                    .await;
-
-                    (tx, result)
+                    Ok::<_, AppError>(())
                 }
+                .await;
+
+                (tx, result)
             })
             .await?;
 
         Ok(())
     }
 
-    pub async fn reset_password(&self, cmd: ResetPasswordCommand) -> Result<(), AppError> {
+    pub async fn reset_password(
+        &self,
+        cmd: ResetPasswordCommand,
+    ) -> Result<(), AppError> {
         let token_hash = self.deps.tokens.hash_token(&cmd.token).await;
 
         let pending = self
@@ -133,51 +146,52 @@ where
         let hashed = self.deps.hasher.hash_password(&cmd.new_password).await?;
 
         let user_id = user.id;
-        let revoke_sessions = self.policy().auth.revoke_all_sessions_on_password_reset;
+        let revoke_sessions =
+            self.policy().auth.revoke_all_sessions_on_password_reset;
 
         self.deps
             .repos
-            .with_transaction(|mut tx| {
-                async move {
-                    let result = async {
-                        tx.tokens().delete_by_hash(&token_hash).await?;
+            .with_transaction(|mut tx| async move {
+                let result = async {
+                    tx.tokens().delete_by_hash(&token_hash).await?;
 
-                        if let Some(mut cred) =
-                            tx.credentials().get_password_by_user_id(user_id).await?
-                        {
-                            cred.update_hash_at(
-                                hashed.hash,
-                                hashed.algorithm_version as i32,
-                                now,
-                            );
-                            tx.credentials().update_password(&cred).await?;
-                        }
-
-                        if revoke_sessions {
-                            tx.sessions().delete_by_user_id(user_id).await?;
-                        }
-
-                        let audit = NewAuditEntry {
-                            event_type: "user.reset_password".to_owned(),
-                            actor: Actor::User(user_id),
-                            target: Some(AuditTarget {
-                                target_type: "user".to_owned(),
-                                target_id: Some(user_id.as_uuid()),
-                            }),
-                            ip_address: None,
-                            user_agent: None,
-                            request_id: None,
-                            metadata: Metadata::empty(),
-                            created_at: now,
-                        };
-                        tx.audit().insert(&audit).await?;
-
-                        Ok::<_, AppError>(())
+                    if let Some(mut cred) = tx
+                        .credentials()
+                        .get_password_by_user_id(user_id)
+                        .await?
+                    {
+                        cred.update_hash_at(
+                            hashed.hash,
+                            hashed.algorithm_version as i32,
+                            now,
+                        );
+                        tx.credentials().update_password(&cred).await?;
                     }
-                    .await;
 
-                    (tx, result)
+                    if revoke_sessions {
+                        tx.sessions().delete_by_user_id(user_id).await?;
+                    }
+
+                    let audit = NewAuditEntry {
+                        event_type: "user.reset_password".to_owned(),
+                        actor: Actor::User(user_id),
+                        target: Some(AuditTarget {
+                            target_type: "user".to_owned(),
+                            target_id: Some(user_id.as_uuid()),
+                        }),
+                        ip_address: None,
+                        user_agent: None,
+                        request_id: None,
+                        metadata: Metadata::empty(),
+                        created_at: now,
+                    };
+                    tx.audit().insert(&audit).await?;
+
+                    Ok::<_, AppError>(())
                 }
+                .await;
+
+                (tx, result)
             })
             .await
     }
@@ -219,7 +233,9 @@ where
                 return Err(AppError::InvalidCredentials);
             }
             crate::ports::PasswordVerifyResult::Valid
-            | crate::ports::PasswordVerifyResult::ValidButRehashNeeded { .. } => {}
+            | crate::ports::PasswordVerifyResult::ValidButRehashNeeded {
+                ..
+            } => {}
         }
 
         self.policy()
@@ -238,7 +254,8 @@ where
 
         let hashed = self.deps.hasher.hash_password(&cmd.new_password).await?;
         let now = self.deps.clock.now();
-        let revoke_sessions = self.policy().auth.revoke_all_sessions_on_password_reset;
+        let revoke_sessions =
+            self.policy().auth.revoke_all_sessions_on_password_reset;
         let ctx = ctx.clone();
 
         self.deps

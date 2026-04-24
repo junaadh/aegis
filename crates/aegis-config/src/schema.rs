@@ -4,7 +4,8 @@ pub fn generate_schema() -> Value {
     let settings = schemars::r#gen::SchemaSettings::default();
     let mut r#gen = schemars::r#gen::SchemaGenerator::new(settings);
     let schema = r#gen.root_schema_for::<crate::root::Config>();
-    let mut value = serde_json::to_value(&schema).expect("schema serialization must not fail");
+    let mut value = serde_json::to_value(&schema)
+        .expect("schema serialization must not fail");
     post_process(&mut value);
     value
 }
@@ -30,7 +31,8 @@ fn transform_definition(schema: &mut Value) {
         }
     }
 
-    if let Some(all_of) = schema.get_mut("allOf").and_then(|a| a.as_array_mut()) {
+    if let Some(all_of) = schema.get_mut("allOf").and_then(|a| a.as_array_mut())
+    {
         for item in all_of.iter_mut() {
             transform_definition(item);
         }
@@ -57,13 +59,15 @@ fn recurse_transform(schema: &mut Value) {
         recurse_into_items(items);
     }
 
-    if let Some(all_of) = schema.get_mut("allOf").and_then(|a| a.as_array_mut()) {
+    if let Some(all_of) = schema.get_mut("allOf").and_then(|a| a.as_array_mut())
+    {
         for item in all_of.iter_mut() {
             recurse_transform(item);
         }
     }
 
-    if let Some(any_of) = schema.get_mut("anyOf").and_then(|a| a.as_array_mut()) {
+    if let Some(any_of) = schema.get_mut("anyOf").and_then(|a| a.as_array_mut())
+    {
         for item in any_of.iter_mut() {
             if !is_null_type(item) {
                 recurse_transform(item);
@@ -120,7 +124,8 @@ fn extract_meta(schema: &Value) -> Map<String, Value> {
 
 fn extract_native(schema: &Value) -> Value {
     if let Some(any_of) = schema.get("anyOf").and_then(|a| a.as_array()) {
-        let non_nulls: Vec<&Value> = any_of.iter().filter(|v| !is_null_type(v)).collect();
+        let non_nulls: Vec<&Value> =
+            any_of.iter().filter(|v| !is_null_type(v)).collect();
         if non_nulls.len() == 1 && any_of.len() == 2 {
             return non_nulls[0].clone();
         }
@@ -200,6 +205,9 @@ fn file_ref_schema() -> Value {
     })
 }
 
-fn obj_mut<'a>(v: &'a mut Value, key: &str) -> Option<&'a mut Map<String, Value>> {
+fn obj_mut<'a>(
+    v: &'a mut Value,
+    key: &str,
+) -> Option<&'a mut Map<String, Value>> {
     v.get_mut(key)?.as_object_mut()
 }

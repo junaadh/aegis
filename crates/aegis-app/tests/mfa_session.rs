@@ -1,10 +1,13 @@
 mod common;
 
-use aegis_app::{LoginCommand, LoginOutcome, SessionRevokeCommand, SignupCommand, TotpEnrollFinishCommand, TotpVerifyCommand};
+use aegis_app::{
+    LoginCommand, LoginOutcome, SessionRevokeCommand, SignupCommand,
+    TotpEnrollFinishCommand, TotpVerifyCommand,
+};
 use time::OffsetDateTime;
 use totp_rs::{Algorithm, Secret, TOTP};
 
-use crate::common::{make_app, simple_hash, test_ctx, MockClock};
+use crate::common::{MockClock, make_app, simple_hash, test_ctx};
 
 fn current_totp(secret_encoded: &str, account_name: &str) -> String {
     let secret = Secret::Encoded(secret_encoded.to_owned())
@@ -139,11 +142,15 @@ async fn revoke_session_and_revoke_all_sessions_work() {
 
     let token_one = match login_one {
         LoginOutcome::Authenticated(auth) => auth.session_token,
-        LoginOutcome::RequiresMfa { .. } => panic!("unexpected mfa requirement"),
+        LoginOutcome::RequiresMfa { .. } => {
+            panic!("unexpected mfa requirement")
+        }
     };
     let token_two = match login_two {
         LoginOutcome::Authenticated(auth) => auth.session_token,
-        LoginOutcome::RequiresMfa { .. } => panic!("unexpected mfa requirement"),
+        LoginOutcome::RequiresMfa { .. } => {
+            panic!("unexpected mfa requirement")
+        }
     };
 
     let session_id_two = state
@@ -164,11 +171,21 @@ async fn revoke_session_and_revoke_all_sessions_work() {
     )
     .await
     .unwrap();
-    assert!(!state.read().await.sessions.contains_key(&simple_hash(&token_two)));
+    assert!(
+        !state
+            .read()
+            .await
+            .sessions
+            .contains_key(&simple_hash(&token_two))
+    );
 
-    app.revoke_all_sessions(signup.user.id, Some(simple_hash(&token_one)), &ctx)
-        .await
-        .unwrap();
+    app.revoke_all_sessions(
+        signup.user.id,
+        Some(simple_hash(&token_one)),
+        &ctx,
+    )
+    .await
+    .unwrap();
 
     let sessions = state.read().await.sessions.clone();
     assert!(sessions.contains_key(&simple_hash(&token_one)));

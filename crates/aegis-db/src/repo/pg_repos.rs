@@ -1,12 +1,14 @@
 use std::ptr::NonNull;
+use std::time::Instant;
 
-use aegis_app::{AppError, Repos, TransactionRepos};
+use aegis_app::{AppError, RepoHealth, Repos, TransactionRepos};
 use sqlx::{PgPool, Postgres, Transaction};
 
 use super::{
-    PgAuditRepo, PgCredentialRepo, PgGuestRepo, PgOutboxRepo, PgPendingTokenRepo, PgRoleRepo,
-    PgSessionRepo, PgTxAuditRepo, PgTxCredentialRepo, PgTxGuestRepo, PgTxOutboxRepo,
-    PgTxPendingTokenRepo, PgTxRoleRepo, PgTxSessionRepo, PgTxUserRepo, PgUserRepo,
+    PgAuditRepo, PgCredentialRepo, PgGuestRepo, PgOutboxRepo,
+    PgPendingTokenRepo, PgRoleRepo, PgSessionRepo, PgTxAuditRepo,
+    PgTxCredentialRepo, PgTxGuestRepo, PgTxOutboxRepo, PgTxPendingTokenRepo,
+    PgTxRoleRepo, PgTxSessionRepo, PgTxUserRepo, PgUserRepo,
 };
 
 pub(crate) type TxPtr = NonNull<Transaction<'static, Postgres>>;
@@ -88,15 +90,11 @@ impl Repos for PgRepos {
     async fn with_transaction<F, Fut, T>(&self, f: F) -> Result<T, AppError>
     where
         F: FnOnce(Self::Tx) -> Fut + Send,
-        Fut: std::future::Future<Output = (Self::Tx, Result<T, AppError>)> + Send,
+        Fut: std::future::Future<Output = (Self::Tx, Result<T, AppError>)>
+            + Send,
         T: Send,
     {
-        let tx = self
-            .users
-            .pool()
-            .begin()
-            .await
-            .map_err(infra_error)?;
+        let tx = self.users.pool().begin().await.map_err(infra_error)?;
         let pg_tx = PgTx::new(tx);
         let (pg_tx, result) = f(pg_tx).await;
 
@@ -110,6 +108,24 @@ impl Repos for PgRepos {
                 Err(err)
             }
         }
+    }
+
+    async fn health_check(&self) -> Result<RepoHealth, AppError> {
+        let pool = self.users.pool();
+        let start = Instant::now();
+        sqlx::query("SELECT 1").execute(pool).await.map_err(|e| {
+            AppError::Infrastructure(format!(
+                "database health check failed: {e}"
+            ))
+        })?;
+        let latency_ms = start.elapsed().as_millis() as u64;
+
+        Ok(RepoHealth {
+            connected: true,
+            latency_ms,
+            pool_size: pool.size(),
+            pool_idle: pool.num_idle() as u32,
+        })
     }
 }
 

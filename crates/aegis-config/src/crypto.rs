@@ -4,10 +4,15 @@ use crate::ref_or::RefOr;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema, Default)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema, Default,
+)]
 #[serde(deny_unknown_fields)]
 pub struct CryptoConfig {
-    #[schemars(title = "Master key", description = "Master encryption key. Use env:VAR or file:/path reference.")]
+    #[schemars(
+        title = "Master key",
+        description = "Master encryption key. Use env:VAR or file:/path reference."
+    )]
     #[serde(default)]
     pub master_key: Option<String>,
 
@@ -15,10 +20,15 @@ pub struct CryptoConfig {
     pub jwt: JwtConfig,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema, Default)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema, Default,
+)]
 #[serde(deny_unknown_fields)]
 pub struct JwtConfig {
-    #[schemars(title = "Enabled", description = "Enable JWT-based stateless authentication.")]
+    #[schemars(
+        title = "Enabled",
+        description = "Enable JWT-based stateless authentication."
+    )]
     #[serde(default)]
     pub enabled: bool,
 
@@ -26,11 +36,17 @@ pub struct JwtConfig {
     #[serde(default)]
     pub algorithm: JwtAlgorithm,
 
-    #[schemars(title = "Private key", description = "Path or reference to JWT private key.")]
+    #[schemars(
+        title = "Private key",
+        description = "Path or reference to JWT private key."
+    )]
     #[serde(default)]
     pub private_key: Option<String>,
 
-    #[schemars(title = "Public key", description = "Path or reference to JWT public key.")]
+    #[schemars(
+        title = "Public key",
+        description = "Path or reference to JWT public key."
+    )]
     #[serde(default)]
     pub public_key: Option<String>,
 
@@ -43,10 +59,15 @@ pub struct JwtConfig {
     pub audience: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize, JsonSchema)]
+#[derive(
+    Debug, Clone, PartialEq, Default, Serialize, Deserialize, JsonSchema,
+)]
 #[serde(deny_unknown_fields)]
 pub struct CryptoConfigSrc {
-    #[schemars(title = "Master key", description = "Master encryption key. Use env:VAR or file:/path reference.")]
+    #[schemars(
+        title = "Master key",
+        description = "Master encryption key. Use env:VAR or file:/path reference."
+    )]
     #[serde(default)]
     pub master_key: RefOr<Option<String>>,
 
@@ -63,10 +84,15 @@ impl CryptoConfigSrc {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize, JsonSchema)]
+#[derive(
+    Debug, Clone, PartialEq, Default, Serialize, Deserialize, JsonSchema,
+)]
 #[serde(deny_unknown_fields)]
 pub struct JwtConfigSrc {
-    #[schemars(title = "Enabled", description = "Enable JWT-based stateless authentication.")]
+    #[schemars(
+        title = "Enabled",
+        description = "Enable JWT-based stateless authentication."
+    )]
     #[serde(default)]
     pub enabled: RefOr<bool>,
 
@@ -74,11 +100,17 @@ pub struct JwtConfigSrc {
     #[serde(default)]
     pub algorithm: RefOr<JwtAlgorithm>,
 
-    #[schemars(title = "Private key", description = "Path or reference to JWT private key.")]
+    #[schemars(
+        title = "Private key",
+        description = "Path or reference to JWT private key."
+    )]
     #[serde(default)]
     pub private_key: RefOr<Option<String>>,
 
-    #[schemars(title = "Public key", description = "Path or reference to JWT public key.")]
+    #[schemars(
+        title = "Public key",
+        description = "Path or reference to JWT public key."
+    )]
     #[serde(default)]
     pub public_key: RefOr<Option<String>>,
 
@@ -101,5 +133,49 @@ impl JwtConfigSrc {
             issuer: self.issuer.resolve()?,
             audience: self.audience.resolve()?,
         })
+    }
+}
+
+impl JwtConfig {
+    pub fn validate(&self) -> Result<(), ConfigError> {
+        if !self.enabled {
+            return Ok(());
+        }
+
+        match self.algorithm {
+            crate::JwtAlgorithm::RS256 | crate::JwtAlgorithm::ES256 => {}
+            crate::JwtAlgorithm::HS256 => {
+                return Err(ConfigError::Validation(
+                    "crypto.jwt.algorithm must be RS256 or ES256 for internal service tokens"
+                        .to_owned(),
+                ));
+            }
+        }
+
+        if self.private_key.as_deref().unwrap_or_default().is_empty() {
+            return Err(ConfigError::MissingField(
+                "crypto.jwt.private_key".to_owned(),
+            ));
+        }
+
+        if self.public_key.as_deref().unwrap_or_default().is_empty() {
+            return Err(ConfigError::MissingField(
+                "crypto.jwt.public_key".to_owned(),
+            ));
+        }
+
+        if self.issuer.as_deref().unwrap_or_default().is_empty() {
+            return Err(ConfigError::MissingField(
+                "crypto.jwt.issuer".to_owned(),
+            ));
+        }
+
+        if self.audience.as_deref().unwrap_or_default().is_empty() {
+            return Err(ConfigError::MissingField(
+                "crypto.jwt.audience".to_owned(),
+            ));
+        }
+
+        Ok(())
     }
 }

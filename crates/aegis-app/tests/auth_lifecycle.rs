@@ -2,14 +2,19 @@ mod common;
 
 use time::OffsetDateTime;
 
-use aegis_core::{Actor, SessionIdentity, UserStatus};
 use aegis_app::{
-    AppError, LoginCommand, LoginOutcome, LogoutCommand, SignupCommand, UpdateProfileCommand,
+    AppError, LoginCommand, LoginOutcome, LogoutCommand, SignupCommand,
+    UpdateProfileCommand,
 };
+use aegis_core::{Actor, SessionIdentity, UserStatus};
 
 use common::*;
 
-async fn signup_user_local(app: &TestApp, email: &str, password: &str) -> aegis_app::AuthResult {
+async fn signup_user_local(
+    app: &TestApp,
+    email: &str,
+    password: &str,
+) -> aegis_app::AuthResult {
     app.signup(
         SignupCommand {
             email: email.to_owned(),
@@ -28,14 +33,17 @@ async fn signup_creates_active_user_when_email_disabled() {
     let clock = MockClock::new(now);
     let (app, state) = make_app(&clock, false);
 
-    let auth = app.signup(
-        SignupCommand {
-            email: "new@test.com".to_owned(),
-            password: "password123".to_owned(),
-            display_name: "New User".to_owned(),
-        },
-        &test_ctx(),
-    ).await.unwrap();
+    let auth = app
+        .signup(
+            SignupCommand {
+                email: "new@test.com".to_owned(),
+                password: "password123".to_owned(),
+                display_name: "New User".to_owned(),
+            },
+            &test_ctx(),
+        )
+        .await
+        .unwrap();
 
     assert_eq!(auth.user.status, UserStatus::Active);
     assert!(auth.session_token.starts_with("tok-"));
@@ -60,14 +68,17 @@ async fn signup_creates_pending_user_when_email_enabled() {
     let clock = MockClock::new(now);
     let (app, state) = make_app(&clock, true);
 
-    let auth = app.signup(
-        SignupCommand {
-            email: "verify@test.com".to_owned(),
-            password: "password123".to_owned(),
-            display_name: "Verify User".to_owned(),
-        },
-        &test_ctx(),
-    ).await.unwrap();
+    let auth = app
+        .signup(
+            SignupCommand {
+                email: "verify@test.com".to_owned(),
+                password: "password123".to_owned(),
+                display_name: "Verify User".to_owned(),
+            },
+            &test_ctx(),
+        )
+        .await
+        .unwrap();
 
     assert_eq!(auth.user.status, UserStatus::PendingVerification);
     assert!(!auth.user.is_email_verified());
@@ -97,16 +108,20 @@ async fn signup_rejects_duplicate_email() {
             display_name: "First".to_owned(),
         },
         &test_ctx(),
-    ).await.unwrap();
+    )
+    .await
+    .unwrap();
 
-    let result = app.signup(
-        SignupCommand {
-            email: "dup@test.com".to_owned(),
-            password: "password456".to_owned(),
-            display_name: "Second".to_owned(),
-        },
-        &test_ctx(),
-    ).await;
+    let result = app
+        .signup(
+            SignupCommand {
+                email: "dup@test.com".to_owned(),
+                password: "password456".to_owned(),
+                display_name: "Second".to_owned(),
+            },
+            &test_ctx(),
+        )
+        .await;
 
     assert!(result.is_err());
     assert!(matches!(result.unwrap_err(), AppError::EmailAlreadyExists));
@@ -118,14 +133,16 @@ async fn signup_rejects_weak_password() {
     let clock = MockClock::new(now);
     let (app, _state) = make_app(&clock, false);
 
-    let result = app.signup(
-        SignupCommand {
-            email: "weak@test.com".to_owned(),
-            password: "short".to_owned(),
-            display_name: "Weak".to_owned(),
-        },
-        &test_ctx(),
-    ).await;
+    let result = app
+        .signup(
+            SignupCommand {
+                email: "weak@test.com".to_owned(),
+                password: "short".to_owned(),
+                display_name: "Weak".to_owned(),
+            },
+            &test_ctx(),
+        )
+        .await;
 
     assert!(result.is_err());
     assert!(matches!(result.unwrap_err(), AppError::PasswordTooWeak(_)));
@@ -137,14 +154,16 @@ async fn signup_rejects_invalid_email() {
     let clock = MockClock::new(now);
     let (app, _state) = make_app(&clock, false);
 
-    let result = app.signup(
-        SignupCommand {
-            email: "no-at-sign".to_owned(),
-            password: "password123".to_owned(),
-            display_name: "Bad Email".to_owned(),
-        },
-        &test_ctx(),
-    ).await;
+    let result = app
+        .signup(
+            SignupCommand {
+                email: "no-at-sign".to_owned(),
+                password: "password123".to_owned(),
+                display_name: "Bad Email".to_owned(),
+            },
+            &test_ctx(),
+        )
+        .await;
 
     assert!(result.is_err());
     assert!(matches!(result.unwrap_err(), AppError::Validation(_)));
@@ -156,14 +175,17 @@ async fn signup_normalizes_email_to_lowercase() {
     let clock = MockClock::new(now);
     let (app, state) = make_app(&clock, false);
 
-    let auth = app.signup(
-        SignupCommand {
-            email: "Upper@Case.COM".to_owned(),
-            password: "password123".to_owned(),
-            display_name: "Test".to_owned(),
-        },
-        &test_ctx(),
-    ).await.unwrap();
+    let auth = app
+        .signup(
+            SignupCommand {
+                email: "Upper@Case.COM".to_owned(),
+                password: "password123".to_owned(),
+                display_name: "Test".to_owned(),
+            },
+            &test_ctx(),
+        )
+        .await
+        .unwrap();
 
     assert_eq!(auth.user.email.as_str(), "upper@case.com");
 
@@ -185,22 +207,29 @@ async fn login_succeeds_with_correct_password() {
             display_name: "Login User".to_owned(),
         },
         &test_ctx(),
-    ).await.unwrap();
+    )
+    .await
+    .unwrap();
 
-    let outcome = app.login_with_password(
-        LoginCommand {
-            email: "login@test.com".to_owned(),
-            password: "password123".to_owned(),
-        },
-        &test_ctx(),
-    ).await.unwrap();
+    let outcome = app
+        .login_with_password(
+            LoginCommand {
+                email: "login@test.com".to_owned(),
+                password: "password123".to_owned(),
+            },
+            &test_ctx(),
+        )
+        .await
+        .unwrap();
 
     match outcome {
         LoginOutcome::Authenticated(auth) => {
             assert!(auth.session_token.starts_with("tok-"));
             assert_eq!(auth.user.email.as_str(), "login@test.com");
         }
-        LoginOutcome::RequiresMfa { .. } => panic!("expected authenticated, got mfa required"),
+        LoginOutcome::RequiresMfa { .. } => {
+            panic!("expected authenticated, got mfa required")
+        }
     }
 }
 
@@ -217,15 +246,19 @@ async fn login_fails_with_wrong_password() {
             display_name: "Wrong Pw".to_owned(),
         },
         &test_ctx(),
-    ).await.unwrap();
+    )
+    .await
+    .unwrap();
 
-    let result = app.login_with_password(
-        LoginCommand {
-            email: "wrong@test.com".to_owned(),
-            password: "wrongpassword".to_owned(),
-        },
-        &test_ctx(),
-    ).await;
+    let result = app
+        .login_with_password(
+            LoginCommand {
+                email: "wrong@test.com".to_owned(),
+                password: "wrongpassword".to_owned(),
+            },
+            &test_ctx(),
+        )
+        .await;
 
     assert!(result.is_err());
     assert!(matches!(result.unwrap_err(), AppError::InvalidCredentials));
@@ -237,13 +270,15 @@ async fn login_fails_for_nonexistent_user() {
     let clock = MockClock::new(now);
     let (app, _state) = make_app(&clock, false);
 
-    let result = app.login_with_password(
-        LoginCommand {
-            email: "nobody@test.com".to_owned(),
-            password: "password123".to_owned(),
-        },
-        &test_ctx(),
-    ).await;
+    let result = app
+        .login_with_password(
+            LoginCommand {
+                email: "nobody@test.com".to_owned(),
+                password: "password123".to_owned(),
+            },
+            &test_ctx(),
+        )
+        .await;
 
     assert!(result.is_err());
     assert!(matches!(result.unwrap_err(), AppError::InvalidCredentials));
@@ -262,7 +297,9 @@ async fn login_fails_for_deleted_user() {
             display_name: "Deleted".to_owned(),
         },
         &test_ctx(),
-    ).await.unwrap();
+    )
+    .await
+    .unwrap();
 
     {
         let mut s = state.write().await;
@@ -270,13 +307,15 @@ async fn login_fails_for_deleted_user() {
         user.delete_at(now);
     }
 
-    let result = app.login_with_password(
-        LoginCommand {
-            email: "deleted@test.com".to_owned(),
-            password: "password123".to_owned(),
-        },
-        &test_ctx(),
-    ).await;
+    let result = app
+        .login_with_password(
+            LoginCommand {
+                email: "deleted@test.com".to_owned(),
+                password: "password123".to_owned(),
+            },
+            &test_ctx(),
+        )
+        .await;
 
     assert!(result.is_err());
     assert!(matches!(result.unwrap_err(), AppError::Unauthorized));
@@ -295,7 +334,9 @@ async fn login_fails_for_disabled_user() {
             display_name: "Disabled".to_owned(),
         },
         &test_ctx(),
-    ).await.unwrap();
+    )
+    .await
+    .unwrap();
 
     {
         let mut s = state.write().await;
@@ -303,13 +344,15 @@ async fn login_fails_for_disabled_user() {
         user.disable_at(now).unwrap();
     }
 
-    let result = app.login_with_password(
-        LoginCommand {
-            email: "disabled@test.com".to_owned(),
-            password: "password123".to_owned(),
-        },
-        &test_ctx(),
-    ).await;
+    let result = app
+        .login_with_password(
+            LoginCommand {
+                email: "disabled@test.com".to_owned(),
+                password: "password123".to_owned(),
+            },
+            &test_ctx(),
+        )
+        .await;
 
     assert!(result.is_err());
     assert!(matches!(result.unwrap_err(), AppError::Unauthorized));
@@ -328,15 +371,19 @@ async fn login_fails_for_unverified_when_email_enforced() {
             display_name: "Unverified".to_owned(),
         },
         &test_ctx(),
-    ).await.unwrap();
+    )
+    .await
+    .unwrap();
 
-    let result = app.login_with_password(
-        LoginCommand {
-            email: "unverified@test.com".to_owned(),
-            password: "password123".to_owned(),
-        },
-        &test_ctx(),
-    ).await;
+    let result = app
+        .login_with_password(
+            LoginCommand {
+                email: "unverified@test.com".to_owned(),
+                password: "password123".to_owned(),
+            },
+            &test_ctx(),
+        )
+        .await;
 
     assert!(result.is_err());
     assert!(matches!(result.unwrap_err(), AppError::EmailNotVerified));
@@ -355,15 +402,19 @@ async fn login_succeeds_for_unverified_when_email_disabled() {
             display_name: "No Email".to_owned(),
         },
         &test_ctx(),
-    ).await.unwrap();
+    )
+    .await
+    .unwrap();
 
-    let result = app.login_with_password(
-        LoginCommand {
-            email: "noemail@test.com".to_owned(),
-            password: "password123".to_owned(),
-        },
-        &test_ctx(),
-    ).await;
+    let result = app
+        .login_with_password(
+            LoginCommand {
+                email: "noemail@test.com".to_owned(),
+                password: "password123".to_owned(),
+            },
+            &test_ctx(),
+        )
+        .await;
 
     assert!(result.is_ok());
 }
@@ -374,23 +425,29 @@ async fn login_creates_session_with_correct_identity() {
     let clock = MockClock::new(now);
     let (app, state) = make_app(&clock, false);
 
-    let auth = app.signup(
-        SignupCommand {
-            email: "session@test.com".to_owned(),
-            password: "password123".to_owned(),
-            display_name: "Session".to_owned(),
-        },
-        &test_ctx(),
-    ).await.unwrap();
+    let auth = app
+        .signup(
+            SignupCommand {
+                email: "session@test.com".to_owned(),
+                password: "password123".to_owned(),
+                display_name: "Session".to_owned(),
+            },
+            &test_ctx(),
+        )
+        .await
+        .unwrap();
     let user_id = auth.user.id;
 
-    let _outcome = app.login_with_password(
-        LoginCommand {
-            email: "session@test.com".to_owned(),
-            password: "password123".to_owned(),
-        },
-        &test_ctx(),
-    ).await.unwrap();
+    let _outcome = app
+        .login_with_password(
+            LoginCommand {
+                email: "session@test.com".to_owned(),
+                password: "password123".to_owned(),
+            },
+            &test_ctx(),
+        )
+        .await
+        .unwrap();
 
     let s = state.read().await;
     let login_sessions: Vec<_> = s.sessions.values()
@@ -405,14 +462,17 @@ async fn login_requires_mfa_when_totp_enabled() {
     let clock = MockClock::new(now);
     let (app, state) = make_app(&clock, false);
 
-    let auth = app.signup(
-        SignupCommand {
-            email: "mfa@test.com".to_owned(),
-            password: "password123".to_owned(),
-            display_name: "Mfa User".to_owned(),
-        },
-        &test_ctx(),
-    ).await.unwrap();
+    let auth = app
+        .signup(
+            SignupCommand {
+                email: "mfa@test.com".to_owned(),
+                password: "password123".to_owned(),
+                display_name: "Mfa User".to_owned(),
+            },
+            &test_ctx(),
+        )
+        .await
+        .unwrap();
 
     {
         let mut s = state.write().await;
@@ -433,13 +493,16 @@ async fn login_requires_mfa_when_totp_enabled() {
         );
     }
 
-    let outcome = app.login_with_password(
-        LoginCommand {
-            email: "mfa@test.com".to_owned(),
-            password: "password123".to_owned(),
-        },
-        &test_ctx(),
-    ).await.unwrap();
+    let outcome = app
+        .login_with_password(
+            LoginCommand {
+                email: "mfa@test.com".to_owned(),
+                password: "password123".to_owned(),
+            },
+            &test_ctx(),
+        )
+        .await
+        .unwrap();
 
     match outcome {
         LoginOutcome::RequiresMfa { session_token, .. } => {
@@ -449,7 +512,11 @@ async fn login_requires_mfa_when_totp_enabled() {
     }
 
     let s = state.read().await;
-    let mfa_audit = s.audits.iter().find(|a| a.event_type == "user.login.mfa_required").unwrap();
+    let mfa_audit = s
+        .audits
+        .iter()
+        .find(|a| a.event_type == "user.login.mfa_required")
+        .unwrap();
     assert!(matches!(mfa_audit.actor, Actor::User(_)));
 }
 
@@ -459,28 +526,37 @@ async fn login_rehashes_password_when_algorithm_is_stale() {
     let clock = MockClock::new(now);
     let (app, state) = make_app(&clock, false);
 
-    let auth = app.signup(
-        SignupCommand {
-            email: "rehash@test.com".to_owned(),
-            password: "password123".to_owned(),
-            display_name: "Rehash User".to_owned(),
-        },
-        &test_ctx(),
-    ).await.unwrap();
+    let auth = app
+        .signup(
+            SignupCommand {
+                email: "rehash@test.com".to_owned(),
+                password: "password123".to_owned(),
+                display_name: "Rehash User".to_owned(),
+            },
+            &test_ctx(),
+        )
+        .await
+        .unwrap();
 
     {
         let mut s = state.write().await;
-        let cred = s.credentials_password.get_mut(&auth.user.id.as_uuid()).unwrap();
+        let cred = s
+            .credentials_password
+            .get_mut(&auth.user.id.as_uuid())
+            .unwrap();
         cred.algorithm_version = 0;
     }
 
-    let outcome = app.login_with_password(
-        LoginCommand {
-            email: "rehash@test.com".to_owned(),
-            password: "password123".to_owned(),
-        },
-        &test_ctx(),
-    ).await.unwrap();
+    let outcome = app
+        .login_with_password(
+            LoginCommand {
+                email: "rehash@test.com".to_owned(),
+                password: "password123".to_owned(),
+            },
+            &test_ctx(),
+        )
+        .await
+        .unwrap();
 
     assert!(matches!(outcome, LoginOutcome::Authenticated(_)));
 
@@ -503,7 +579,9 @@ async fn login_audit_trail() {
             display_name: "Audit".to_owned(),
         },
         &test_ctx(),
-    ).await.unwrap();
+    )
+    .await
+    .unwrap();
 
     app.login_with_password(
         LoginCommand {
@@ -511,10 +589,16 @@ async fn login_audit_trail() {
             password: "password123".to_owned(),
         },
         &test_ctx(),
-    ).await.unwrap();
+    )
+    .await
+    .unwrap();
 
     let s = state.read().await;
-    let login_audit = s.audits.iter().find(|a| a.event_type == "user.login").unwrap();
+    let login_audit = s
+        .audits
+        .iter()
+        .find(|a| a.event_type == "user.login")
+        .unwrap();
     assert!(matches!(login_audit.actor, Actor::User(_)));
     assert_eq!(login_audit.target.as_ref().unwrap().target_type, "session");
 }
@@ -525,28 +609,39 @@ async fn logout_deletes_session() {
     let clock = MockClock::new(now);
     let (app, state) = make_app(&clock, false);
 
-    let auth = app.signup(
-        SignupCommand {
-            email: "logout@test.com".to_owned(),
-            password: "password123".to_owned(),
-            display_name: "Logout".to_owned(),
-        },
-        &test_ctx(),
-    ).await.unwrap();
+    let auth = app
+        .signup(
+            SignupCommand {
+                email: "logout@test.com".to_owned(),
+                password: "password123".to_owned(),
+                display_name: "Logout".to_owned(),
+            },
+            &test_ctx(),
+        )
+        .await
+        .unwrap();
 
     let token_hash = common::simple_hash(&auth.session_token);
 
     assert!(state.read().await.sessions.len() == 1);
 
     app.logout(
-        LogoutCommand { session_token_hash: token_hash },
+        LogoutCommand {
+            session_token_hash: token_hash,
+        },
         &test_ctx(),
-    ).await.unwrap();
+    )
+    .await
+    .unwrap();
 
     assert!(state.read().await.sessions.is_empty());
 
     let s = state.read().await;
-    let logout_audit = s.audits.iter().find(|a| a.event_type == "session.logout").unwrap();
+    let logout_audit = s
+        .audits
+        .iter()
+        .find(|a| a.event_type == "session.logout")
+        .unwrap();
     assert!(matches!(logout_audit.actor, Actor::User(_)));
 }
 
@@ -557,10 +652,14 @@ async fn logout_idempotent_for_missing_session() {
     let (app, _state) = make_app(&clock, false);
 
     let fake_hash = [0u8; 32];
-    let result = app.logout(
-        LogoutCommand { session_token_hash: fake_hash },
-        &test_ctx(),
-    ).await;
+    let result = app
+        .logout(
+            LogoutCommand {
+                session_token_hash: fake_hash,
+            },
+            &test_ctx(),
+        )
+        .await;
 
     assert!(result.is_ok());
 }
@@ -571,18 +670,29 @@ async fn logout_for_guest_session() {
     let clock = MockClock::new(now);
     let (app, state) = make_app(&clock, false);
 
-    let guest_result = app.create_guest(aegis_app::CreateGuestCommand, &test_ctx()).await.unwrap();
+    let guest_result = app
+        .create_guest(aegis_app::CreateGuestCommand, &test_ctx())
+        .await
+        .unwrap();
     let token_hash = common::simple_hash(&guest_result.session_token);
 
     app.logout(
-        LogoutCommand { session_token_hash: token_hash },
+        LogoutCommand {
+            session_token_hash: token_hash,
+        },
         &test_ctx(),
-    ).await.unwrap();
+    )
+    .await
+    .unwrap();
 
     assert!(state.read().await.sessions.is_empty());
 
     let s = state.read().await;
-    let logout_audit = s.audits.iter().find(|a| a.event_type == "session.logout").unwrap();
+    let logout_audit = s
+        .audits
+        .iter()
+        .find(|a| a.event_type == "session.logout")
+        .unwrap();
     assert!(matches!(logout_audit.actor, Actor::Guest(_)));
 }
 
@@ -601,7 +711,10 @@ async fn get_current_identity_returns_user() {
     assert!(identity.guest.is_none());
     assert_eq!(identity.user.unwrap().email.as_str(), "me@test.com");
     assert_eq!(identity.credentials.len(), 1);
-    assert_eq!(identity.credentials[0].kind, aegis_core::CredentialKind::Password);
+    assert_eq!(
+        identity.credentials[0].kind,
+        aegis_core::CredentialKind::Password
+    );
 }
 
 #[tokio::test]
@@ -624,13 +737,16 @@ async fn update_profile_changes_display_name() {
     let auth = signup_user_local(&app, "update@test.com", "password123").await;
     let user_id = auth.user.id;
 
-    let result = app.update_profile(
-        user_id,
-        UpdateProfileCommand {
-            display_name: Some("Updated Name".to_owned()),
-        },
-        &test_ctx(),
-    ).await.unwrap();
+    let result = app
+        .update_profile(
+            user_id,
+            UpdateProfileCommand {
+                display_name: Some("Updated Name".to_owned()),
+            },
+            &test_ctx(),
+        )
+        .await
+        .unwrap();
 
     assert_eq!(result.user.unwrap().display_name.as_str(), "Updated Name");
 }
@@ -641,14 +757,18 @@ async fn update_profile_no_change_returns_current() {
     let clock = MockClock::new(now);
     let (app, _state) = make_app(&clock, false);
 
-    let auth = signup_user_local(&app, "nochange@test.com", "password123").await;
+    let auth =
+        signup_user_local(&app, "nochange@test.com", "password123").await;
     let user_id = auth.user.id;
 
-    let result = app.update_profile(
-        user_id,
-        UpdateProfileCommand { display_name: None },
-        &test_ctx(),
-    ).await.unwrap();
+    let result = app
+        .update_profile(
+            user_id,
+            UpdateProfileCommand { display_name: None },
+            &test_ctx(),
+        )
+        .await
+        .unwrap();
 
     assert_eq!(result.user.unwrap().display_name.as_str(), "Test User");
 }

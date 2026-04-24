@@ -82,3 +82,32 @@ pub struct RegisterWebhookCommand {
     pub events: Vec<String>,
     pub secret: Option<String>,
 }
+
+#[derive(Debug, Clone, Default)]
+pub struct AdminUserListQuery {
+    pub status: Option<String>,
+    pub verified: Option<bool>,
+    pub role: Option<String>,
+    pub q: Option<String>,
+    pub page: u32,
+    pub per_page: u32,
+    pub sort: Option<String>,
+    pub order: Option<String>,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct AdminGuestListQuery {
+    pub status: Option<String>,
+    pub page: u32,
+    pub per_page: u32,
+    pub sort: Option<String>,
+    pub order: Option<String>,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct AdminSessionListQuery {
+    pub user_id: Option<Uuid>,
+    pub active_only: Option<bool>,
+    pub page: u32,
+    pub per_page: u32,
+}

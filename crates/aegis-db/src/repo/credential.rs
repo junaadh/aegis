@@ -1,7 +1,7 @@
 use aegis_app::{AppError, CredentialRepo, CredentialSummary};
 use aegis_core::{
-    CredentialKind, PasskeyCredential, PasswordCredential, RecoveryCode, RecoveryCodeState,
-    TotpCredential, UserId,
+    CredentialKind, PasskeyCredential, PasswordCredential, RecoveryCode,
+    RecoveryCodeState, TotpCredential, UserId,
 };
 use sqlx::{Executor, FromRow, PgPool, Postgres, Transaction};
 use time::OffsetDateTime;
@@ -9,7 +9,8 @@ use uuid::Uuid;
 
 use crate::repo::pg_repos::TxPtr;
 use crate::row::{
-    PasskeyCredentialRow, PasswordCredentialRow, RecoveryCodeRow, TotpCredentialRow,
+    PasskeyCredentialRow, PasswordCredentialRow, RecoveryCodeRow,
+    TotpCredentialRow,
 };
 
 pub struct PgCredentialRepo {
@@ -35,7 +36,12 @@ impl PgTxCredentialRepo {
     }
 
     fn tx(&self) -> &mut Transaction<'static, Postgres> {
-        unsafe { self.tx.as_ptr().as_mut().expect("transaction pointer must be valid") }
+        unsafe {
+            self.tx
+                .as_ptr()
+                .as_mut()
+                .expect("transaction pointer must be valid")
+        }
     }
 }
 
@@ -51,12 +57,18 @@ fn infra_error(err: impl std::fmt::Display) -> AppError {
     AppError::Infrastructure(err.to_string())
 }
 
-fn map_summary(row: CredentialSummaryRow) -> Result<CredentialSummary, AppError> {
+fn map_summary(
+    row: CredentialSummaryRow,
+) -> Result<CredentialSummary, AppError> {
     let kind = match row.kind.as_str() {
         "password" => CredentialKind::Password,
         "passkey" => CredentialKind::Passkey,
         "totp" => CredentialKind::Totp,
-        other => return Err(AppError::Infrastructure(format!("unknown credential kind: {other}"))),
+        other => {
+            return Err(AppError::Infrastructure(format!(
+                "unknown credential kind: {other}"
+            )));
+        }
     };
 
     Ok(CredentialSummary {
@@ -85,7 +97,10 @@ where
     Ok(row.map(Into::into))
 }
 
-async fn list_by_user_id_impl<'e, E>(executor: E, user_id: UserId) -> Result<Vec<CredentialSummary>, AppError>
+async fn list_by_user_id_impl<'e, E>(
+    executor: E,
+    user_id: UserId,
+) -> Result<Vec<CredentialSummary>, AppError>
 where
     E: Executor<'e, Database = Postgres>,
 {
@@ -105,7 +120,10 @@ where
     rows.into_iter().map(map_summary).collect()
 }
 
-async fn get_totp_by_user_id_impl<'e, E>(executor: E, user_id: UserId) -> Result<Option<TotpCredential>, AppError>
+async fn get_totp_by_user_id_impl<'e, E>(
+    executor: E,
+    user_id: UserId,
+) -> Result<Option<TotpCredential>, AppError>
 where
     E: Executor<'e, Database = Postgres>,
 {
@@ -120,7 +138,10 @@ where
     row.map(TryInto::try_into).transpose().map_err(infra_error)
 }
 
-async fn get_recovery_code_by_hash_impl<'e, E>(executor: E, hash: &str) -> Result<Option<RecoveryCode>, AppError>
+async fn get_recovery_code_by_hash_impl<'e, E>(
+    executor: E,
+    hash: &str,
+) -> Result<Option<RecoveryCode>, AppError>
 where
     E: Executor<'e, Database = Postgres>,
 {
@@ -153,7 +174,10 @@ where
     Ok(row.map(Into::into))
 }
 
-async fn insert_password_impl<'e, E>(executor: E, cred: &PasswordCredential) -> Result<(), AppError>
+async fn insert_password_impl<'e, E>(
+    executor: E,
+    cred: &PasswordCredential,
+) -> Result<(), AppError>
 where
     E: Executor<'e, Database = Postgres>,
 {
@@ -173,7 +197,10 @@ where
     Ok(())
 }
 
-async fn update_password_impl<'e, E>(executor: E, cred: &PasswordCredential) -> Result<(), AppError>
+async fn update_password_impl<'e, E>(
+    executor: E,
+    cred: &PasswordCredential,
+) -> Result<(), AppError>
 where
     E: Executor<'e, Database = Postgres>,
 {
@@ -247,7 +274,10 @@ async fn delete_by_id_tx_impl(
     Ok(())
 }
 
-async fn insert_totp_impl<'e, E>(executor: E, cred: &TotpCredential) -> Result<(), AppError>
+async fn insert_totp_impl<'e, E>(
+    executor: E,
+    cred: &TotpCredential,
+) -> Result<(), AppError>
 where
     E: Executor<'e, Database = Postgres>,
 {
@@ -270,7 +300,10 @@ where
     Ok(())
 }
 
-async fn update_totp_impl<'e, E>(executor: E, cred: &TotpCredential) -> Result<(), AppError>
+async fn update_totp_impl<'e, E>(
+    executor: E,
+    cred: &TotpCredential,
+) -> Result<(), AppError>
 where
     E: Executor<'e, Database = Postgres>,
 {
@@ -293,7 +326,10 @@ where
     Ok(())
 }
 
-async fn insert_recovery_codes_impl<'e, E>(executor: E, codes: &[RecoveryCode]) -> Result<(), AppError>
+async fn insert_recovery_codes_impl<'e, E>(
+    executor: E,
+    codes: &[RecoveryCode],
+) -> Result<(), AppError>
 where
     E: Executor<'e, Database = Postgres> + Copy,
 {
@@ -344,7 +380,10 @@ async fn insert_recovery_codes_tx_impl(
     Ok(())
 }
 
-async fn update_recovery_code_impl<'e, E>(executor: E, code: &RecoveryCode) -> Result<(), AppError>
+async fn update_recovery_code_impl<'e, E>(
+    executor: E,
+    code: &RecoveryCode,
+) -> Result<(), AppError>
 where
     E: Executor<'e, Database = Postgres>,
 {
@@ -365,7 +404,10 @@ where
     Ok(())
 }
 
-async fn delete_recovery_codes_by_user_id_impl<'e, E>(executor: E, user_id: UserId) -> Result<(), AppError>
+async fn delete_recovery_codes_by_user_id_impl<'e, E>(
+    executor: E,
+    user_id: UserId,
+) -> Result<(), AppError>
 where
     E: Executor<'e, Database = Postgres>,
 {
@@ -377,7 +419,10 @@ where
     Ok(())
 }
 
-async fn insert_passkey_impl<'e, E>(executor: E, cred: &PasskeyCredential) -> Result<(), AppError>
+async fn insert_passkey_impl<'e, E>(
+    executor: E,
+    cred: &PasskeyCredential,
+) -> Result<(), AppError>
 where
     E: Executor<'e, Database = Postgres>,
 {
@@ -402,7 +447,10 @@ where
     Ok(())
 }
 
-async fn update_passkey_impl<'e, E>(executor: E, cred: &PasskeyCredential) -> Result<(), AppError>
+async fn update_passkey_impl<'e, E>(
+    executor: E,
+    cred: &PasskeyCredential,
+) -> Result<(), AppError>
 where
     E: Executor<'e, Database = Postgres>,
 {
@@ -429,31 +477,52 @@ where
 
 #[async_trait::async_trait]
 impl CredentialRepo for PgCredentialRepo {
-    async fn get_password_by_user_id(&self, user_id: UserId) -> Result<Option<PasswordCredential>, AppError> {
+    async fn get_password_by_user_id(
+        &self,
+        user_id: UserId,
+    ) -> Result<Option<PasswordCredential>, AppError> {
         get_password_by_user_id_impl(&self.pool, user_id).await
     }
 
-    async fn list_by_user_id(&self, user_id: UserId) -> Result<Vec<CredentialSummary>, AppError> {
+    async fn list_by_user_id(
+        &self,
+        user_id: UserId,
+    ) -> Result<Vec<CredentialSummary>, AppError> {
         list_by_user_id_impl(&self.pool, user_id).await
     }
 
-    async fn get_totp_by_user_id(&self, user_id: UserId) -> Result<Option<TotpCredential>, AppError> {
+    async fn get_totp_by_user_id(
+        &self,
+        user_id: UserId,
+    ) -> Result<Option<TotpCredential>, AppError> {
         get_totp_by_user_id_impl(&self.pool, user_id).await
     }
 
-    async fn get_recovery_code_by_hash(&self, hash: &str) -> Result<Option<RecoveryCode>, AppError> {
+    async fn get_recovery_code_by_hash(
+        &self,
+        hash: &str,
+    ) -> Result<Option<RecoveryCode>, AppError> {
         get_recovery_code_by_hash_impl(&self.pool, hash).await
     }
 
-    async fn get_passkey_by_credential_id(&self, credential_id: &str) -> Result<Option<PasskeyCredential>, AppError> {
+    async fn get_passkey_by_credential_id(
+        &self,
+        credential_id: &str,
+    ) -> Result<Option<PasskeyCredential>, AppError> {
         get_passkey_by_credential_id_impl(&self.pool, credential_id).await
     }
 
-    async fn insert_password(&mut self, cred: &PasswordCredential) -> Result<(), AppError> {
+    async fn insert_password(
+        &mut self,
+        cred: &PasswordCredential,
+    ) -> Result<(), AppError> {
         insert_password_impl(&self.pool, cred).await
     }
 
-    async fn update_password(&mut self, cred: &PasswordCredential) -> Result<(), AppError> {
+    async fn update_password(
+        &mut self,
+        cred: &PasswordCredential,
+    ) -> Result<(), AppError> {
         update_password_impl(&self.pool, cred).await
     }
 
@@ -461,62 +530,105 @@ impl CredentialRepo for PgCredentialRepo {
         delete_by_id_impl(&self.pool, id).await
     }
 
-    async fn insert_totp(&mut self, cred: &TotpCredential) -> Result<(), AppError> {
+    async fn insert_totp(
+        &mut self,
+        cred: &TotpCredential,
+    ) -> Result<(), AppError> {
         insert_totp_impl(&self.pool, cred).await
     }
 
-    async fn update_totp(&mut self, cred: &TotpCredential) -> Result<(), AppError> {
+    async fn update_totp(
+        &mut self,
+        cred: &TotpCredential,
+    ) -> Result<(), AppError> {
         update_totp_impl(&self.pool, cred).await
     }
 
-    async fn insert_recovery_codes(&mut self, codes: &[RecoveryCode]) -> Result<(), AppError> {
+    async fn insert_recovery_codes(
+        &mut self,
+        codes: &[RecoveryCode],
+    ) -> Result<(), AppError> {
         insert_recovery_codes_impl(&self.pool, codes).await
     }
 
-    async fn update_recovery_code(&mut self, code: &RecoveryCode) -> Result<(), AppError> {
+    async fn update_recovery_code(
+        &mut self,
+        code: &RecoveryCode,
+    ) -> Result<(), AppError> {
         update_recovery_code_impl(&self.pool, code).await
     }
 
-    async fn delete_recovery_codes_by_user_id(&mut self, user_id: UserId) -> Result<(), AppError> {
+    async fn delete_recovery_codes_by_user_id(
+        &mut self,
+        user_id: UserId,
+    ) -> Result<(), AppError> {
         delete_recovery_codes_by_user_id_impl(&self.pool, user_id).await
     }
 
-    async fn insert_passkey(&mut self, cred: &PasskeyCredential) -> Result<(), AppError> {
+    async fn insert_passkey(
+        &mut self,
+        cred: &PasskeyCredential,
+    ) -> Result<(), AppError> {
         insert_passkey_impl(&self.pool, cred).await
     }
 
-    async fn update_passkey(&mut self, cred: &PasskeyCredential) -> Result<(), AppError> {
+    async fn update_passkey(
+        &mut self,
+        cred: &PasskeyCredential,
+    ) -> Result<(), AppError> {
         update_passkey_impl(&self.pool, cred).await
     }
 }
 
 #[async_trait::async_trait]
 impl CredentialRepo for PgTxCredentialRepo {
-    async fn get_password_by_user_id(&self, user_id: UserId) -> Result<Option<PasswordCredential>, AppError> {
+    async fn get_password_by_user_id(
+        &self,
+        user_id: UserId,
+    ) -> Result<Option<PasswordCredential>, AppError> {
         get_password_by_user_id_impl(self.tx().as_mut(), user_id).await
     }
 
-    async fn list_by_user_id(&self, user_id: UserId) -> Result<Vec<CredentialSummary>, AppError> {
+    async fn list_by_user_id(
+        &self,
+        user_id: UserId,
+    ) -> Result<Vec<CredentialSummary>, AppError> {
         list_by_user_id_impl(self.tx().as_mut(), user_id).await
     }
 
-    async fn get_totp_by_user_id(&self, user_id: UserId) -> Result<Option<TotpCredential>, AppError> {
+    async fn get_totp_by_user_id(
+        &self,
+        user_id: UserId,
+    ) -> Result<Option<TotpCredential>, AppError> {
         get_totp_by_user_id_impl(self.tx().as_mut(), user_id).await
     }
 
-    async fn get_recovery_code_by_hash(&self, hash: &str) -> Result<Option<RecoveryCode>, AppError> {
+    async fn get_recovery_code_by_hash(
+        &self,
+        hash: &str,
+    ) -> Result<Option<RecoveryCode>, AppError> {
         get_recovery_code_by_hash_impl(self.tx().as_mut(), hash).await
     }
 
-    async fn get_passkey_by_credential_id(&self, credential_id: &str) -> Result<Option<PasskeyCredential>, AppError> {
-        get_passkey_by_credential_id_impl(self.tx().as_mut(), credential_id).await
+    async fn get_passkey_by_credential_id(
+        &self,
+        credential_id: &str,
+    ) -> Result<Option<PasskeyCredential>, AppError> {
+        get_passkey_by_credential_id_impl(self.tx().as_mut(), credential_id)
+            .await
     }
 
-    async fn insert_password(&mut self, cred: &PasswordCredential) -> Result<(), AppError> {
+    async fn insert_password(
+        &mut self,
+        cred: &PasswordCredential,
+    ) -> Result<(), AppError> {
         insert_password_impl(self.tx().as_mut(), cred).await
     }
 
-    async fn update_password(&mut self, cred: &PasswordCredential) -> Result<(), AppError> {
+    async fn update_password(
+        &mut self,
+        cred: &PasswordCredential,
+    ) -> Result<(), AppError> {
         update_password_impl(self.tx().as_mut(), cred).await
     }
 
@@ -524,31 +636,52 @@ impl CredentialRepo for PgTxCredentialRepo {
         delete_by_id_tx_impl(self.tx().as_mut(), id).await
     }
 
-    async fn insert_totp(&mut self, cred: &TotpCredential) -> Result<(), AppError> {
+    async fn insert_totp(
+        &mut self,
+        cred: &TotpCredential,
+    ) -> Result<(), AppError> {
         insert_totp_impl(self.tx().as_mut(), cred).await
     }
 
-    async fn update_totp(&mut self, cred: &TotpCredential) -> Result<(), AppError> {
+    async fn update_totp(
+        &mut self,
+        cred: &TotpCredential,
+    ) -> Result<(), AppError> {
         update_totp_impl(self.tx().as_mut(), cred).await
     }
 
-    async fn insert_recovery_codes(&mut self, codes: &[RecoveryCode]) -> Result<(), AppError> {
+    async fn insert_recovery_codes(
+        &mut self,
+        codes: &[RecoveryCode],
+    ) -> Result<(), AppError> {
         insert_recovery_codes_tx_impl(self.tx().as_mut(), codes).await
     }
 
-    async fn update_recovery_code(&mut self, code: &RecoveryCode) -> Result<(), AppError> {
+    async fn update_recovery_code(
+        &mut self,
+        code: &RecoveryCode,
+    ) -> Result<(), AppError> {
         update_recovery_code_impl(self.tx().as_mut(), code).await
     }
 
-    async fn delete_recovery_codes_by_user_id(&mut self, user_id: UserId) -> Result<(), AppError> {
+    async fn delete_recovery_codes_by_user_id(
+        &mut self,
+        user_id: UserId,
+    ) -> Result<(), AppError> {
         delete_recovery_codes_by_user_id_impl(self.tx().as_mut(), user_id).await
     }
 
-    async fn insert_passkey(&mut self, cred: &PasskeyCredential) -> Result<(), AppError> {
+    async fn insert_passkey(
+        &mut self,
+        cred: &PasskeyCredential,
+    ) -> Result<(), AppError> {
         insert_passkey_impl(self.tx().as_mut(), cred).await
     }
 
-    async fn update_passkey(&mut self, cred: &PasskeyCredential) -> Result<(), AppError> {
+    async fn update_passkey(
+        &mut self,
+        cred: &PasskeyCredential,
+    ) -> Result<(), AppError> {
         update_passkey_impl(self.tx().as_mut(), cred).await
     }
 }

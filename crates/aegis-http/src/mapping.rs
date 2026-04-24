@@ -1,7 +1,8 @@
 use aegis_app::{AuthResult, GuestAuthResult, IdentityResult, LoginOutcome};
 use aegis_core::{Guest, User};
 use aegis_types::{
-    AuthResponse, GuestResponse, IdentityData, IdentityResponse, SessionInfo, UserResponse,
+    AuthResponse, GuestResponse, IdentityData, IdentityResponse, SessionInfo,
+    UserResponse,
 };
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
@@ -115,13 +116,13 @@ pub fn map_login_outcome(outcome: &LoginOutcome) -> LoginOutcomeResponse {
         LoginOutcome::Authenticated(auth) => {
             LoginOutcomeResponse::Authenticated(Box::new(map_auth_result(auth)))
         }
-        LoginOutcome::RequiresMfa { session_expires_at, .. } => {
-            LoginOutcomeResponse::RequiresMfa {
-                session: SessionInfo {
-                    expires_at: format_ts(*session_expires_at),
-                    mfa_verified: false,
-                },
-            }
-        }
+        LoginOutcome::RequiresMfa {
+            session_expires_at, ..
+        } => LoginOutcomeResponse::RequiresMfa {
+            session: SessionInfo {
+                expires_at: format_ts(*session_expires_at),
+                mfa_verified: false,
+            },
+        },
     }
 }

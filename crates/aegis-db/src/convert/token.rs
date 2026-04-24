@@ -1,4 +1,4 @@
-use aegis_core::{UserId, PendingToken, PendingTokenPurpose};
+use aegis_core::{PendingToken, PendingTokenPurpose, UserId};
 
 use crate::error::ConversionError;
 use crate::row::{EmailVerificationTokenRow, PasswordResetTokenRow};
@@ -7,12 +7,12 @@ impl TryFrom<EmailVerificationTokenRow> for PendingToken {
     type Error = ConversionError;
 
     fn try_from(row: EmailVerificationTokenRow) -> Result<Self, Self::Error> {
-        let token_hash: [u8; 32] = row
-            .token_hash
-            .try_into()
-            .map_err(|v: Vec<u8>| ConversionError::InvalidTokenHashLength {
-                expected: 32,
-                actual: v.len(),
+        let token_hash: [u8; 32] =
+            row.token_hash.try_into().map_err(|v: Vec<u8>| {
+                ConversionError::InvalidTokenHashLength {
+                    expected: 32,
+                    actual: v.len(),
+                }
             })?;
 
         Ok(Self {
@@ -29,12 +29,12 @@ impl TryFrom<PasswordResetTokenRow> for PendingToken {
     type Error = ConversionError;
 
     fn try_from(row: PasswordResetTokenRow) -> Result<Self, Self::Error> {
-        let token_hash: [u8; 32] = row
-            .token_hash
-            .try_into()
-            .map_err(|v: Vec<u8>| ConversionError::InvalidTokenHashLength {
-                expected: 32,
-                actual: v.len(),
+        let token_hash: [u8; 32] =
+            row.token_hash.try_into().map_err(|v: Vec<u8>| {
+                ConversionError::InvalidTokenHashLength {
+                    expected: 32,
+                    actual: v.len(),
+                }
             })?;
 
         Ok(Self {

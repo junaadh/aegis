@@ -1,6 +1,6 @@
 use aegis_app::{AppError, TokenGenerator};
-use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
-use rand::{rngs::OsRng, RngCore};
+use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
+use rand::{RngCore, rngs::OsRng};
 use sha2::{Digest, Sha256};
 
 pub struct SystemTokenGenerator;
@@ -19,7 +19,10 @@ impl Default for SystemTokenGenerator {
 
 #[async_trait::async_trait]
 impl TokenGenerator for SystemTokenGenerator {
-    async fn generate_opaque(&self, len: usize) -> Result<(String, [u8; 32]), AppError> {
+    async fn generate_opaque(
+        &self,
+        len: usize,
+    ) -> Result<(String, [u8; 32]), AppError> {
         if len == 0 {
             return Err(AppError::Infrastructure(
                 "token length must be greater than zero".to_owned(),

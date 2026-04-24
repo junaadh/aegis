@@ -4,5 +4,9 @@ use crate::error::AppError;
 
 #[async_trait]
 pub trait WebhookDispatcher: Send + Sync {
-    async fn dispatch(&self, event: &str, payload: &str) -> Result<(), AppError>;
+    async fn dispatch(
+        &self,
+        event: &str,
+        payload: &str,
+    ) -> Result<(), AppError>;
 }

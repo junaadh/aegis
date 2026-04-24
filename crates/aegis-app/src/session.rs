@@ -3,7 +3,10 @@ use aegis_core::{Session, SessionIdentity};
 use crate::app::AegisApp;
 use crate::dto::{AuthResult, LoginOutcome};
 use crate::error::AppError;
-use crate::ports::{Cache, Clock, Hasher, IdGenerator, Repos, TokenGenerator, WebAuthn, WebhookDispatcher};
+use crate::ports::{
+    Cache, Clock, Hasher, IdGenerator, Repos, TokenGenerator, WebAuthn,
+    WebhookDispatcher,
+};
 
 pub struct IssuedSession {
     pub token: String,
@@ -37,9 +40,10 @@ where
 
         let expires_at = now + self.policy().auth.session_max_age;
 
-        let session = Session::builder(session_id, token_hash, identity, expires_at)
-            .mfa_verified(mfa_verified)
-            .build();
+        let session =
+            Session::builder(session_id, token_hash, identity, expires_at)
+                .mfa_verified(mfa_verified)
+                .build();
 
         Ok(IssuedSession { token, session })
     }

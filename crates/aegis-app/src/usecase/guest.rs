@@ -1,16 +1,20 @@
 use aegis_core::{
-    Actor, AuditTarget, Guest, Metadata, NewAuditEntry, PasswordCredential, SessionIdentity,
-    User,
+    Actor, AuditTarget, Guest, Metadata, NewAuditEntry, PasswordCredential,
+    SessionIdentity, User,
 };
 
 use crate::app::AegisApp;
-use crate::dto::{AuthResult, CreateGuestCommand, GuestAuthResult, GuestConvertCommand,
-    GuestEmailCommand, RequestContext};
+use crate::dto::{
+    AuthResult, CreateGuestCommand, GuestAuthResult, GuestConvertCommand,
+    GuestEmailCommand, RequestContext,
+};
 use crate::error::AppError;
 use crate::jobs::JobPayload;
-use crate::ports::{AuditRepo, Cache, Clock, CredentialRepo, GuestRepo, Hasher, IdGenerator,
-    OutboxRepo, PendingTokenRepo, Repos, SessionRepo, TokenGenerator, TransactionRepos, UserRepo,
-    WebAuthn, WebhookDispatcher};
+use crate::ports::{
+    AuditRepo, Cache, Clock, CredentialRepo, GuestRepo, Hasher, IdGenerator,
+    OutboxRepo, PendingTokenRepo, Repos, SessionRepo, TokenGenerator,
+    TransactionRepos, UserRepo, WebAuthn, WebhookDispatcher,
+};
 
 impl<R, C, H, T, W, K, I, A> AegisApp<R, C, H, T, W, K, I, A>
 where
@@ -195,10 +199,11 @@ where
 
         let resolved_email = match email {
             Some(e) => e,
-            None => guest
-                .email
-                .clone()
-                .ok_or_else(|| AppError::Validation("email is required for conversion".to_owned()))?,
+            None => guest.email.clone().ok_or_else(|| {
+                AppError::Validation(
+                    "email is required for conversion".to_owned(),
+                )
+            })?,
         };
 
         let email_str = resolved_email.as_str().to_owned();
@@ -250,8 +255,10 @@ where
                 .tokens
                 .generate_opaque(self.policy().auth.bearer_token_length)
                 .await?;
-            let verification_expires = now + self.policy().email.verification_token_ttl;
-            let token_hash = self.deps.tokens.hash_token(&verification_token.0).await;
+            let verification_expires =
+                now + self.policy().email.verification_token_ttl;
+            let token_hash =
+                self.deps.tokens.hash_token(&verification_token.0).await;
 
             let pending_token = aegis_core::PendingToken {
                 token_hash,
@@ -291,7 +298,9 @@ where
                         tx.sessions().insert(&issued_session).await?;
                         tx.guests().update(&guest).await?;
 
-                        if let Some((pending_token, raw_token, email)) = pending_token_data {
+                        if let Some((pending_token, raw_token, email)) =
+                            pending_token_data
+                        {
                             tx.tokens().insert(&pending_token).await?;
                             let job = JobPayload::SendVerificationEmail {
                                 user_id: user_id.as_uuid(),
@@ -328,7 +337,8 @@ where
         match result {
             Ok(()) => Ok(self.assemble_auth_result(user, issued)),
             Err(AppError::Infrastructure(msg))
-                if msg.contains("duplicate key") || msg.contains("unique constraint") =>
+                if msg.contains("duplicate key")
+                    || msg.contains("unique constraint") =>
             {
                 Err(AppError::EmailAlreadyExists)
             }

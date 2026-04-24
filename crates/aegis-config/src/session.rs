@@ -7,14 +7,23 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct SessionConfig {
-    #[schemars(title = "Session secret", description = "Secret key for signing session tokens. Use env:VAR reference.")]
+    #[schemars(
+        title = "Session secret",
+        description = "Secret key for signing session tokens. Use env:VAR reference."
+    )]
     pub secret: String,
 
-    #[schemars(title = "Max age", description = "Maximum session lifetime in hours.")]
+    #[schemars(
+        title = "Max age",
+        description = "Maximum session lifetime in hours."
+    )]
     #[serde(default = "default_max_age_hours")]
     pub max_age_hours: u64,
 
-    #[schemars(title = "Idle timeout", description = "Session idle timeout in minutes.")]
+    #[schemars(
+        title = "Idle timeout",
+        description = "Session idle timeout in minutes."
+    )]
     #[serde(default = "default_idle_timeout_minutes")]
     pub idle_timeout_minutes: u64,
 
@@ -28,15 +37,24 @@ pub struct SessionConfig {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct CookieConfig {
-    #[schemars(title = "Cookie name", description = "Name of the session cookie.")]
+    #[schemars(
+        title = "Cookie name",
+        description = "Name of the session cookie."
+    )]
     #[serde(default = "default_cookie_name")]
     pub name: String,
 
-    #[schemars(title = "Cookie path", description = "URL path for the cookie.")]
+    #[schemars(
+        title = "Cookie path",
+        description = "URL path for the cookie."
+    )]
     #[serde(default = "default_cookie_path")]
     pub path: String,
 
-    #[schemars(title = "Cookie domain", description = "Domain for the cookie.")]
+    #[schemars(
+        title = "Cookie domain",
+        description = "Domain for the cookie."
+    )]
     #[serde(default)]
     pub domain: Option<String>,
 
@@ -44,7 +62,10 @@ pub struct CookieConfig {
     #[serde(default = "default_true")]
     pub secure: bool,
 
-    #[schemars(title = "HTTP only", description = "Prevent JavaScript access to cookie.")]
+    #[schemars(
+        title = "HTTP only",
+        description = "Prevent JavaScript access to cookie."
+    )]
     #[serde(default = "default_true")]
     pub http_only: bool,
 
@@ -56,19 +77,31 @@ pub struct CookieConfig {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct BearerConfig {
-    #[schemars(title = "Token length", description = "Length of opaque bearer tokens in bytes.")]
+    #[schemars(
+        title = "Token length",
+        description = "Length of opaque bearer tokens in bytes."
+    )]
     #[serde(default = "default_opaque_token_length")]
     pub opaque_token_length: u32,
 
-    #[schemars(title = "Default TTL", description = "Default bearer token TTL in minutes.")]
+    #[schemars(
+        title = "Default TTL",
+        description = "Default bearer token TTL in minutes."
+    )]
     #[serde(default = "default_bearer_ttl")]
     pub default_ttl_minutes: u64,
 
-    #[schemars(title = "Refresh tokens", description = "Enable refresh token flow.")]
+    #[schemars(
+        title = "Refresh tokens",
+        description = "Enable refresh token flow."
+    )]
     #[serde(default)]
     pub refresh_token_enabled: bool,
 
-    #[schemars(title = "Refresh TTL", description = "Refresh token TTL in days.")]
+    #[schemars(
+        title = "Refresh TTL",
+        description = "Refresh token TTL in days."
+    )]
     #[serde(default = "default_refresh_ttl")]
     pub refresh_token_ttl_days: u64,
 }
@@ -76,14 +109,23 @@ pub struct BearerConfig {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct SessionConfigSrc {
-    #[schemars(title = "Session secret", description = "Secret key for signing session tokens. Use env:VAR reference.")]
+    #[schemars(
+        title = "Session secret",
+        description = "Secret key for signing session tokens. Use env:VAR reference."
+    )]
     pub secret: RefOr<String>,
 
-    #[schemars(title = "Max age", description = "Maximum session lifetime in hours.")]
+    #[schemars(
+        title = "Max age",
+        description = "Maximum session lifetime in hours."
+    )]
     #[serde(default = "default_max_age_hours_or")]
     pub max_age_hours: RefOr<u64>,
 
-    #[schemars(title = "Idle timeout", description = "Session idle timeout in minutes.")]
+    #[schemars(
+        title = "Idle timeout",
+        description = "Session idle timeout in minutes."
+    )]
     #[serde(default = "default_idle_timeout_minutes_or")]
     pub idle_timeout_minutes: RefOr<u64>,
 
@@ -97,15 +139,24 @@ pub struct SessionConfigSrc {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct CookieConfigSrc {
-    #[schemars(title = "Cookie name", description = "Name of the session cookie.")]
+    #[schemars(
+        title = "Cookie name",
+        description = "Name of the session cookie."
+    )]
     #[serde(default = "default_cookie_name_or")]
     pub name: RefOr<String>,
 
-    #[schemars(title = "Cookie path", description = "URL path for the cookie.")]
+    #[schemars(
+        title = "Cookie path",
+        description = "URL path for the cookie."
+    )]
     #[serde(default = "default_cookie_path_or")]
     pub path: RefOr<String>,
 
-    #[schemars(title = "Cookie domain", description = "Domain for the cookie.")]
+    #[schemars(
+        title = "Cookie domain",
+        description = "Domain for the cookie."
+    )]
     #[serde(default)]
     pub domain: RefOr<Option<String>>,
 
@@ -113,7 +164,10 @@ pub struct CookieConfigSrc {
     #[serde(default = "default_true_or")]
     pub secure: RefOr<bool>,
 
-    #[schemars(title = "HTTP only", description = "Prevent JavaScript access to cookie.")]
+    #[schemars(
+        title = "HTTP only",
+        description = "Prevent JavaScript access to cookie."
+    )]
     #[serde(default = "default_true_or")]
     pub http_only: RefOr<bool>,
 
@@ -125,19 +179,31 @@ pub struct CookieConfigSrc {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct BearerConfigSrc {
-    #[schemars(title = "Token length", description = "Length of opaque bearer tokens in bytes.")]
+    #[schemars(
+        title = "Token length",
+        description = "Length of opaque bearer tokens in bytes."
+    )]
     #[serde(default = "default_opaque_token_length_or")]
     pub opaque_token_length: RefOr<u32>,
 
-    #[schemars(title = "Default TTL", description = "Default bearer token TTL in minutes.")]
+    #[schemars(
+        title = "Default TTL",
+        description = "Default bearer token TTL in minutes."
+    )]
     #[serde(default = "default_bearer_ttl_or")]
     pub default_ttl_minutes: RefOr<u64>,
 
-    #[schemars(title = "Refresh tokens", description = "Enable refresh token flow.")]
+    #[schemars(
+        title = "Refresh tokens",
+        description = "Enable refresh token flow."
+    )]
     #[serde(default = "default_false_or")]
     pub refresh_token_enabled: RefOr<bool>,
 
-    #[schemars(title = "Refresh TTL", description = "Refresh token TTL in days.")]
+    #[schemars(
+        title = "Refresh TTL",
+        description = "Refresh token TTL in days."
+    )]
     #[serde(default = "default_refresh_ttl_or")]
     pub refresh_token_ttl_days: RefOr<u64>,
 }

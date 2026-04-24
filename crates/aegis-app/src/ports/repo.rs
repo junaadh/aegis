@@ -6,18 +6,30 @@ use uuid::Uuid;
 
 use aegis_core::{
     Guest, GuestId, NewAuditEntry, PasskeyCredential, PasswordCredential,
-    PendingToken, PendingTokenPurpose, RecoveryCode, Role, Session, SessionId, TotpCredential,
-    User, UserId, UserRoleAssignment,
+    PendingToken, PendingTokenPurpose, RecoveryCode, Role, Session, SessionId,
+    TotpCredential, User, UserId, UserRoleAssignment,
 };
 
-use crate::dto::CredentialSummary;
+use crate::dto::{
+    AdminGuestDetailResult, AdminGuestListItem, AdminGuestListQuery,
+    AdminSessionDetailResult, AdminSessionListItem, AdminSessionListQuery,
+    AdminUserListItem, AdminUserListQuery, CredentialSummary,
+    PaginatedResult, UserSessionSummary,
+};
 use crate::error::AppError;
 use crate::jobs::JobPayload;
 
 #[async_trait]
 pub trait UserRepo: Send + Sync {
     async fn get_by_id(&self, id: UserId) -> Result<Option<User>, AppError>;
-    async fn get_by_email(&self, email: &str) -> Result<Option<User>, AppError>;
+    async fn get_by_email(&self, email: &str)
+    -> Result<Option<User>, AppError>;
+    async fn list_admin(
+        &self,
+        query: &AdminUserListQuery,
+    ) -> Result<PaginatedResult<AdminUserListItem>, AppError>;
+    async fn count(&self) -> Result<u64, AppError>;
+    async fn count_by_status(&self, status: &str) -> Result<u64, AppError>;
     async fn email_exists(&self, email: &str) -> Result<bool, AppError>;
     async fn insert(&mut self, user: &User) -> Result<(), AppError>;
     async fn update(&mut self, user: &User) -> Result<(), AppError>;
@@ -26,18 +38,50 @@ pub trait UserRepo: Send + Sync {
 #[async_trait]
 pub trait GuestRepo: Send + Sync {
     async fn get_by_id(&self, id: GuestId) -> Result<Option<Guest>, AppError>;
+    async fn list_admin(
+        &self,
+        query: &AdminGuestListQuery,
+    ) -> Result<PaginatedResult<AdminGuestListItem>, AppError>;
+    async fn get_admin_detail(
+        &self,
+        id: GuestId,
+    ) -> Result<Option<AdminGuestDetailResult>, AppError>;
+    async fn count(&self) -> Result<u64, AppError>;
+    async fn count_active(&self) -> Result<u64, AppError>;
     async fn insert(&mut self, guest: &Guest) -> Result<(), AppError>;
     async fn update(&mut self, guest: &Guest) -> Result<(), AppError>;
 }
 
 #[async_trait]
 pub trait SessionRepo: Send + Sync {
-    async fn get_by_id(&self, id: SessionId) -> Result<Option<Session>, AppError>;
-    async fn get_by_token_hash(&self, hash: &[u8; 32]) -> Result<Option<Session>, AppError>;
+    async fn get_by_id(
+        &self,
+        id: SessionId,
+    ) -> Result<Option<Session>, AppError>;
+    async fn get_by_token_hash(
+        &self,
+        hash: &[u8; 32],
+    ) -> Result<Option<Session>, AppError>;
+    async fn get_user_summary(
+        &self,
+        user_id: UserId,
+    ) -> Result<UserSessionSummary, AppError>;
+    async fn list_admin(
+        &self,
+        query: &AdminSessionListQuery,
+    ) -> Result<PaginatedResult<AdminSessionListItem>, AppError>;
+    async fn get_admin_detail(
+        &self,
+        id: SessionId,
+    ) -> Result<Option<AdminSessionDetailResult>, AppError>;
+    async fn count_active(&self) -> Result<u64, AppError>;
     async fn insert(&mut self, session: &Session) -> Result<(), AppError>;
     async fn update(&mut self, session: &Session) -> Result<(), AppError>;
     async fn delete_by_id(&mut self, id: SessionId) -> Result<(), AppError>;
-    async fn delete_by_user_id(&mut self, user_id: UserId) -> Result<(), AppError>;
+    async fn delete_by_user_id(
+        &mut self,
+        user_id: UserId,
+    ) -> Result<(), AppError>;
 }
 
 #[async_trait]
@@ -46,7 +90,10 @@ pub trait CredentialRepo: Send + Sync {
         &self,
         user_id: UserId,
     ) -> Result<Option<PasswordCredential>, AppError>;
-    async fn list_by_user_id(&self, user_id: UserId) -> Result<Vec<CredentialSummary>, AppError>;
+    async fn list_by_user_id(
+        &self,
+        user_id: UserId,
+    ) -> Result<Vec<CredentialSummary>, AppError>;
     async fn get_totp_by_user_id(
         &self,
         user_id: UserId,
@@ -59,21 +106,51 @@ pub trait CredentialRepo: Send + Sync {
         &self,
         credential_id: &str,
     ) -> Result<Option<PasskeyCredential>, AppError>;
-    async fn insert_password(&mut self, cred: &PasswordCredential) -> Result<(), AppError>;
-    async fn update_password(&mut self, cred: &PasswordCredential) -> Result<(), AppError>;
+    async fn insert_password(
+        &mut self,
+        cred: &PasswordCredential,
+    ) -> Result<(), AppError>;
+    async fn update_password(
+        &mut self,
+        cred: &PasswordCredential,
+    ) -> Result<(), AppError>;
     async fn delete_by_id(&mut self, id: Uuid) -> Result<(), AppError>;
-    async fn insert_totp(&mut self, cred: &TotpCredential) -> Result<(), AppError>;
-    async fn update_totp(&mut self, cred: &TotpCredential) -> Result<(), AppError>;
-    async fn insert_recovery_codes(&mut self, codes: &[RecoveryCode]) -> Result<(), AppError>;
-    async fn update_recovery_code(&mut self, code: &RecoveryCode) -> Result<(), AppError>;
-    async fn delete_recovery_codes_by_user_id(&mut self, user_id: UserId) -> Result<(), AppError>;
-    async fn insert_passkey(&mut self, cred: &PasskeyCredential) -> Result<(), AppError>;
-    async fn update_passkey(&mut self, cred: &PasskeyCredential) -> Result<(), AppError>;
+    async fn insert_totp(
+        &mut self,
+        cred: &TotpCredential,
+    ) -> Result<(), AppError>;
+    async fn update_totp(
+        &mut self,
+        cred: &TotpCredential,
+    ) -> Result<(), AppError>;
+    async fn insert_recovery_codes(
+        &mut self,
+        codes: &[RecoveryCode],
+    ) -> Result<(), AppError>;
+    async fn update_recovery_code(
+        &mut self,
+        code: &RecoveryCode,
+    ) -> Result<(), AppError>;
+    async fn delete_recovery_codes_by_user_id(
+        &mut self,
+        user_id: UserId,
+    ) -> Result<(), AppError>;
+    async fn insert_passkey(
+        &mut self,
+        cred: &PasskeyCredential,
+    ) -> Result<(), AppError>;
+    async fn update_passkey(
+        &mut self,
+        cred: &PasskeyCredential,
+    ) -> Result<(), AppError>;
 }
 
 #[async_trait]
 pub trait RoleRepo: Send + Sync {
-    async fn get_roles_by_user_id(&self, user_id: UserId) -> Result<Vec<Role>, AppError>;
+    async fn get_roles_by_user_id(
+        &self,
+        user_id: UserId,
+    ) -> Result<Vec<Role>, AppError>;
     async fn get_assignments_by_user_id(
         &self,
         user_id: UserId,
@@ -88,7 +165,8 @@ pub trait PendingTokenRepo: Send + Sync {
         purpose: PendingTokenPurpose,
     ) -> Result<Option<PendingToken>, AppError>;
     async fn insert(&mut self, token: &PendingToken) -> Result<(), AppError>;
-    async fn delete_by_hash(&mut self, hash: &[u8; 32]) -> Result<(), AppError>;
+    async fn delete_by_hash(&mut self, hash: &[u8; 32])
+    -> Result<(), AppError>;
 }
 
 #[async_trait]
@@ -110,7 +188,10 @@ pub struct OutboxEntry {
 #[async_trait]
 pub trait OutboxRepo: Send + Sync {
     async fn enqueue(&mut self, payload: &JobPayload) -> Result<(), AppError>;
-    async fn claim_pending(&mut self, limit: usize) -> Result<Vec<OutboxEntry>, AppError>;
+    async fn claim_pending(
+        &mut self,
+        limit: usize,
+    ) -> Result<Vec<OutboxEntry>, AppError>;
     async fn mark_processed(&mut self, id: i64) -> Result<(), AppError>;
     async fn mark_retry(
         &mut self,
@@ -167,4 +248,14 @@ pub trait Repos: Send + Sync {
         F: FnOnce(Self::Tx) -> Fut + Send,
         Fut: Future<Output = (Self::Tx, Result<T, AppError>)> + Send,
         T: Send;
+
+    async fn health_check(&self) -> Result<RepoHealth, AppError>;
+}
+
+#[derive(Debug, Clone)]
+pub struct RepoHealth {
+    pub connected: bool,
+    pub latency_ms: u64,
+    pub pool_size: u32,
+    pub pool_idle: u32,
 }

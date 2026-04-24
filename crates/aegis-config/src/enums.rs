@@ -1,7 +1,17 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema, Default)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Serialize,
+    Deserialize,
+    JsonSchema,
+    Default,
+)]
 #[serde(rename_all = "lowercase")]
 pub enum LogLevel {
     #[default]
@@ -11,7 +21,17 @@ pub enum LogLevel {
     Error,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema, Default)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Serialize,
+    Deserialize,
+    JsonSchema,
+    Default,
+)]
 #[serde(rename_all = "lowercase")]
 pub enum LogFormat {
     #[default]
@@ -19,7 +39,17 @@ pub enum LogFormat {
     Text,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema, Default)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Serialize,
+    Deserialize,
+    JsonSchema,
+    Default,
+)]
 #[serde(rename_all = "lowercase")]
 pub enum SameSite {
     Strict,
@@ -28,14 +58,34 @@ pub enum SameSite {
     None,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema, Default)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Serialize,
+    Deserialize,
+    JsonSchema,
+    Default,
+)]
 #[serde(rename_all = "lowercase")]
 pub enum HashingAlgorithm {
     #[default]
     Argon2id,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema, Default)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Serialize,
+    Deserialize,
+    JsonSchema,
+    Default,
+)]
 pub enum TotpAlgorithm {
     #[default]
     SHA1,
@@ -43,7 +93,17 @@ pub enum TotpAlgorithm {
     SHA512,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema, Default)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Serialize,
+    Deserialize,
+    JsonSchema,
+    Default,
+)]
 #[serde(rename_all = "lowercase")]
 pub enum UserVerification {
     Required,
@@ -52,7 +112,17 @@ pub enum UserVerification {
     Discouraged,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema, Default)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Serialize,
+    Deserialize,
+    JsonSchema,
+    Default,
+)]
 #[serde(rename_all = "lowercase")]
 pub enum ResidentKey {
     Required,
@@ -61,7 +131,17 @@ pub enum ResidentKey {
     Discouraged,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema, Default)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Serialize,
+    Deserialize,
+    JsonSchema,
+    Default,
+)]
 pub enum JwtAlgorithm {
     #[default]
     RS256,

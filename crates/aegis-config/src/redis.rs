@@ -6,7 +6,10 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct RedisConfig {
-    #[schemars(title = "Enabled", description = "Enable Redis for caching and rate limiting.")]
+    #[schemars(
+        title = "Enabled",
+        description = "Enable Redis for caching and rate limiting."
+    )]
     #[serde(default)]
     pub enabled: bool,
 
@@ -14,7 +17,10 @@ pub struct RedisConfig {
     #[serde(default = "default_redis_url")]
     pub url: String,
 
-    #[schemars(title = "Max connections", description = "Maximum number of Redis connections.")]
+    #[schemars(
+        title = "Max connections",
+        description = "Maximum number of Redis connections."
+    )]
     #[serde(default = "default_redis_max_connections")]
     pub max_connections: u32,
 }
@@ -52,7 +58,10 @@ impl Default for RedisConfig {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct RedisConfigSrc {
-    #[schemars(title = "Enabled", description = "Enable Redis for caching and rate limiting.")]
+    #[schemars(
+        title = "Enabled",
+        description = "Enable Redis for caching and rate limiting."
+    )]
     #[serde(default = "default_redis_enabled_or")]
     pub enabled: RefOr<bool>,
 
@@ -60,7 +69,10 @@ pub struct RedisConfigSrc {
     #[serde(default = "default_redis_url_or")]
     pub url: RefOr<String>,
 
-    #[schemars(title = "Max connections", description = "Maximum number of Redis connections.")]
+    #[schemars(
+        title = "Max connections",
+        description = "Maximum number of Redis connections."
+    )]
     #[serde(default = "default_redis_max_connections_or")]
     pub max_connections: RefOr<u32>,
 }

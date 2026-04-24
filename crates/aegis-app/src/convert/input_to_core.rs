@@ -1,6 +1,8 @@
 use aegis_core::{DisplayName, EmailAddress};
 
-use crate::dto::{GuestConvertCommand, LoginCommand, SignupCommand, UpdateProfileCommand};
+use crate::dto::{
+    GuestConvertCommand, LoginCommand, SignupCommand, UpdateProfileCommand,
+};
 use crate::error::AppError;
 
 impl SignupCommand {
@@ -15,7 +17,8 @@ impl SignupCommand {
 
 impl LoginCommand {
     pub fn parse_email(&self) -> Result<EmailAddress, AppError> {
-        EmailAddress::parse(&self.email).map_err(|e| AppError::Validation(e.to_string()))
+        EmailAddress::parse(&self.email)
+            .map_err(|e| AppError::Validation(e.to_string()))
     }
 }
 
@@ -30,7 +33,9 @@ impl UpdateProfileCommand {
 }
 
 impl GuestConvertCommand {
-    pub fn into_parts(self) -> Result<(Option<EmailAddress>, DisplayName), AppError> {
+    pub fn into_parts(
+        self,
+    ) -> Result<(Option<EmailAddress>, DisplayName), AppError> {
         let email = self
             .email
             .as_deref()

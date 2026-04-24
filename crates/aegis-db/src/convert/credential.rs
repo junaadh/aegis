@@ -1,12 +1,13 @@
 use aegis_core::{
-    PasswordCredentialId, PasskeyCredentialId, RecoveryCodeId, TotpCredentialId, UserId,
-    PasswordCredential, PasskeyCredential, RecoveryCode, TotpCredential, RecoveryCodeState,
-    TotpAlgorithm,
+    PasskeyCredential, PasskeyCredentialId, PasswordCredential,
+    PasswordCredentialId, RecoveryCode, RecoveryCodeId, RecoveryCodeState,
+    TotpAlgorithm, TotpCredential, TotpCredentialId, UserId,
 };
 
 use crate::error::ConversionError;
 use crate::row::{
-    PasswordCredentialRow, PasskeyCredentialRow, RecoveryCodeRow, TotpCredentialRow,
+    PasskeyCredentialRow, PasswordCredentialRow, RecoveryCodeRow,
+    TotpCredentialRow,
 };
 
 impl From<PasswordCredentialRow> for PasswordCredential {
@@ -46,10 +47,9 @@ impl TryFrom<TotpCredentialRow> for TotpCredential {
     type Error = ConversionError;
 
     fn try_from(row: TotpCredentialRow) -> Result<Self, Self::Error> {
-        let algorithm: TotpAlgorithm = row
-            .algorithm
-            .parse()
-            .map_err(|_| ConversionError::InvalidTotpAlgorithm(row.algorithm.clone()))?;
+        let algorithm: TotpAlgorithm = row.algorithm.parse().map_err(|_| {
+            ConversionError::InvalidTotpAlgorithm(row.algorithm.clone())
+        })?;
 
         Ok(Self {
             id: TotpCredentialId::from_uuid(row.id),

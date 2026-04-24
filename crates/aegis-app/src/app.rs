@@ -1,6 +1,9 @@
 use crate::deps::AppDeps;
 use crate::policy::AppPolicies;
-use crate::ports::{Cache, Clock, Hasher, IdGenerator, Repos, TokenGenerator, WebAuthn, WebhookDispatcher};
+use crate::ports::{
+    Cache, Clock, Hasher, IdGenerator, Repos, TokenGenerator, WebAuthn,
+    WebhookDispatcher,
+};
 
 pub struct AegisApp<R, C, H, T, W, K, I, A>
 where
@@ -28,7 +31,10 @@ where
     I: IdGenerator,
     A: WebAuthn,
 {
-    pub fn new(deps: AppDeps<R, C, H, T, W, K, I, A>, policy: AppPolicies) -> Self {
+    pub fn new(
+        deps: AppDeps<R, C, H, T, W, K, I, A>,
+        policy: AppPolicies,
+    ) -> Self {
         Self { deps, policy }
     }
 

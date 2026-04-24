@@ -1,19 +1,19 @@
-use axum::extract::State;
-use axum::http::HeaderMap;
-use axum::Json;
 use aegis_app::{RequestContext, SessionRevokeCommand};
 use aegis_types::{ApiResponse, SessionRevokeRequest};
+use axum::Json;
+use axum::extract::State;
+use axum::http::HeaderMap;
 
 use crate::auth::RequiredAuth;
 use crate::context;
-use crate::error::HttpError;
+use crate::error::{ApiJson, HttpError};
 use crate::state::AppState;
 
 pub async fn revoke_session<R, C, H, T, W, K, I, A>(
     State(state): State<AppState<R, C, H, T, W, K, I, A>>,
     auth: RequiredAuth<R, C, H, T, W, K, I, A>,
     headers: HeaderMap,
-    Json(body): Json<SessionRevokeRequest>,
+    ApiJson(body): ApiJson<SessionRevokeRequest>,
 ) -> Result<Json<ApiResponse<serde_json::Value>>, HttpError>
 where
     R: aegis_app::Repos,

@@ -595,11 +595,12 @@ define_permissions! {
         Manage => "manage",
     }
 
-    resources {
-        User => "user",
-        Guest => "guest",
-        Email => "email",
-        Profile => "profile",
+        resources {
+            User => "user",
+            Guest => "guest",
+            System => "system",
+            Email => "email",
+            Profile => "profile",
         Roles => "roles",
         Status => "status",
         Token => "token",
@@ -640,7 +641,9 @@ define_permissions! {
         AdminDeleteUser => (Admin, Delete, User),
         AdminManageRoles => (Admin, Manage, Roles),
         AdminManageWebhook => (Admin, Manage, Webhook),
+        AdminReadSystem => (Admin, Read, System),
         AdminReadUser => (Admin, Read, User),
+        AdminUpdateUser => (Admin, Update, User),
     }
 }
 

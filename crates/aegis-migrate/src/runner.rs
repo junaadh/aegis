@@ -1,5 +1,5 @@
-use sqlx::migrate::Migrator;
 use sqlx::PgPool;
+use sqlx::migrate::Migrator;
 use std::path::{Path, PathBuf};
 
 pub struct MigrationRunner {
@@ -20,16 +20,19 @@ impl MigrationRunner {
         m.run(&self.pool).await
     }
 
-    pub async fn status(&self) -> Result<Vec<(String, bool)>, sqlx::migrate::MigrateError> {
+    pub async fn status(
+        &self,
+    ) -> Result<Vec<(String, bool)>, sqlx::migrate::MigrateError> {
         let m = Migrator::new(self.migrations_dir.clone()).await?;
 
-        let applied: Vec<i64> = sqlx::query_scalar("SELECT version FROM _sqlx_migrations ORDER BY version")
-            .fetch_all(&self.pool)
-            .await
-            .unwrap_or_default();
+        let applied: Vec<i64> = sqlx::query_scalar(
+            "SELECT version FROM _sqlx_migrations ORDER BY version",
+        )
+        .fetch_all(&self.pool)
+        .await
+        .unwrap_or_default();
 
-        Ok(m
-            .iter()
+        Ok(m.iter()
             .map(|mig| {
                 let desc = format!("{} — {}", mig.version, mig.description);
                 let is_applied = applied.contains(&mig.version);
@@ -38,7 +41,10 @@ impl MigrationRunner {
             .collect())
     }
 
-    pub fn create(name: &str, migrations_dir: &Path) -> Result<PathBuf, std::io::Error> {
+    pub fn create(
+        name: &str,
+        migrations_dir: &Path,
+    ) -> Result<PathBuf, std::io::Error> {
         std::fs::create_dir_all(migrations_dir)?;
 
         let timestamp = chrono_like_timestamp();

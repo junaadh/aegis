@@ -1,8 +1,9 @@
 use crate::error::ConfigError;
-use schemars::schema::{
-    InstanceType, Schema, SchemaObject, SingleOrVec, StringValidation, SubschemaValidation,
-};
 use schemars::JsonSchema;
+use schemars::schema::{
+    InstanceType, Schema, SchemaObject, SingleOrVec, StringValidation,
+    SubschemaValidation,
+};
 use serde::de::IntoDeserializer;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
@@ -37,8 +38,9 @@ impl<T: Clone + ResolveLeaf> RefOr<T> {
         match self {
             RefOr::Value(t) => Ok(t.clone()),
             RefOr::Env(var) => {
-                let raw = std::env::var(var)
-                    .map_err(|_| ConfigError::ResolveEnv { var: var.clone() })?;
+                let raw = std::env::var(var).map_err(|_| {
+                    ConfigError::ResolveEnv { var: var.clone() }
+                })?;
                 T::from_resolved_str(&raw)
             }
             RefOr::File(path) => {
@@ -62,8 +64,9 @@ impl<T: serde::de::DeserializeOwned> RefOr<T> {
         match self {
             RefOr::Value(t) => f(t),
             RefOr::Env(var) => {
-                let raw = std::env::var(var)
-                    .map_err(|_| ConfigError::ResolveEnv { var: var.clone() })?;
+                let raw = std::env::var(var).map_err(|_| {
+                    ConfigError::ResolveEnv { var: var.clone() }
+                })?;
                 let src: T = toml::from_str(&raw)?;
                 f(&src)
             }
@@ -119,7 +122,9 @@ impl<T: JsonSchema> JsonSchema for RefOr<T> {
         let schemas = vec![
             T::json_schema(r#gen),
             Schema::Object(SchemaObject {
-                instance_type: Some(SingleOrVec::Single(Box::new(InstanceType::String))),
+                instance_type: Some(SingleOrVec::Single(Box::new(
+                    InstanceType::String,
+                ))),
                 string: Some(Box::new(StringValidation {
                     pattern: Some("^env:".to_owned()),
                     ..Default::default()
@@ -127,7 +132,9 @@ impl<T: JsonSchema> JsonSchema for RefOr<T> {
                 ..Default::default()
             }),
             Schema::Object(SchemaObject {
-                instance_type: Some(SingleOrVec::Single(Box::new(InstanceType::String))),
+                instance_type: Some(SingleOrVec::Single(Box::new(
+                    InstanceType::String,
+                ))),
                 string: Some(Box::new(StringValidation {
                     pattern: Some("^file:".to_owned()),
                     ..Default::default()
@@ -154,10 +161,13 @@ pub trait ResolveLeaf: Sized {
     fn from_resolved_str(s: &str) -> Result<Self, ConfigError>;
 }
 
-fn parse_toml_scalar<T: serde::de::DeserializeOwned>(s: &str) -> Result<T, ConfigError> {
+fn parse_toml_scalar<T: serde::de::DeserializeOwned>(
+    s: &str,
+) -> Result<T, ConfigError> {
     let val = toml::Value::String(s.to_owned());
-    T::deserialize(val.into_deserializer())
-        .map_err(|e| ConfigError::Validation(format!("invalid value '{s}': {e}")))
+    T::deserialize(val.into_deserializer()).map_err(|e| {
+        ConfigError::Validation(format!("invalid value '{s}': {e}"))
+    })
 }
 
 impl ResolveLeaf for String {
@@ -189,8 +199,9 @@ impl ResolveLeaf for u64 {
 
 impl ResolveLeaf for usize {
     fn from_resolved_str(s: &str) -> Result<Self, ConfigError> {
-        s.parse()
-            .map_err(|_| ConfigError::Validation(format!("invalid usize: '{s}'")))
+        s.parse().map_err(|_| {
+            ConfigError::Validation(format!("invalid usize: '{s}'"))
+        })
     }
 }
 

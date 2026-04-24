@@ -28,7 +28,12 @@ impl PgTxOutboxRepo {
     }
 
     fn tx(&self) -> &mut Transaction<'static, Postgres> {
-        unsafe { self.tx.as_ptr().as_mut().expect("transaction pointer must be valid") }
+        unsafe {
+            self.tx
+                .as_ptr()
+                .as_mut()
+                .expect("transaction pointer must be valid")
+        }
     }
 }
 
@@ -49,13 +54,23 @@ fn infra_error(err: impl std::fmt::Display) -> AppError {
 
 fn serialize_payload(payload: &JobPayload) -> serde_json::Value {
     match payload {
-        JobPayload::SendVerificationEmail { user_id, email, token } => {
+        JobPayload::SendVerificationEmail {
+            user_id,
+            email,
+            token,
+        } => {
             json!({ "user_id": user_id, "email": email, "token": token })
         }
-        JobPayload::SendPasswordResetEmail { user_id, email, token } => {
+        JobPayload::SendPasswordResetEmail {
+            user_id,
+            email,
+            token,
+        } => {
             json!({ "user_id": user_id, "email": email, "token": token })
         }
-        JobPayload::SendMfaEnrolledNotification { user_id } => json!({ "user_id": user_id }),
+        JobPayload::SendMfaEnrolledNotification { user_id } => {
+            json!({ "user_id": user_id })
+        }
         JobPayload::CleanupExpiredSessions => json!({}),
         JobPayload::CleanupExpiredGuests => json!({}),
     }
@@ -73,7 +88,10 @@ fn map_outbox(row: OutboxRow) -> Result<OutboxEntry, AppError> {
     })
 }
 
-async fn enqueue_impl<'e, E>(executor: E, payload: &JobPayload) -> Result<(), AppError>
+async fn enqueue_impl<'e, E>(
+    executor: E,
+    payload: &JobPayload,
+) -> Result<(), AppError>
 where
     E: Executor<'e, Database = Postgres>,
 {
@@ -86,7 +104,10 @@ where
     Ok(())
 }
 
-async fn claim_pending_impl<'e, E>(executor: E, limit: usize) -> Result<Vec<OutboxEntry>, AppError>
+async fn claim_pending_impl<'e, E>(
+    executor: E,
+    limit: usize,
+) -> Result<Vec<OutboxEntry>, AppError>
 where
     E: Executor<'e, Database = Postgres>,
 {
@@ -114,7 +135,10 @@ where
     rows.into_iter().map(map_outbox).collect()
 }
 
-async fn mark_processed_impl<'e, E>(executor: E, id: i64) -> Result<(), AppError>
+async fn mark_processed_impl<'e, E>(
+    executor: E,
+    id: i64,
+) -> Result<(), AppError>
 where
     E: Executor<'e, Database = Postgres>,
 {
@@ -126,7 +150,11 @@ where
     Ok(())
 }
 
-async fn mark_retry_impl<'e, E>(executor: E, id: i64, next_retry_at: OffsetDateTime) -> Result<(), AppError>
+async fn mark_retry_impl<'e, E>(
+    executor: E,
+    id: i64,
+    next_retry_at: OffsetDateTime,
+) -> Result<(), AppError>
 where
     E: Executor<'e, Database = Postgres>,
 {
@@ -139,7 +167,10 @@ where
     Ok(())
 }
 
-async fn mark_dead_lettered_impl<'e, E>(executor: E, id: i64) -> Result<(), AppError>
+async fn mark_dead_lettered_impl<'e, E>(
+    executor: E,
+    id: i64,
+) -> Result<(), AppError>
 where
     E: Executor<'e, Database = Postgres>,
 {
@@ -157,7 +188,10 @@ impl OutboxRepo for PgOutboxRepo {
         enqueue_impl(&self.pool, payload).await
     }
 
-    async fn claim_pending(&mut self, limit: usize) -> Result<Vec<OutboxEntry>, AppError> {
+    async fn claim_pending(
+        &mut self,
+        limit: usize,
+    ) -> Result<Vec<OutboxEntry>, AppError> {
         claim_pending_impl(&self.pool, limit).await
     }
 
@@ -165,7 +199,11 @@ impl OutboxRepo for PgOutboxRepo {
         mark_processed_impl(&self.pool, id).await
     }
 
-    async fn mark_retry(&mut self, id: i64, next_retry_at: OffsetDateTime) -> Result<(), AppError> {
+    async fn mark_retry(
+        &mut self,
+        id: i64,
+        next_retry_at: OffsetDateTime,
+    ) -> Result<(), AppError> {
         mark_retry_impl(&self.pool, id, next_retry_at).await
     }
 
@@ -180,7 +218,10 @@ impl OutboxRepo for PgTxOutboxRepo {
         enqueue_impl(self.tx().as_mut(), payload).await
     }
 
-    async fn claim_pending(&mut self, limit: usize) -> Result<Vec<OutboxEntry>, AppError> {
+    async fn claim_pending(
+        &mut self,
+        limit: usize,
+    ) -> Result<Vec<OutboxEntry>, AppError> {
         claim_pending_impl(self.tx().as_mut(), limit).await
     }
 
@@ -188,7 +229,11 @@ impl OutboxRepo for PgTxOutboxRepo {
         mark_processed_impl(self.tx().as_mut(), id).await
     }
 
-    async fn mark_retry(&mut self, id: i64, next_retry_at: OffsetDateTime) -> Result<(), AppError> {
+    async fn mark_retry(
+        &mut self,
+        id: i64,
+        next_retry_at: OffsetDateTime,
+    ) -> Result<(), AppError> {
         mark_retry_impl(self.tx().as_mut(), id, next_retry_at).await
     }
 

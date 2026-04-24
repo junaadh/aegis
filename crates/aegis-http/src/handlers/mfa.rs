@@ -1,14 +1,15 @@
-use axum::extract::State;
-use axum::http::HeaderMap;
-use axum::Json;
 use aegis_app::{RequestContext, TotpEnrollFinishCommand, TotpVerifyCommand};
 use aegis_types::{
-    ApiResponse, RecoveryCodesRegenerateRequest, TotpEnrollFinishRequest, TotpVerifyRequest,
+    ApiResponse, RecoveryCodesRegenerateRequest, TotpEnrollFinishRequest,
+    TotpVerifyRequest,
 };
+use axum::Json;
+use axum::extract::State;
+use axum::http::HeaderMap;
 
 use crate::auth::RequiredAuth;
 use crate::context;
-use crate::error::HttpError;
+use crate::error::{ApiJson, HttpError};
 use crate::state::AppState;
 
 pub async fn enroll_totp_start<R, C, H, T, W, K, I, A>(
@@ -29,7 +30,9 @@ where
     let request_id = context::extract_or_generate_request_id(&headers);
     let result = state
         .app
-        .enroll_totp_start(auth.identity.verified_user_id().map_err(HttpError::from)?)
+        .enroll_totp_start(
+            auth.identity.verified_user_id().map_err(HttpError::from)?,
+        )
         .await?;
 
     Ok(Json(ApiResponse {
@@ -47,7 +50,7 @@ pub async fn enroll_totp_finish<R, C, H, T, W, K, I, A>(
     State(state): State<AppState<R, C, H, T, W, K, I, A>>,
     auth: RequiredAuth<R, C, H, T, W, K, I, A>,
     headers: HeaderMap,
-    Json(body): Json<TotpEnrollFinishRequest>,
+    ApiJson(body): ApiJson<TotpEnrollFinishRequest>,
 ) -> Result<Json<ApiResponse<serde_json::Value>>, HttpError>
 where
     R: aegis_app::Repos,
@@ -85,7 +88,7 @@ pub async fn verify_totp<R, C, H, T, W, K, I, A>(
     State(state): State<AppState<R, C, H, T, W, K, I, A>>,
     auth: RequiredAuth<R, C, H, T, W, K, I, A>,
     headers: HeaderMap,
-    Json(body): Json<TotpVerifyRequest>,
+    ApiJson(body): ApiJson<TotpVerifyRequest>,
 ) -> Result<Json<ApiResponse<serde_json::Value>>, HttpError>
 where
     R: aegis_app::Repos,
@@ -125,7 +128,7 @@ pub async fn regenerate_recovery_codes<R, C, H, T, W, K, I, A>(
     State(state): State<AppState<R, C, H, T, W, K, I, A>>,
     auth: RequiredAuth<R, C, H, T, W, K, I, A>,
     headers: HeaderMap,
-    _body: Json<RecoveryCodesRegenerateRequest>,
+    _body: ApiJson<RecoveryCodesRegenerateRequest>,
 ) -> Result<Json<ApiResponse<serde_json::Value>>, HttpError>
 where
     R: aegis_app::Repos,

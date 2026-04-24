@@ -4,7 +4,9 @@ use serde::{Deserialize, Serialize};
 use crate::error::ConfigError;
 use crate::ref_or::RefOr;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema, Default)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema, Default,
+)]
 #[serde(deny_unknown_fields)]
 pub struct ComplianceConfig {
     #[serde(default)]
@@ -17,15 +19,24 @@ pub struct ComplianceConfig {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct DataRetentionConfig {
-    #[schemars(title = "Audit log retention", description = "Days to retain audit logs (~7 years = 2555).")]
+    #[schemars(
+        title = "Audit log retention",
+        description = "Days to retain audit logs (~7 years = 2555)."
+    )]
     #[serde(default = "default_audit_log_days")]
     pub audit_log_days: u32,
 
-    #[schemars(title = "Guest TTL", description = "Days before expired guests are purged.")]
+    #[schemars(
+        title = "Guest TTL",
+        description = "Days before expired guests are purged."
+    )]
     #[serde(default = "default_guest_ttl_days")]
     pub guest_ttl_days: u32,
 
-    #[schemars(title = "Anonymize after", description = "Days after deletion to anonymize user data (0 = immediate).")]
+    #[schemars(
+        title = "Anonymize after",
+        description = "Days after deletion to anonymize user data (0 = immediate)."
+    )]
     #[serde(default = "default_anonymize_after_days")]
     pub deleted_user_anonymize_after_days: u32,
 }
@@ -33,11 +44,17 @@ pub struct DataRetentionConfig {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct DeletionConfig {
-    #[schemars(title = "Anonymize pattern", description = "Pattern for anonymized emails. Use {hash} as placeholder.")]
+    #[schemars(
+        title = "Anonymize pattern",
+        description = "Pattern for anonymized emails. Use {hash} as placeholder."
+    )]
     #[serde(default = "default_anonymize_pattern")]
     pub anonymize_email_pattern: String,
 
-    #[schemars(title = "Preserve referential integrity", description = "Keep anonymized records for referential integrity.")]
+    #[schemars(
+        title = "Preserve referential integrity",
+        description = "Keep anonymized records for referential integrity."
+    )]
     #[serde(default = "default_true")]
     pub preserve_referential_integrity: bool,
 }
@@ -112,19 +129,27 @@ pub struct ComplianceConfigSrc {
     pub deletion: RefOr<DeletionConfigSrc>,
 }
 
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct DataRetentionConfigSrc {
-    #[schemars(title = "Audit log retention", description = "Days to retain audit logs (~7 years = 2555).")]
+    #[schemars(
+        title = "Audit log retention",
+        description = "Days to retain audit logs (~7 years = 2555)."
+    )]
     #[serde(default = "default_audit_log_days_or")]
     pub audit_log_days: RefOr<u32>,
 
-    #[schemars(title = "Guest TTL", description = "Days before expired guests are purged.")]
+    #[schemars(
+        title = "Guest TTL",
+        description = "Days before expired guests are purged."
+    )]
     #[serde(default = "default_guest_ttl_days_or")]
     pub guest_ttl_days: RefOr<u32>,
 
-    #[schemars(title = "Anonymize after", description = "Days after deletion to anonymize user data (0 = immediate).")]
+    #[schemars(
+        title = "Anonymize after",
+        description = "Days after deletion to anonymize user data (0 = immediate)."
+    )]
     #[serde(default = "default_anonymize_after_days_or")]
     pub deleted_user_anonymize_after_days: RefOr<u32>,
 }
@@ -134,7 +159,8 @@ impl Default for DataRetentionConfigSrc {
         Self {
             audit_log_days: default_audit_log_days_or(),
             guest_ttl_days: default_guest_ttl_days_or(),
-            deleted_user_anonymize_after_days: default_anonymize_after_days_or(),
+            deleted_user_anonymize_after_days: default_anonymize_after_days_or(
+            ),
         }
     }
 }
@@ -142,11 +168,17 @@ impl Default for DataRetentionConfigSrc {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct DeletionConfigSrc {
-    #[schemars(title = "Anonymize pattern", description = "Pattern for anonymized emails. Use {hash} as placeholder.")]
+    #[schemars(
+        title = "Anonymize pattern",
+        description = "Pattern for anonymized emails. Use {hash} as placeholder."
+    )]
     #[serde(default = "default_anonymize_pattern_or")]
     pub anonymize_email_pattern: RefOr<String>,
 
-    #[schemars(title = "Preserve referential integrity", description = "Keep anonymized records for referential integrity.")]
+    #[schemars(
+        title = "Preserve referential integrity",
+        description = "Keep anonymized records for referential integrity."
+    )]
     #[serde(default = "default_true_or")]
     pub preserve_referential_integrity: RefOr<bool>,
 }
@@ -163,7 +195,9 @@ impl Default for DeletionConfigSrc {
 impl ComplianceConfigSrc {
     pub fn resolve(&self) -> Result<ComplianceConfig, ConfigError> {
         Ok(ComplianceConfig {
-            data_retention: self.data_retention.resolve_nested(|s| s.resolve())?,
+            data_retention: self
+                .data_retention
+                .resolve_nested(|s| s.resolve())?,
             deletion: self.deletion.resolve_nested(|s| s.resolve())?,
         })
     }
@@ -174,7 +208,9 @@ impl DataRetentionConfigSrc {
         Ok(DataRetentionConfig {
             audit_log_days: self.audit_log_days.resolve()?,
             guest_ttl_days: self.guest_ttl_days.resolve()?,
-            deleted_user_anonymize_after_days: self.deleted_user_anonymize_after_days.resolve()?,
+            deleted_user_anonymize_after_days: self
+                .deleted_user_anonymize_after_days
+                .resolve()?,
         })
     }
 }
@@ -183,7 +219,9 @@ impl DeletionConfigSrc {
     pub fn resolve(&self) -> Result<DeletionConfig, ConfigError> {
         Ok(DeletionConfig {
             anonymize_email_pattern: self.anonymize_email_pattern.resolve()?,
-            preserve_referential_integrity: self.preserve_referential_integrity.resolve()?,
+            preserve_referential_integrity: self
+                .preserve_referential_integrity
+                .resolve()?,
         })
     }
 }

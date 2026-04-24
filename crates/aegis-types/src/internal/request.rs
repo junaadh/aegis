@@ -26,3 +26,35 @@ pub struct UserLookupRequest {
 pub struct UserLookupByEmailRequest {
     pub email: String,
 }
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AdminUserListQuery {
+    pub status: Option<String>,
+    pub verified: Option<bool>,
+    pub role: Option<String>,
+    pub q: Option<String>,
+    pub page: Option<u32>,
+    pub per_page: Option<u32>,
+    pub sort: Option<String>,
+    pub order: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AdminGuestListQuery {
+    pub status: Option<String>,
+    pub page: Option<u32>,
+    pub per_page: Option<u32>,
+    pub sort: Option<String>,
+    pub order: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AdminSessionListQuery {
+    pub user_id: Option<Uuid>,
+    pub active_only: Option<bool>,
+    pub page: Option<u32>,
+    pub per_page: Option<u32>,
+}

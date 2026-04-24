@@ -71,7 +71,8 @@ impl Default for Config {
         Self {
             server: ServerConfig::default(),
             database: Some(DatabaseConfig {
-                url: "postgresql://aegis:password@localhost:5432/aegis".to_owned(),
+                url: "postgresql://aegis:password@localhost:5432/aegis"
+                    .to_owned(),
                 ..DatabaseConfig::default()
             }),
             redis: RedisConfig::default(),
@@ -114,21 +115,13 @@ impl Default for ConfigSrc {
 
 impl ConfigSrc {
     pub fn resolve(&self) -> Result<Config, ConfigError> {
-        let database = self
-            .database
-            .resolve_nested(|opt| {
-                opt.as_ref()
-                    .map(|db| db.resolve())
-                    .transpose()
-            })?;
+        let database = self.database.resolve_nested(|opt| {
+            opt.as_ref().map(|db| db.resolve()).transpose()
+        })?;
 
-        let session = self
-            .session
-            .resolve_nested(|opt| {
-                opt.as_ref()
-                    .map(|s| s.resolve())
-                    .transpose()
-            })?;
+        let session = self.session.resolve_nested(|opt| {
+            opt.as_ref().map(|s| s.resolve()).transpose()
+        })?;
 
         let config = Config {
             server: self.server.resolve_nested(|s| s.resolve())?,
@@ -199,6 +192,8 @@ impl Config {
         }
 
         self.email.validate().map_err(ConfigError::Validation)?;
+        self.api.internal.validate()?;
+        self.crypto.jwt.validate()?;
 
         Ok(())
     }

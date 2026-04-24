@@ -22,7 +22,9 @@ unknown_field = "should_fail"
     match result.unwrap_err() {
         ConfigError::Parse(e) => {
             let msg = e.to_string();
-            assert!(msg.contains("unknown field") || msg.contains("unexpected"));
+            assert!(
+                msg.contains("unknown field") || msg.contains("unexpected")
+            );
         }
         e => panic!("expected parse error, got: {e}"),
     }
@@ -102,7 +104,9 @@ fn ref_or_env_missing_fails() {
     let result = r.resolve();
     assert!(result.is_err());
     match result.unwrap_err() {
-        ConfigError::ResolveEnv { var } => assert_eq!(var, "NONEXISTENT_AEGIS_VAR_99999"),
+        ConfigError::ResolveEnv { var } => {
+            assert_eq!(var, "NONEXISTENT_AEGIS_VAR_99999")
+        }
         e => panic!("expected ResolveEnv, got: {e}"),
     }
 }
@@ -122,7 +126,8 @@ fn ref_or_file_resolves() {
 
 #[test]
 fn ref_or_file_missing_fails() {
-    let r: RefOr<String> = RefOr::File("/nonexistent/path/value.txt".to_owned());
+    let r: RefOr<String> =
+        RefOr::File("/nonexistent/path/value.txt".to_owned());
     let result = r.resolve();
     assert!(result.is_err());
     match result.unwrap_err() {
@@ -139,7 +144,9 @@ fn ref_or_serde_roundtrip_value() {
     struct Wrap {
         port: RefOr<u16>,
     }
-    let w = Wrap { port: RefOr::Value(587) };
+    let w = Wrap {
+        port: RefOr::Value(587),
+    };
     let toml_str = toml::to_string(&w).unwrap();
     assert!(toml_str.contains("port = 587"));
 
@@ -153,7 +160,9 @@ fn ref_or_serde_roundtrip_env() {
     struct Wrap {
         url: RefOr<String>,
     }
-    let w = Wrap { url: RefOr::Env("MY_VAR".to_owned()) };
+    let w = Wrap {
+        url: RefOr::Env("MY_VAR".to_owned()),
+    };
     let toml_str = toml::to_string(&w).unwrap();
     assert!(toml_str.contains("env:MY_VAR"));
 
@@ -167,7 +176,9 @@ fn ref_or_serde_roundtrip_file() {
     struct Wrap {
         key: RefOr<String>,
     }
-    let w = Wrap { key: RefOr::File("/path/to/secret".to_owned()) };
+    let w = Wrap {
+        key: RefOr::File("/path/to/secret".to_owned()),
+    };
     let toml_str = toml::to_string(&w).unwrap();
     assert!(toml_str.contains("file:/path/to/secret"));
 
@@ -181,7 +192,9 @@ fn ref_or_bool_serde() {
     struct Wrap {
         enabled: RefOr<bool>,
     }
-    let w = Wrap { enabled: RefOr::Value(true) };
+    let w = Wrap {
+        enabled: RefOr::Value(true),
+    };
     let toml_str = toml::to_string(&w).unwrap();
     assert!(toml_str.contains("enabled = true"));
 
@@ -221,7 +234,9 @@ enabled = false
     }
 
     if let RefOr::Value(Some(session)) = &source.session {
-        assert!(matches!(&session.secret, RefOr::Env(v) if v == "AEGIS_SESSION_SECRET"));
+        assert!(
+            matches!(&session.secret, RefOr::Env(v) if v == "AEGIS_SESSION_SECRET")
+        );
     } else {
         panic!("expected session");
     }
@@ -359,14 +374,23 @@ enabled = false
 "#;
 
     let config = Config::from_toml(toml_str).unwrap();
-    assert_eq!(config.database.unwrap().url, "postgresql://aegis:aegis@localhost:5432/aegis_dev");
-    assert_eq!(config.session.unwrap().secret, "test-session-secret-for-testing");
+    assert_eq!(
+        config.database.unwrap().url,
+        "postgresql://aegis:aegis@localhost:5432/aegis_dev"
+    );
+    assert_eq!(
+        config.session.unwrap().secret,
+        "test-session-secret-for-testing"
+    );
 }
 
 #[test]
 fn config_loads_env_ref_with_var_set() {
     unsafe {
-        std::env::set_var("TEST_AEGIS_DB_URL", "postgresql://test:test@localhost/testdb");
+        std::env::set_var(
+            "TEST_AEGIS_DB_URL",
+            "postgresql://test:test@localhost/testdb",
+        );
         std::env::set_var("TEST_AEGIS_SESSION", "my-session-secret");
     }
 
@@ -389,7 +413,10 @@ enabled = false
 "#;
 
     let config = Config::from_toml(toml_str).unwrap();
-    assert_eq!(config.database.unwrap().url, "postgresql://test:test@localhost/testdb");
+    assert_eq!(
+        config.database.unwrap().url,
+        "postgresql://test:test@localhost/testdb"
+    );
     assert_eq!(config.session.unwrap().secret, "my-session-secret");
 
     unsafe {
@@ -424,7 +451,11 @@ fn ref_or_nested_resolves() {
         inner: RefOr<Inner>,
     }
 
-    let o = Outer { inner: RefOr::Value(Inner { port: RefOr::Value(587) }) };
+    let o = Outer {
+        inner: RefOr::Value(Inner {
+            port: RefOr::Value(587),
+        }),
+    };
     let resolved = o.inner.resolve_nested(|i| i.port.resolve()).unwrap();
     assert_eq!(resolved, 587);
 }

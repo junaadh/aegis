@@ -28,7 +28,12 @@ impl PgTxPendingTokenRepo {
     }
 
     fn tx(&self) -> &mut Transaction<'static, Postgres> {
-        unsafe { self.tx.as_ptr().as_mut().expect("transaction pointer must be valid") }
+        unsafe {
+            self.tx
+                .as_ptr()
+                .as_mut()
+                .expect("transaction pointer must be valid")
+        }
     }
 }
 
@@ -70,7 +75,10 @@ where
     }
 }
 
-async fn insert_impl<'e, E>(executor: E, token: &PendingToken) -> Result<(), AppError>
+async fn insert_impl<'e, E>(
+    executor: E,
+    token: &PendingToken,
+) -> Result<(), AppError>
 where
     E: Executor<'e, Database = Postgres>,
 {
@@ -95,7 +103,10 @@ where
     Ok(())
 }
 
-async fn delete_by_hash_impl<'e, E>(executor: E, hash: &[u8; 32]) -> Result<(), AppError>
+async fn delete_by_hash_impl<'e, E>(
+    executor: E,
+    hash: &[u8; 32],
+) -> Result<(), AppError>
 where
     E: Executor<'e, Database = Postgres> + Copy,
 {
@@ -131,7 +142,11 @@ async fn delete_by_hash_tx_impl(
 
 #[async_trait::async_trait]
 impl PendingTokenRepo for PgPendingTokenRepo {
-    async fn get_by_hash(&self, hash: &[u8; 32], purpose: PendingTokenPurpose) -> Result<Option<PendingToken>, AppError> {
+    async fn get_by_hash(
+        &self,
+        hash: &[u8; 32],
+        purpose: PendingTokenPurpose,
+    ) -> Result<Option<PendingToken>, AppError> {
         get_by_hash_impl(&self.pool, hash, purpose).await
     }
 
@@ -139,14 +154,21 @@ impl PendingTokenRepo for PgPendingTokenRepo {
         insert_impl(&self.pool, token).await
     }
 
-    async fn delete_by_hash(&mut self, hash: &[u8; 32]) -> Result<(), AppError> {
+    async fn delete_by_hash(
+        &mut self,
+        hash: &[u8; 32],
+    ) -> Result<(), AppError> {
         delete_by_hash_impl(&self.pool, hash).await
     }
 }
 
 #[async_trait::async_trait]
 impl PendingTokenRepo for PgTxPendingTokenRepo {
-    async fn get_by_hash(&self, hash: &[u8; 32], purpose: PendingTokenPurpose) -> Result<Option<PendingToken>, AppError> {
+    async fn get_by_hash(
+        &self,
+        hash: &[u8; 32],
+        purpose: PendingTokenPurpose,
+    ) -> Result<Option<PendingToken>, AppError> {
         get_by_hash_impl(self.tx().as_mut(), hash, purpose).await
     }
 
@@ -154,7 +176,10 @@ impl PendingTokenRepo for PgTxPendingTokenRepo {
         insert_impl(self.tx().as_mut(), token).await
     }
 
-    async fn delete_by_hash(&mut self, hash: &[u8; 32]) -> Result<(), AppError> {
+    async fn delete_by_hash(
+        &mut self,
+        hash: &[u8; 32],
+    ) -> Result<(), AppError> {
         delete_by_hash_tx_impl(self.tx().as_mut(), hash).await
     }
 }

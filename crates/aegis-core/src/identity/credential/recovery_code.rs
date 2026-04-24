@@ -26,7 +26,10 @@ impl RecoveryCode {
         self.redeem_at(OffsetDateTime::now_utc())
     }
 
-    pub fn redeem_at(&mut self, now: OffsetDateTime) -> Result<(), RecoveryCodeError> {
+    pub fn redeem_at(
+        &mut self,
+        now: OffsetDateTime,
+    ) -> Result<(), RecoveryCodeError> {
         if self.is_used() {
             return Err(RecoveryCodeError::AlreadyUsed);
         }

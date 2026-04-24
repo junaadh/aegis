@@ -1,11 +1,14 @@
-use aegis_app::{OutboxEntry, OutboxProcessor, OutboxRepo, Repos, TransactionRepos};
-use sqlx::postgres::PgListener;
+use aegis_app::{
+    OutboxEntry, OutboxProcessor, OutboxRepo, Repos, TransactionRepos,
+};
 use sqlx::PgPool;
+use sqlx::postgres::PgListener;
 use time::OffsetDateTime;
 
 const CHANNEL: &str = "aegis_outbox";
 const CLAIM_BATCH: usize = 16;
-const FALLBACK_POLL_INTERVAL: std::time::Duration = std::time::Duration::from_secs(30);
+const FALLBACK_POLL_INTERVAL: std::time::Duration =
+    std::time::Duration::from_secs(30);
 const BASE_RETRY_DELAY_SECS: i64 = 5;
 
 pub struct OutboxWorker<R, P>
@@ -24,7 +27,11 @@ where
     P: OutboxProcessor,
 {
     pub fn new(pool: PgPool, repos: R, processor: P) -> Self {
-        Self { repos, processor, pool }
+        Self {
+            repos,
+            processor,
+            pool,
+        }
     }
 
     pub async fn run(self) {
@@ -122,13 +129,17 @@ where
         }
     }
 
-    async fn handle_failure(&self, entry: OutboxEntry) -> Result<(), aegis_app::AppError> {
+    async fn handle_failure(
+        &self,
+        entry: OutboxEntry,
+    ) -> Result<(), aegis_app::AppError> {
         let next_attempt = entry.attempts + 1;
         if next_attempt >= entry.max_attempts {
             self.mark_dead_lettered(entry.id).await
         } else {
             let delay_secs = BASE_RETRY_DELAY_SECS * 2i64.pow(next_attempt);
-            let next_retry_at = OffsetDateTime::now_utc() + time::Duration::seconds(delay_secs);
+            let next_retry_at =
+                OffsetDateTime::now_utc() + time::Duration::seconds(delay_secs);
             self.mark_retry(entry.id, next_retry_at).await
         }
     }
@@ -155,7 +166,10 @@ where
             .await
     }
 
-    async fn mark_dead_lettered(&self, id: i64) -> Result<(), aegis_app::AppError> {
+    async fn mark_dead_lettered(
+        &self,
+        id: i64,
+    ) -> Result<(), aegis_app::AppError> {
         self.repos
             .with_transaction(|mut tx| async move {
                 let result = tx.outbox().mark_dead_lettered(id).await;

@@ -1,9 +1,9 @@
 use std::fmt;
 
 use crate::{
-    ids::{GuestId, UserId},
     identity::user::EmailAddress,
     identity::{GuestStatus, Metadata},
+    ids::{GuestId, UserId},
 };
 use time::OffsetDateTime;
 
@@ -111,12 +111,19 @@ impl Guest {
         self.associate_email_at(email, OffsetDateTime::now_utc());
     }
 
-    pub fn associate_email_at(&mut self, email: EmailAddress, now: OffsetDateTime) {
+    pub fn associate_email_at(
+        &mut self,
+        email: EmailAddress,
+        now: OffsetDateTime,
+    ) {
         self.email = Some(email);
         self.updated_at = now;
     }
 
-    pub fn convert_to_user(&mut self, user_id: UserId) -> Result<(), GuestError> {
+    pub fn convert_to_user(
+        &mut self,
+        user_id: UserId,
+    ) -> Result<(), GuestError> {
         self.convert_to_user_at(user_id, OffsetDateTime::now_utc())
     }
 

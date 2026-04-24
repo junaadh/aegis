@@ -18,11 +18,17 @@ pub struct EmailConfig {
     #[serde(default)]
     pub from_name: String,
 
-    #[schemars(title = "Verification token TTL (hours)", description = "How long email verification tokens remain valid.")]
+    #[schemars(
+        title = "Verification token TTL (hours)",
+        description = "How long email verification tokens remain valid."
+    )]
     #[serde(default = "default_verification_token_ttl_hours")]
     pub verification_token_ttl_hours: u64,
 
-    #[schemars(title = "Password reset token TTL (minutes)", description = "How long password reset tokens remain valid.")]
+    #[schemars(
+        title = "Password reset token TTL (minutes)",
+        description = "How long password reset tokens remain valid."
+    )]
     #[serde(default = "default_password_reset_token_ttl_minutes")]
     pub password_reset_token_ttl_minutes: u64,
 
@@ -44,11 +50,17 @@ pub struct SmtpConfig {
     #[serde(default = "default_smtp_port")]
     pub port: u16,
 
-    #[schemars(title = "Username", description = "SMTP authentication username.")]
+    #[schemars(
+        title = "Username",
+        description = "SMTP authentication username."
+    )]
     #[serde(default)]
     pub username: String,
 
-    #[schemars(title = "Password", description = "SMTP authentication password. Use env:VAR reference.")]
+    #[schemars(
+        title = "Password",
+        description = "SMTP authentication password. Use env:VAR reference."
+    )]
     #[serde(default)]
     pub password: String,
 
@@ -56,19 +68,30 @@ pub struct SmtpConfig {
     #[serde(default = "default_true")]
     pub starttls: bool,
 
-    #[schemars(title = "Timeout", description = "SMTP connection timeout in seconds.")]
+    #[schemars(
+        title = "Timeout",
+        description = "SMTP connection timeout in seconds."
+    )]
     #[serde(default = "default_smtp_timeout")]
     pub timeout_seconds: u64,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema, Default)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema, Default,
+)]
 #[serde(deny_unknown_fields)]
 pub struct EmailTemplatesConfig {
-    #[schemars(title = "Verification template", description = "Path to email verification template.")]
+    #[schemars(
+        title = "Verification template",
+        description = "Path to email verification template."
+    )]
     #[serde(default)]
     pub verification: String,
 
-    #[schemars(title = "Password reset template", description = "Path to password reset template.")]
+    #[schemars(
+        title = "Password reset template",
+        description = "Path to password reset template."
+    )]
     #[serde(default)]
     pub password_reset: String,
 }
@@ -88,11 +111,17 @@ pub struct EmailConfigSrc {
     #[serde(default)]
     pub from_name: RefOr<String>,
 
-    #[schemars(title = "Verification token TTL (hours)", description = "How long email verification tokens remain valid.")]
+    #[schemars(
+        title = "Verification token TTL (hours)",
+        description = "How long email verification tokens remain valid."
+    )]
     #[serde(default = "default_verification_token_ttl_hours_or")]
     pub verification_token_ttl_hours: RefOr<u64>,
 
-    #[schemars(title = "Password reset token TTL (minutes)", description = "How long password reset tokens remain valid.")]
+    #[schemars(
+        title = "Password reset token TTL (minutes)",
+        description = "How long password reset tokens remain valid."
+    )]
     #[serde(default = "default_password_reset_token_ttl_minutes_or")]
     pub password_reset_token_ttl_minutes: RefOr<u64>,
 
@@ -114,11 +143,17 @@ pub struct SmtpConfigSrc {
     #[serde(default = "default_smtp_port_or")]
     pub port: RefOr<u16>,
 
-    #[schemars(title = "Username", description = "SMTP authentication username.")]
+    #[schemars(
+        title = "Username",
+        description = "SMTP authentication username."
+    )]
     #[serde(default)]
     pub username: RefOr<String>,
 
-    #[schemars(title = "Password", description = "SMTP authentication password. Use env:VAR reference.")]
+    #[schemars(
+        title = "Password",
+        description = "SMTP authentication password. Use env:VAR reference."
+    )]
     #[serde(default)]
     pub password: RefOr<String>,
 
@@ -126,19 +161,30 @@ pub struct SmtpConfigSrc {
     #[serde(default = "default_true_or")]
     pub starttls: RefOr<bool>,
 
-    #[schemars(title = "Timeout", description = "SMTP connection timeout in seconds.")]
+    #[schemars(
+        title = "Timeout",
+        description = "SMTP connection timeout in seconds."
+    )]
     #[serde(default = "default_smtp_timeout_or")]
     pub timeout_seconds: RefOr<u64>,
 }
 
-#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize, JsonSchema)]
+#[derive(
+    Debug, Clone, PartialEq, Default, Serialize, Deserialize, JsonSchema,
+)]
 #[serde(deny_unknown_fields)]
 pub struct EmailTemplatesConfigSrc {
-    #[schemars(title = "Verification template", description = "Path to email verification template.")]
+    #[schemars(
+        title = "Verification template",
+        description = "Path to email verification template."
+    )]
     #[serde(default)]
     pub verification: RefOr<String>,
 
-    #[schemars(title = "Password reset template", description = "Path to password reset template.")]
+    #[schemars(
+        title = "Password reset template",
+        description = "Path to password reset template."
+    )]
     #[serde(default)]
     pub password_reset: RefOr<String>,
 }
@@ -193,8 +239,10 @@ impl Default for EmailConfig {
             enabled: false,
             from_address: String::new(),
             from_name: String::new(),
-            verification_token_ttl_hours: default_verification_token_ttl_hours(),
-            password_reset_token_ttl_minutes: default_password_reset_token_ttl_minutes(),
+            verification_token_ttl_hours: default_verification_token_ttl_hours(
+            ),
+            password_reset_token_ttl_minutes:
+                default_password_reset_token_ttl_minutes(),
             smtp: SmtpConfig::default(),
             templates: EmailTemplatesConfig::default(),
         }
@@ -220,8 +268,10 @@ impl Default for EmailConfigSrc {
             enabled: default_false_or(),
             from_address: RefOr::Value(String::new()),
             from_name: RefOr::Value(String::new()),
-            verification_token_ttl_hours: default_verification_token_ttl_hours_or(),
-            password_reset_token_ttl_minutes: default_password_reset_token_ttl_minutes_or(),
+            verification_token_ttl_hours:
+                default_verification_token_ttl_hours_or(),
+            password_reset_token_ttl_minutes:
+                default_password_reset_token_ttl_minutes_or(),
             smtp: RefOr::default(),
             templates: RefOr::default(),
         }
@@ -245,10 +295,16 @@ impl EmailConfig {
     pub fn validate(&self) -> Result<(), String> {
         if self.enabled {
             if self.from_address.is_empty() {
-                return Err("email.from_address is required when email is enabled".to_owned());
+                return Err(
+                    "email.from_address is required when email is enabled"
+                        .to_owned(),
+                );
             }
             if self.smtp.host.is_empty() {
-                return Err("email.smtp.host is required when email is enabled".to_owned());
+                return Err(
+                    "email.smtp.host is required when email is enabled"
+                        .to_owned(),
+                );
             }
         }
         Ok(())
@@ -260,16 +316,24 @@ impl EmailConfigSrc {
         if let RefOr::Value(true) = self.enabled {
             match &self.from_address {
                 RefOr::Value(v) if v.is_empty() => {
-                    return Err("email.from_address is required when email is enabled".to_owned());
+                    return Err(
+                        "email.from_address is required when email is enabled"
+                            .to_owned(),
+                    );
                 }
                 _ => {}
             }
-            if let RefOr::Value(s) = &self.smtp { match &s.host {
-                RefOr::Value(v) if v.is_empty() => {
-                    return Err("email.smtp.host is required when email is enabled".to_owned());
+            if let RefOr::Value(s) = &self.smtp {
+                match &s.host {
+                    RefOr::Value(v) if v.is_empty() => {
+                        return Err(
+                            "email.smtp.host is required when email is enabled"
+                                .to_owned(),
+                        );
+                    }
+                    _ => {}
                 }
-                _ => {}
-            } }
+            }
         }
         Ok(())
     }
@@ -278,8 +342,10 @@ impl EmailConfigSrc {
         let enabled = self.enabled.resolve()?;
         let from_address = self.from_address.resolve()?;
         let from_name = self.from_name.resolve()?;
-        let verification_token_ttl_hours = self.verification_token_ttl_hours.resolve()?;
-        let password_reset_token_ttl_minutes = self.password_reset_token_ttl_minutes.resolve()?;
+        let verification_token_ttl_hours =
+            self.verification_token_ttl_hours.resolve()?;
+        let password_reset_token_ttl_minutes =
+            self.password_reset_token_ttl_minutes.resolve()?;
         let smtp = self.smtp.resolve_nested(|s| s.resolve())?;
         let templates = self.templates.resolve_nested(|s| s.resolve())?;
         let config = EmailConfig {

@@ -28,5 +28,12 @@ pub trait Cache: Send + Sync {
         ttl: Duration,
     ) -> impl Future<Output = Result<(), CacheError>> + Send;
 
-    fn delete(&self, key: &str) -> impl Future<Output = Result<(), CacheError>> + Send;
+    fn delete(
+        &self,
+        key: &str,
+    ) -> impl Future<Output = Result<(), CacheError>> + Send;
+
+    fn ping(&self) -> impl Future<Output = Result<(), CacheError>> + Send {
+        async { Ok(()) }
+    }
 }

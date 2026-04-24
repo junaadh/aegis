@@ -56,9 +56,9 @@ require_symbol = true
 disallow_common = true
 
 [credentials.passkeys]
-rp_id = ""
-rp_name = ""
-origins = []
+rp_id = "localhost"
+rp_name = "Aegis"
+origins = ["http://localhost:8080"]
 user_verification = "preferred"
 resident_key = "preferred"
 timeout_seconds = 60
@@ -108,8 +108,12 @@ allowed_cidrs = []
 master_key = "env:AEGIS_CRYPTO_MASTER_KEY"
 
 [crypto.jwt]
-enabled = false
+enabled = true
 algorithm = "RS256"
+issuer = "aegis"
+audience = "aegis-internal"
+private_key = "file:secrets/jwt_private.pem"
+public_key = "file:secrets/jwt_public.pem"
 
 [compliance.data_retention]
 audit_log_days = 2555

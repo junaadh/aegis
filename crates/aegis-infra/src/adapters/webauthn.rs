@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use aegis_app::{
-    PasskeyLoginFinishResult, PasskeyLoginStartResult, PasskeyRegisterFinishResult,
-    PasskeyRegisterStartResult, WebAuthn,
+    PasskeyLoginFinishResult, PasskeyLoginStartResult,
+    PasskeyRegisterFinishResult, PasskeyRegisterStartResult, WebAuthn,
 };
 use aegis_config::PasskeysConfig;
 use async_trait::async_trait;
@@ -55,23 +55,35 @@ impl WebAuthn for WebAuthnAdapter {
         display_name: &str,
         exclude_credentials: Vec<String>,
     ) -> Result<PasskeyRegisterStartResult, aegis_app::AppError> {
-        let user_uuid = Uuid::parse_str(user_id)
-            .map_err(|e| aegis_app::AppError::Validation(format!("invalid user id: {e}")))?;
+        let user_uuid = Uuid::parse_str(user_id).map_err(|e| {
+            aegis_app::AppError::Validation(format!("invalid user id: {e}"))
+        })?;
 
-        let exclude: Option<Vec<CredentialID>> = if exclude_credentials.is_empty() {
-            None
-        } else {
-            Some(
-                exclude_credentials
-                    .into_iter()
-                    .map(|id| base64::engine::general_purpose::URL_SAFE_NO_PAD.decode(&id).unwrap_or_default().into())
-                    .collect(),
-            )
-        };
+        let exclude: Option<Vec<CredentialID>> =
+            if exclude_credentials.is_empty() {
+                None
+            } else {
+                Some(
+                    exclude_credentials
+                        .into_iter()
+                        .map(|id| {
+                            base64::engine::general_purpose::URL_SAFE_NO_PAD
+                                .decode(&id)
+                                .unwrap_or_default()
+                                .into()
+                        })
+                        .collect(),
+                )
+            };
 
         let (ccr, state) = self
             .inner
-            .start_passkey_registration(user_uuid, user_name, display_name, exclude)
+            .start_passkey_registration(
+                user_uuid,
+                user_name,
+                display_name,
+                exclude,
+            )
             .map_err(|e| {
                 aegis_app::AppError::Infrastructure(format!(
                     "failed to start passkey registration: {e}"
@@ -79,7 +91,9 @@ impl WebAuthn for WebAuthnAdapter {
             })?;
 
         let state_bytes = serde_json::to_vec(&state).map_err(|e| {
-            aegis_app::AppError::Infrastructure(format!("failed to serialize register state: {e}"))
+            aegis_app::AppError::Infrastructure(format!(
+                "failed to serialize register state: {e}"
+            ))
         })?;
 
         let public_key = serde_json::to_value(&ccr).map_err(|e| {
@@ -99,13 +113,19 @@ impl WebAuthn for WebAuthnAdapter {
         state: &[u8],
         response: &[u8],
     ) -> Result<PasskeyRegisterFinishResult, aegis_app::AppError> {
-        let reg_state: PasskeyRegistration = serde_json::from_slice(state).map_err(|e| {
-            aegis_app::AppError::Validation(format!("invalid registration state: {e}"))
-        })?;
+        let reg_state: PasskeyRegistration = serde_json::from_slice(state)
+            .map_err(|e| {
+                aegis_app::AppError::Validation(format!(
+                    "invalid registration state: {e}"
+                ))
+            })?;
 
-        let resp: RegisterPublicKeyCredential = serde_json::from_slice(response).map_err(|e| {
-            aegis_app::AppError::Validation(format!("invalid registration response: {e}"))
-        })?;
+        let resp: RegisterPublicKeyCredential =
+            serde_json::from_slice(response).map_err(|e| {
+                aegis_app::AppError::Validation(format!(
+                    "invalid registration response: {e}"
+                ))
+            })?;
 
         let passkey = self
             .inner
@@ -116,12 +136,13 @@ impl WebAuthn for WebAuthnAdapter {
                 ))
             })?;
 
-        let credential_id =
-            base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(passkey.cred_id().as_slice());
+        let credential_id = base64::engine::general_purpose::URL_SAFE_NO_PAD
+            .encode(passkey.cred_id().as_slice());
 
         Ok(PasskeyRegisterFinishResult {
             credential_id,
-            public_key: serde_json::to_vec(passkey.get_public_key()).unwrap_or_default(),
+            public_key: serde_json::to_vec(passkey.get_public_key())
+                .unwrap_or_default(),
             backup_eligible: false,
             backup_state: false,
             transports: vec![],
@@ -138,7 +159,8 @@ impl WebAuthn for WebAuthnAdapter {
                 if pk_bytes.is_empty() {
                     return None;
                 }
-                let cred: Credential = serde_json::from_slice(&pk_bytes).ok()?;
+                let cred: Credential =
+                    serde_json::from_slice(&pk_bytes).ok()?;
                 Some(Passkey::from(cred))
             })
             .collect();
@@ -151,13 +173,15 @@ impl WebAuthn for WebAuthnAdapter {
             .inner
             .start_passkey_authentication(&passkeys)
             .map_err(|e| {
-                aegis_app::AppError::Infrastructure(format!(
-                    "failed to start passkey authentication: {e}"
-                ))
-            })?;
+            aegis_app::AppError::Infrastructure(format!(
+                "failed to start passkey authentication: {e}"
+            ))
+        })?;
 
         let state_bytes = serde_json::to_vec(&state).map_err(|e| {
-            aegis_app::AppError::Infrastructure(format!("failed to serialize auth state: {e}"))
+            aegis_app::AppError::Infrastructure(format!(
+                "failed to serialize auth state: {e}"
+            ))
         })?;
 
         let public_key = serde_json::to_value(&rcr).map_err(|e| {
@@ -177,21 +201,25 @@ impl WebAuthn for WebAuthnAdapter {
         state: &[u8],
         response: &[u8],
     ) -> Result<PasskeyLoginFinishResult, aegis_app::AppError> {
-        let auth_state: PasskeyAuthentication = serde_json::from_slice(state).map_err(|e| {
+        let auth_state: PasskeyAuthentication = serde_json::from_slice(state)
+            .map_err(|e| {
             aegis_app::AppError::Validation(format!("invalid auth state: {e}"))
         })?;
 
-        let resp: PublicKeyCredential = serde_json::from_slice(response).map_err(|e| {
-            aegis_app::AppError::Validation(format!("invalid auth response: {e}"))
-        })?;
+        let resp: PublicKeyCredential = serde_json::from_slice(response)
+            .map_err(|e| {
+                aegis_app::AppError::Validation(format!(
+                    "invalid auth response: {e}"
+                ))
+            })?;
 
         let result = self
             .inner
             .finish_passkey_authentication(&resp, &auth_state)
             .map_err(|_| aegis_app::AppError::InvalidCredentials)?;
 
-        let credential_id =
-            base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(result.cred_id());
+        let credential_id = base64::engine::general_purpose::URL_SAFE_NO_PAD
+            .encode(result.cred_id());
 
         Ok(PasskeyLoginFinishResult {
             credential_id,

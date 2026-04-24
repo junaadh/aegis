@@ -1,4 +1,7 @@
-use aegis_core::{RoleId, UserId, Role, RoleName, UserRoleAssignment, EffectivePermissions, Permission};
+use aegis_core::{
+    EffectivePermissions, Permission, Role, RoleId, RoleName, UserId,
+    UserRoleAssignment,
+};
 
 use crate::row::{RoleRow, UserRoleAssignmentRow};
 
@@ -16,10 +19,8 @@ impl TryFrom<RoleRow> for Role {
             _ => return Err("permissions must be a json array".to_owned()),
         };
 
-        let parsed: Vec<Permission> = permissions
-            .iter()
-            .filter_map(|p| p.parse().ok())
-            .collect();
+        let parsed: Vec<Permission> =
+            permissions.iter().filter_map(|p| p.parse().ok()).collect();
 
         let effective = EffectivePermissions::new(parsed);
 

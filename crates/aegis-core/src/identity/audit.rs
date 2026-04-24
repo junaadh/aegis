@@ -3,8 +3,8 @@ use std::fmt;
 use time::OffsetDateTime;
 
 use crate::{
-    ids::{GuestId, UserId},
     identity::Metadata,
+    ids::{GuestId, UserId},
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]

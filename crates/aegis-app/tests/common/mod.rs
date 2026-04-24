@@ -6,22 +6,24 @@ use time::{Duration, OffsetDateTime};
 use tokio::sync::RwLock;
 use uuid::Uuid;
 
-use aegis_core::{
-    Guest, GuestId, NewAuditEntry,
-    PasskeyCredential, PasswordCredential, PendingToken, PendingTokenPurpose, RecoveryCode, Role,
-    Session, SessionId, TotpCredential, User, UserId, UserRoleAssignment,
-};
 use aegis_app::{
-    AppDeps, AppError, AppPolicies, AuthPolicy, CompliancePolicy,
-    CredentialSummary, CryptoPolicy, EmailPolicy,
-    Hasher, JobPayload, OutboxEntry, PasswordHash,
-    PasswordVerifyResult, RecoveryCodePolicy, TotpPolicy,
-    PasskeyPolicy, Cache, Clock, IdGenerator, Repos, TokenGenerator, TransactionRepos,
-    WebAuthn, WebhookDispatcher,
-    GuestRepo, UserRepo, SessionRepo, CredentialRepo, RoleRepo, PendingTokenRepo, AuditRepo,
-    OutboxRepo, AegisApp,
-    PasskeyRegisterStartResult, PasskeyRegisterFinishResult, PasskeyLoginStartResult,
-    PasskeyLoginFinishResult,
+    AdminGuestDetailResult, AdminGuestListItem, AdminGuestListQuery,
+    AdminSessionDetailResult, AdminSessionListItem, AdminSessionListQuery,
+    AdminUserListItem, AdminUserListQuery, AegisApp, AppDeps, AppError,
+    AppPolicies, AuditRepo, AuthPolicy, Cache, Clock, CompliancePolicy,
+    CredentialRepo, CredentialSummary, CryptoPolicy, EmailPolicy, GuestRepo,
+    Hasher, IdGenerator, JobPayload, OutboxEntry, OutboxRepo,
+    PaginatedResult, PasskeyLoginFinishResult, PasskeyLoginStartResult,
+    PasskeyPolicy, PasskeyRegisterFinishResult, PasskeyRegisterStartResult,
+    PasswordHash, PasswordVerifyResult, PendingTokenRepo, RecoveryCodePolicy,
+    RepoHealth, Repos, RoleRepo, SessionRepo, TokenGenerator, TotpPolicy,
+    TransactionRepos, UserRepo, UserSessionSummary, WebAuthn,
+    WebhookDispatcher,
+};
+use aegis_core::{
+    Guest, GuestId, NewAuditEntry, PasskeyCredential, PasswordCredential,
+    PendingToken, PendingTokenPurpose, RecoveryCode, Role, Session, SessionId,
+    TotpCredential, User, UserId, UserRoleAssignment,
 };
 
 pub struct MockClock {
@@ -30,7 +32,9 @@ pub struct MockClock {
 
 impl MockClock {
     pub fn new(now: OffsetDateTime) -> Self {
-        Self { now: Arc::new(RwLock::new(now)) }
+        Self {
+            now: Arc::new(RwLock::new(now)),
+        }
     }
 
     pub fn handle(&self) -> Arc<RwLock<OffsetDateTime>> {
@@ -40,7 +44,10 @@ impl MockClock {
 
 impl Clock for MockClock {
     fn now(&self) -> OffsetDateTime {
-        self.now.try_read().map(|g| *g).unwrap_or(OffsetDateTime::now_utc())
+        self.now
+            .try_read()
+            .map(|g| *g)
+            .unwrap_or(OffsetDateTime::now_utc())
     }
 }
 
@@ -50,7 +57,9 @@ pub struct MockIdGen {
 
 impl MockIdGen {
     pub fn new() -> Self {
-        Self { counter: Arc::new(std::sync::Mutex::new(0)) }
+        Self {
+            counter: Arc::new(std::sync::Mutex::new(0)),
+        }
     }
 
     fn next_uuid(&self) -> Uuid {
@@ -64,9 +73,15 @@ impl MockIdGen {
 }
 
 impl IdGenerator for MockIdGen {
-    fn user_id(&self) -> UserId { UserId::from_uuid(self.next_uuid()) }
-    fn guest_id(&self) -> GuestId { GuestId::from_uuid(self.next_uuid()) }
-    fn session_id(&self) -> SessionId { SessionId::from_uuid(self.next_uuid()) }
+    fn user_id(&self) -> UserId {
+        UserId::from_uuid(self.next_uuid())
+    }
+    fn guest_id(&self) -> GuestId {
+        GuestId::from_uuid(self.next_uuid())
+    }
+    fn session_id(&self) -> SessionId {
+        SessionId::from_uuid(self.next_uuid())
+    }
     fn password_cred_id(&self) -> aegis_core::PasswordCredentialId {
         aegis_core::PasswordCredentialId::from_uuid(self.next_uuid())
     }
@@ -103,7 +118,10 @@ pub fn simple_hash(s: &str) -> [u8; 32] {
 
 #[async_trait]
 impl TokenGenerator for MockTokenGen {
-    async fn generate_opaque(&self, _len: usize) -> Result<(String, [u8; 32]), AppError> {
+    async fn generate_opaque(
+        &self,
+        _len: usize,
+    ) -> Result<(String, [u8; 32]), AppError> {
         let token = format!("tok-{}", Uuid::now_v7());
         let hash = simple_hash(&token);
         Ok((token, hash))
@@ -118,9 +136,14 @@ pub struct MockHasher;
 
 #[async_trait]
 impl Hasher for MockHasher {
-    fn current_algorithm_version(&self) -> u32 { 1 }
+    fn current_algorithm_version(&self) -> u32 {
+        1
+    }
 
-    async fn hash_password(&self, password: &str) -> Result<PasswordHash, AppError> {
+    async fn hash_password(
+        &self,
+        password: &str,
+    ) -> Result<PasswordHash, AppError> {
         Ok(PasswordHash {
             hash: format!("hashed:{password}"),
             algorithm_version: 1,
@@ -151,16 +174,33 @@ pub struct MockCache;
 
 #[async_trait]
 impl Cache for MockCache {
-    async fn get(&self, _key: &str) -> Result<Option<Vec<u8>>, AppError> { Ok(None) }
-    async fn set(&self, _key: &str, _value: Vec<u8>, _ttl: Duration) -> Result<(), AppError> { Ok(()) }
-    async fn delete(&self, _key: &str) -> Result<(), AppError> { Ok(()) }
+    async fn get(&self, _key: &str) -> Result<Option<Vec<u8>>, AppError> {
+        Ok(None)
+    }
+    async fn set(
+        &self,
+        _key: &str,
+        _value: Vec<u8>,
+        _ttl: Duration,
+    ) -> Result<(), AppError> {
+        Ok(())
+    }
+    async fn delete(&self, _key: &str) -> Result<(), AppError> {
+        Ok(())
+    }
 }
 
 pub struct MockWebhook;
 
 #[async_trait]
 impl WebhookDispatcher for MockWebhook {
-    async fn dispatch(&self, _event: &str, _payload: &str) -> Result<(), AppError> { Ok(()) }
+    async fn dispatch(
+        &self,
+        _event: &str,
+        _payload: &str,
+    ) -> Result<(), AppError> {
+        Ok(())
+    }
 }
 
 pub struct MockWebAuthn;
@@ -232,7 +272,9 @@ pub struct MockState {
 macro_rules! make_repo {
     ($name:ident) => {
         #[derive(Clone)]
-        pub struct $name { state: Arc<RwLock<MockState>> }
+        pub struct $name {
+            state: Arc<RwLock<MockState>>,
+        }
     };
 }
 
@@ -252,18 +294,111 @@ impl UserRepo for MockUserRepo {
     async fn get_by_id(&self, id: UserId) -> Result<Option<User>, AppError> {
         Ok(self.state.read().await.users.get(&id.as_uuid()).cloned())
     }
-    async fn get_by_email(&self, email: &str) -> Result<Option<User>, AppError> {
-        Ok(self.state.read().await.users.values().find(|u| u.email.as_str() == email).cloned())
+    async fn get_by_email(
+        &self,
+        email: &str,
+    ) -> Result<Option<User>, AppError> {
+        Ok(self
+            .state
+            .read()
+            .await
+            .users
+            .values()
+            .find(|u| u.email.as_str() == email)
+            .cloned())
+    }
+    async fn list_admin(
+        &self,
+        query: &AdminUserListQuery,
+    ) -> Result<PaginatedResult<AdminUserListItem>, AppError> {
+        let state = self.state.read().await;
+        let mut users = state.users.values().cloned().collect::<Vec<_>>();
+
+        if let Some(status) = query.status.as_deref() {
+            users.retain(|user| user.status.to_string() == status);
+        }
+        if let Some(verified) = query.verified {
+            users.retain(|user| user.is_email_verified() == verified);
+        }
+        if let Some(search) = query.q.as_deref() {
+            let search = search.to_lowercase();
+            users.retain(|user| {
+                user.email.as_str().to_lowercase().starts_with(&search)
+                    || user
+                        .display_name
+                        .as_str()
+                        .to_lowercase()
+                        .starts_with(&search)
+            });
+        }
+
+        users.sort_by_key(|user| user.created_at);
+        if !matches!(query.order.as_deref(), Some("asc")) {
+            users.reverse();
+        }
+
+        let page = query.page.max(1);
+        let per_page = query.per_page.clamp(1, 200);
+        let offset = ((page - 1) * per_page) as usize;
+        let total = users.len() as u64;
+        let items = users
+            .into_iter()
+            .skip(offset)
+            .take(per_page as usize)
+            .map(|user| AdminUserListItem {
+                id: user.id.as_uuid(),
+                email: user.email.as_str().to_owned(),
+                display_name: user.display_name.as_str().to_owned(),
+                status: user.status.to_string(),
+                email_verified: user.is_email_verified(),
+                created_at: user.created_at,
+                updated_at: user.updated_at,
+            })
+            .collect();
+
+        Ok(PaginatedResult {
+            items,
+            page,
+            per_page,
+            total,
+        })
     }
     async fn email_exists(&self, email: &str) -> Result<bool, AppError> {
-        Ok(self.state.read().await.users.values().any(|u| u.email.as_str() == email))
+        Ok(self
+            .state
+            .read()
+            .await
+            .users
+            .values()
+            .any(|u| u.email.as_str() == email))
+    }
+    async fn count(&self) -> Result<u64, AppError> {
+        Ok(self.state.read().await.users.len() as u64)
+    }
+    async fn count_by_status(&self, status: &str) -> Result<u64, AppError> {
+        Ok(self
+            .state
+            .read()
+            .await
+            .users
+            .values()
+            .filter(|u| u.status.to_string() == status)
+            .count() as u64)
     }
     async fn insert(&mut self, user: &User) -> Result<(), AppError> {
-        self.state.write().await.users.insert(user.id.as_uuid(), user.clone());
+        self.state
+            .write()
+            .await
+            .users
+            .insert(user.id.as_uuid(), user.clone());
         Ok(())
     }
     async fn update(&mut self, user: &User) -> Result<(), AppError> {
-        self.state.write().await.users.insert(user.id.as_uuid(), user.clone());
+        self.state
+            .write()
+            .await
+            .users
+            .insert(user.id.as_uuid(), user.clone());
         Ok(())
     }
 }
@@ -273,48 +408,312 @@ impl GuestRepo for MockGuestRepo {
     async fn get_by_id(&self, id: GuestId) -> Result<Option<Guest>, AppError> {
         Ok(self.state.read().await.guests.get(&id.as_uuid()).cloned())
     }
+    async fn list_admin(
+        &self,
+        query: &AdminGuestListQuery,
+    ) -> Result<PaginatedResult<AdminGuestListItem>, AppError> {
+        let state = self.state.read().await;
+        let mut guests: Vec<_> = state.guests.values().cloned().collect();
+        let now = OffsetDateTime::now_utc();
+
+        if let Some(status) = query.status.as_deref() {
+            guests.retain(|g| {
+                let derived = if g.converted_to.is_some() {
+                    "converted"
+                } else if g.expires_at <= now {
+                    "expired"
+                } else {
+                    "active"
+                };
+                derived == status
+            });
+        }
+
+        guests.sort_by_key(|g| g.created_at);
+        if !matches!(query.order.as_deref(), Some("asc")) {
+            guests.reverse();
+        }
+
+        let page = query.page.max(1);
+        let per_page = query.per_page.clamp(1, 200);
+        let offset = ((page - 1) * per_page) as usize;
+        let total = guests.len() as u64;
+        let items = guests
+            .into_iter()
+            .skip(offset)
+            .take(per_page as usize)
+            .map(|g| {
+                let status = if g.converted_to.is_some() {
+                    "converted".to_owned()
+                } else if g.expires_at <= now {
+                    "expired".to_owned()
+                } else {
+                    "active".to_owned()
+                };
+                AdminGuestListItem {
+                    id: g.id.as_uuid(),
+                    email: g.email.as_ref().map(|e| e.as_str().to_owned()),
+                    status,
+                    converted_to: g.converted_to.map(|id| id.as_uuid()),
+                    expires_at: g.expires_at,
+                    created_at: g.created_at,
+                    updated_at: g.updated_at,
+                }
+            })
+            .collect();
+
+        Ok(PaginatedResult {
+            items,
+            page,
+            per_page,
+            total,
+        })
+    }
+    async fn get_admin_detail(
+        &self,
+        id: GuestId,
+    ) -> Result<Option<AdminGuestDetailResult>, AppError> {
+        let state = self.state.read().await;
+        let g = match state.guests.get(&id.as_uuid()) {
+            Some(g) => g,
+            None => return Ok(None),
+        };
+        let now = OffsetDateTime::now_utc();
+        let status = if g.converted_to.is_some() {
+            "converted".to_owned()
+        } else if g.expires_at <= now {
+            "expired".to_owned()
+        } else {
+            "active".to_owned()
+        };
+        Ok(Some(AdminGuestDetailResult {
+            id: g.id.as_uuid(),
+            email: g.email.as_ref().map(|e| e.as_str().to_owned()),
+            status,
+            converted_to: g.converted_to.map(|id| id.as_uuid()),
+            metadata: serde_json::from_str(g.metadata.as_str())
+                .unwrap_or_default(),
+            expires_at: g.expires_at,
+            created_at: g.created_at,
+            updated_at: g.updated_at,
+        }))
+    }
+    async fn count(&self) -> Result<u64, AppError> {
+        Ok(self.state.read().await.guests.len() as u64)
+    }
+    async fn count_active(&self) -> Result<u64, AppError> {
+        let now = OffsetDateTime::now_utc();
+        Ok(self
+            .state
+            .read()
+            .await
+            .guests
+            .values()
+            .filter(|g| g.converted_to.is_none() && g.expires_at > now)
+            .count() as u64)
+    }
     async fn insert(&mut self, guest: &Guest) -> Result<(), AppError> {
-        self.state.write().await.guests.insert(guest.id.as_uuid(), guest.clone());
+        self.state
+            .write()
+            .await
+            .guests
+            .insert(guest.id.as_uuid(), guest.clone());
         Ok(())
     }
     async fn update(&mut self, guest: &Guest) -> Result<(), AppError> {
-        self.state.write().await.guests.insert(guest.id.as_uuid(), guest.clone());
+        self.state
+            .write()
+            .await
+            .guests
+            .insert(guest.id.as_uuid(), guest.clone());
         Ok(())
     }
 }
 
 #[async_trait]
 impl SessionRepo for MockSessionRepo {
-    async fn get_by_id(&self, id: SessionId) -> Result<Option<Session>, AppError> {
-        Ok(self.state.read().await.sessions.values().find(|session| session.id == id).cloned())
+    async fn get_by_id(
+        &self,
+        id: SessionId,
+    ) -> Result<Option<Session>, AppError> {
+        Ok(self
+            .state
+            .read()
+            .await
+            .sessions
+            .values()
+            .find(|session| session.id == id)
+            .cloned())
     }
-    async fn get_by_token_hash(&self, hash: &[u8; 32]) -> Result<Option<Session>, AppError> {
+    async fn get_by_token_hash(
+        &self,
+        hash: &[u8; 32],
+    ) -> Result<Option<Session>, AppError> {
         Ok(self.state.read().await.sessions.get(hash).cloned())
     }
+    async fn get_user_summary(
+        &self,
+        user_id: UserId,
+    ) -> Result<UserSessionSummary, AppError> {
+        let state = self.state.read().await;
+        let sessions = state
+            .sessions
+            .values()
+            .filter(|session| session.user_id() == Some(user_id))
+            .collect::<Vec<_>>();
+        let last_seen_at =
+            sessions.iter().map(|session| session.last_seen_at).max();
+        Ok(UserSessionSummary {
+            session_count: sessions.len() as u64,
+            last_seen_at,
+        })
+    }
+    async fn list_admin(
+        &self,
+        query: &AdminSessionListQuery,
+    ) -> Result<PaginatedResult<AdminSessionListItem>, AppError> {
+        let state = self.state.read().await;
+        let now = OffsetDateTime::now_utc();
+        let mut sessions: Vec<_> = state.sessions.values().cloned().collect();
+
+        if let Some(user_id) = query.user_id {
+            sessions.retain(|s| s.user_id() == Some(UserId::from_uuid(user_id)));
+        }
+        if query.active_only.unwrap_or(false) {
+            sessions.retain(|s| s.expires_at > now);
+        }
+
+        sessions.sort_by_key(|s| std::cmp::Reverse(s.last_seen_at));
+
+        let page = query.page.max(1);
+        let per_page = query.per_page.clamp(1, 200);
+        let offset = ((page - 1) * per_page) as usize;
+        let total = sessions.len() as u64;
+        let items = sessions
+            .into_iter()
+            .skip(offset)
+            .take(per_page as usize)
+            .map(|s| {
+                let (identity_type, identity_id) = match s.identity {
+                    aegis_core::SessionIdentity::User(uid) => {
+                        ("user".to_owned(), uid.as_uuid())
+                    }
+                    aegis_core::SessionIdentity::Guest(gid) => {
+                        ("guest".to_owned(), gid.as_uuid())
+                    }
+                };
+                AdminSessionListItem {
+                    id: s.id.as_uuid(),
+                    identity_type,
+                    identity_id,
+                    expires_at: s.expires_at,
+                    last_seen_at: s.last_seen_at,
+                    mfa_verified: s.mfa_verified,
+                    user_agent: s.user_agent.clone(),
+                    ip_address: s.ip_address.clone(),
+                }
+            })
+            .collect();
+
+        Ok(PaginatedResult {
+            items,
+            page,
+            per_page,
+            total,
+        })
+    }
+    async fn get_admin_detail(
+        &self,
+        id: SessionId,
+    ) -> Result<Option<AdminSessionDetailResult>, AppError> {
+        let state = self.state.read().await;
+        let session = match state.sessions.values().find(|s| s.id == id) {
+            Some(s) => s,
+            None => return Ok(None),
+        };
+        let (identity_type, identity_id) = match session.identity {
+            aegis_core::SessionIdentity::User(uid) => {
+                ("user".to_owned(), uid.as_uuid())
+            }
+            aegis_core::SessionIdentity::Guest(gid) => {
+                ("guest".to_owned(), gid.as_uuid())
+            }
+        };
+        Ok(Some(AdminSessionDetailResult {
+            id: session.id.as_uuid(),
+            identity_type,
+            identity_id,
+            expires_at: session.expires_at,
+            last_seen_at: session.last_seen_at,
+            mfa_verified: session.mfa_verified,
+            user_agent: session.user_agent.clone(),
+            ip_address: session.ip_address.clone(),
+            metadata: serde_json::from_str(session.metadata.as_str())
+                .unwrap_or_default(),
+        }))
+    }
+    async fn count_active(&self) -> Result<u64, AppError> {
+        let now = OffsetDateTime::now_utc();
+        Ok(self
+            .state
+            .read()
+            .await
+            .sessions
+            .values()
+            .filter(|s| s.expires_at > now)
+            .count() as u64)
+    }
     async fn insert(&mut self, session: &Session) -> Result<(), AppError> {
-        self.state.write().await.sessions.insert(session.token_hash, session.clone());
+        self.state
+            .write()
+            .await
+            .sessions
+            .insert(session.token_hash, session.clone());
         Ok(())
     }
     async fn update(&mut self, session: &Session) -> Result<(), AppError> {
-        self.state.write().await.sessions.insert(session.token_hash, session.clone());
+        self.state
+            .write()
+            .await
+            .sessions
+            .insert(session.token_hash, session.clone());
         Ok(())
     }
     async fn delete_by_id(&mut self, id: SessionId) -> Result<(), AppError> {
         self.state.write().await.sessions.retain(|_, s| s.id != id);
         Ok(())
     }
-    async fn delete_by_user_id(&mut self, user_id: UserId) -> Result<(), AppError> {
-        self.state.write().await.sessions.retain(|_, s| s.user_id() != Some(user_id));
+    async fn delete_by_user_id(
+        &mut self,
+        user_id: UserId,
+    ) -> Result<(), AppError> {
+        self.state
+            .write()
+            .await
+            .sessions
+            .retain(|_, s| s.user_id() != Some(user_id));
         Ok(())
     }
 }
 
 #[async_trait]
 impl CredentialRepo for MockCredentialRepo {
-    async fn get_password_by_user_id(&self, user_id: UserId) -> Result<Option<PasswordCredential>, AppError> {
-        Ok(self.state.read().await.credentials_password.get(&user_id.as_uuid()).cloned())
+    async fn get_password_by_user_id(
+        &self,
+        user_id: UserId,
+    ) -> Result<Option<PasswordCredential>, AppError> {
+        Ok(self
+            .state
+            .read()
+            .await
+            .credentials_password
+            .get(&user_id.as_uuid())
+            .cloned())
     }
-    async fn list_by_user_id(&self, user_id: UserId) -> Result<Vec<CredentialSummary>, AppError> {
+    async fn list_by_user_id(
+        &self,
+        user_id: UserId,
+    ) -> Result<Vec<CredentialSummary>, AppError> {
         let state = self.state.read().await;
         let mut summaries = Vec::new();
         if let Some(p) = state.credentials_password.get(&user_id.as_uuid()) {
@@ -335,68 +734,170 @@ impl CredentialRepo for MockCredentialRepo {
         }
         Ok(summaries)
     }
-    async fn get_totp_by_user_id(&self, user_id: UserId) -> Result<Option<TotpCredential>, AppError> {
-        Ok(self.state.read().await.credentials_totp.get(&user_id.as_uuid()).cloned())
+    async fn get_totp_by_user_id(
+        &self,
+        user_id: UserId,
+    ) -> Result<Option<TotpCredential>, AppError> {
+        Ok(self
+            .state
+            .read()
+            .await
+            .credentials_totp
+            .get(&user_id.as_uuid())
+            .cloned())
     }
-    async fn get_recovery_code_by_hash(&self, hash: &str) -> Result<Option<RecoveryCode>, AppError> {
+    async fn get_recovery_code_by_hash(
+        &self,
+        hash: &str,
+    ) -> Result<Option<RecoveryCode>, AppError> {
         Ok(self.state.read().await.recovery_codes.get(hash).cloned())
     }
-    async fn get_passkey_by_credential_id(&self, _cid: &str) -> Result<Option<PasskeyCredential>, AppError> {
+    async fn get_passkey_by_credential_id(
+        &self,
+        _cid: &str,
+    ) -> Result<Option<PasskeyCredential>, AppError> {
         Ok(None)
     }
-    async fn insert_password(&mut self, cred: &PasswordCredential) -> Result<(), AppError> {
-        self.state.write().await.credentials_password.insert(cred.user_id.as_uuid(), cred.clone());
+    async fn insert_password(
+        &mut self,
+        cred: &PasswordCredential,
+    ) -> Result<(), AppError> {
+        self.state
+            .write()
+            .await
+            .credentials_password
+            .insert(cred.user_id.as_uuid(), cred.clone());
         Ok(())
     }
-    async fn update_password(&mut self, cred: &PasswordCredential) -> Result<(), AppError> {
-        self.state.write().await.credentials_password.insert(cred.user_id.as_uuid(), cred.clone());
+    async fn update_password(
+        &mut self,
+        cred: &PasswordCredential,
+    ) -> Result<(), AppError> {
+        self.state
+            .write()
+            .await
+            .credentials_password
+            .insert(cred.user_id.as_uuid(), cred.clone());
         Ok(())
     }
-    async fn delete_by_id(&mut self, _id: Uuid) -> Result<(), AppError> { Ok(()) }
-    async fn insert_totp(&mut self, cred: &TotpCredential) -> Result<(), AppError> {
-        self.state.write().await.credentials_totp.insert(cred.user_id.as_uuid(), cred.clone());
+    async fn delete_by_id(&mut self, _id: Uuid) -> Result<(), AppError> {
         Ok(())
     }
-    async fn update_totp(&mut self, cred: &TotpCredential) -> Result<(), AppError> {
-        self.state.write().await.credentials_totp.insert(cred.user_id.as_uuid(), cred.clone());
+    async fn insert_totp(
+        &mut self,
+        cred: &TotpCredential,
+    ) -> Result<(), AppError> {
+        self.state
+            .write()
+            .await
+            .credentials_totp
+            .insert(cred.user_id.as_uuid(), cred.clone());
         Ok(())
     }
-    async fn insert_recovery_codes(&mut self, codes: &[RecoveryCode]) -> Result<(), AppError> {
+    async fn update_totp(
+        &mut self,
+        cred: &TotpCredential,
+    ) -> Result<(), AppError> {
+        self.state
+            .write()
+            .await
+            .credentials_totp
+            .insert(cred.user_id.as_uuid(), cred.clone());
+        Ok(())
+    }
+    async fn insert_recovery_codes(
+        &mut self,
+        codes: &[RecoveryCode],
+    ) -> Result<(), AppError> {
         let mut state = self.state.write().await;
         for code in codes {
-            state.recovery_codes.insert(code.code_hash.clone(), code.clone());
+            state
+                .recovery_codes
+                .insert(code.code_hash.clone(), code.clone());
         }
         Ok(())
     }
-    async fn update_recovery_code(&mut self, code: &RecoveryCode) -> Result<(), AppError> {
-        self.state.write().await.recovery_codes.insert(code.code_hash.clone(), code.clone());
+    async fn update_recovery_code(
+        &mut self,
+        code: &RecoveryCode,
+    ) -> Result<(), AppError> {
+        self.state
+            .write()
+            .await
+            .recovery_codes
+            .insert(code.code_hash.clone(), code.clone());
         Ok(())
     }
-    async fn delete_recovery_codes_by_user_id(&mut self, uid: UserId) -> Result<(), AppError> {
-        self.state.write().await.recovery_codes.retain(|_, code| code.user_id != uid);
+    async fn delete_recovery_codes_by_user_id(
+        &mut self,
+        uid: UserId,
+    ) -> Result<(), AppError> {
+        self.state
+            .write()
+            .await
+            .recovery_codes
+            .retain(|_, code| code.user_id != uid);
         Ok(())
     }
-    async fn insert_passkey(&mut self, _cred: &PasskeyCredential) -> Result<(), AppError> { Ok(()) }
-    async fn update_passkey(&mut self, _cred: &PasskeyCredential) -> Result<(), AppError> { Ok(()) }
+    async fn insert_passkey(
+        &mut self,
+        _cred: &PasskeyCredential,
+    ) -> Result<(), AppError> {
+        Ok(())
+    }
+    async fn update_passkey(
+        &mut self,
+        _cred: &PasskeyCredential,
+    ) -> Result<(), AppError> {
+        Ok(())
+    }
 }
 
 #[async_trait]
 impl RoleRepo for MockRoleRepo {
-    async fn get_roles_by_user_id(&self, _uid: UserId) -> Result<Vec<Role>, AppError> { Ok(vec![]) }
-    async fn get_assignments_by_user_id(&self, _uid: UserId) -> Result<Vec<UserRoleAssignment>, AppError> { Ok(vec![]) }
+    async fn get_roles_by_user_id(
+        &self,
+        _uid: UserId,
+    ) -> Result<Vec<Role>, AppError> {
+        Ok(vec![])
+    }
+    async fn get_assignments_by_user_id(
+        &self,
+        _uid: UserId,
+    ) -> Result<Vec<UserRoleAssignment>, AppError> {
+        Ok(vec![])
+    }
 }
 
 #[async_trait]
 impl PendingTokenRepo for MockPendingTokenRepo {
-    async fn get_by_hash(&self, hash: &[u8; 32], purpose: PendingTokenPurpose) -> Result<Option<PendingToken>, AppError> {
-        Ok(self.state.read().await.pending_tokens.iter().find(|t| t.token_hash == *hash && t.purpose == purpose).cloned())
+    async fn get_by_hash(
+        &self,
+        hash: &[u8; 32],
+        purpose: PendingTokenPurpose,
+    ) -> Result<Option<PendingToken>, AppError> {
+        Ok(self
+            .state
+            .read()
+            .await
+            .pending_tokens
+            .iter()
+            .find(|t| t.token_hash == *hash && t.purpose == purpose)
+            .cloned())
     }
     async fn insert(&mut self, token: &PendingToken) -> Result<(), AppError> {
         self.state.write().await.pending_tokens.push(token.clone());
         Ok(())
     }
-    async fn delete_by_hash(&mut self, hash: &[u8; 32]) -> Result<(), AppError> {
-        self.state.write().await.pending_tokens.retain(|t| t.token_hash != *hash);
+    async fn delete_by_hash(
+        &mut self,
+        hash: &[u8; 32],
+    ) -> Result<(), AppError> {
+        self.state
+            .write()
+            .await
+            .pending_tokens
+            .retain(|t| t.token_hash != *hash);
         Ok(())
     }
 }
@@ -415,10 +916,25 @@ impl OutboxRepo for MockOutboxRepo {
         self.state.write().await.outbox.push(payload.clone());
         Ok(())
     }
-    async fn claim_pending(&mut self, _limit: usize) -> Result<Vec<OutboxEntry>, AppError> { Ok(vec![]) }
-    async fn mark_processed(&mut self, _id: i64) -> Result<(), AppError> { Ok(()) }
-    async fn mark_retry(&mut self, _id: i64, _next: OffsetDateTime) -> Result<(), AppError> { Ok(()) }
-    async fn mark_dead_lettered(&mut self, _id: i64) -> Result<(), AppError> { Ok(()) }
+    async fn claim_pending(
+        &mut self,
+        _limit: usize,
+    ) -> Result<Vec<OutboxEntry>, AppError> {
+        Ok(vec![])
+    }
+    async fn mark_processed(&mut self, _id: i64) -> Result<(), AppError> {
+        Ok(())
+    }
+    async fn mark_retry(
+        &mut self,
+        _id: i64,
+        _next: OffsetDateTime,
+    ) -> Result<(), AppError> {
+        Ok(())
+    }
+    async fn mark_dead_lettered(&mut self, _id: i64) -> Result<(), AppError> {
+        Ok(())
+    }
 }
 
 pub struct MockTx {
@@ -442,14 +958,30 @@ impl TransactionRepos for MockTx {
     type Audit = MockAuditRepo;
     type Outbox = MockOutboxRepo;
 
-    fn users(&mut self) -> &mut Self::Users { &mut self.users }
-    fn guests(&mut self) -> &mut Self::Guests { &mut self.guests }
-    fn sessions(&mut self) -> &mut Self::Sessions { &mut self.sessions }
-    fn credentials(&mut self) -> &mut Self::Credentials { &mut self.credentials }
-    fn roles(&mut self) -> &mut Self::Roles { &mut self.roles }
-    fn tokens(&mut self) -> &mut Self::Tokens { &mut self.tokens }
-    fn audit(&mut self) -> &mut Self::Audit { &mut self.audit }
-    fn outbox(&mut self) -> &mut Self::Outbox { &mut self.outbox }
+    fn users(&mut self) -> &mut Self::Users {
+        &mut self.users
+    }
+    fn guests(&mut self) -> &mut Self::Guests {
+        &mut self.guests
+    }
+    fn sessions(&mut self) -> &mut Self::Sessions {
+        &mut self.sessions
+    }
+    fn credentials(&mut self) -> &mut Self::Credentials {
+        &mut self.credentials
+    }
+    fn roles(&mut self) -> &mut Self::Roles {
+        &mut self.roles
+    }
+    fn tokens(&mut self) -> &mut Self::Tokens {
+        &mut self.tokens
+    }
+    fn audit(&mut self) -> &mut Self::Audit {
+        &mut self.audit
+    }
+    fn outbox(&mut self) -> &mut Self::Outbox {
+        &mut self.outbox
+    }
 }
 
 pub struct MockRepos {
@@ -475,19 +1007,36 @@ impl Repos for MockRepos {
     type Outbox = MockOutboxRepo;
     type Tx = MockTx;
 
-    fn users(&self) -> &Self::Users { &self.users }
-    fn guests(&self) -> &Self::Guests { &self.guests }
-    fn sessions(&self) -> &Self::Sessions { &self.sessions }
-    fn credentials(&self) -> &Self::Credentials { &self.credentials }
-    fn roles(&self) -> &Self::Roles { &self.roles }
-    fn tokens(&self) -> &Self::Tokens { &self.tokens }
-    fn audit(&self) -> &Self::Audit { &self.audit }
-    fn outbox(&self) -> &Self::Outbox { &self.outbox }
+    fn users(&self) -> &Self::Users {
+        &self.users
+    }
+    fn guests(&self) -> &Self::Guests {
+        &self.guests
+    }
+    fn sessions(&self) -> &Self::Sessions {
+        &self.sessions
+    }
+    fn credentials(&self) -> &Self::Credentials {
+        &self.credentials
+    }
+    fn roles(&self) -> &Self::Roles {
+        &self.roles
+    }
+    fn tokens(&self) -> &Self::Tokens {
+        &self.tokens
+    }
+    fn audit(&self) -> &Self::Audit {
+        &self.audit
+    }
+    fn outbox(&self) -> &Self::Outbox {
+        &self.outbox
+    }
 
     async fn with_transaction<F, Fut, T>(&self, f: F) -> Result<T, AppError>
     where
         F: FnOnce(Self::Tx) -> Fut + Send,
-        Fut: std::future::Future<Output = (Self::Tx, Result<T, AppError>)> + Send,
+        Fut: std::future::Future<Output = (Self::Tx, Result<T, AppError>)>
+            + Send,
         T: Send,
     {
         let tx = MockTx {
@@ -502,6 +1051,15 @@ impl Repos for MockRepos {
         };
         let (_tx, result) = f(tx).await;
         result
+    }
+
+    async fn health_check(&self) -> Result<RepoHealth, AppError> {
+        Ok(RepoHealth {
+            connected: true,
+            latency_ms: 0,
+            pool_size: 1,
+            pool_idle: 1,
+        })
     }
 }
 
@@ -568,19 +1126,45 @@ pub fn test_ctx() -> aegis_app::RequestContext {
     }
 }
 
-pub type TestApp = AegisApp<MockRepos, MockCache, MockHasher, MockTokenGen, MockWebhook, MockClock, MockIdGen, MockWebAuthn>;
+pub type TestApp = AegisApp<
+    MockRepos,
+    MockCache,
+    MockHasher,
+    MockTokenGen,
+    MockWebhook,
+    MockClock,
+    MockIdGen,
+    MockWebAuthn,
+>;
 
-pub fn make_app(clock: &MockClock, email_enabled: bool) -> (TestApp, Arc<RwLock<MockState>>) {
+pub fn make_app(
+    clock: &MockClock,
+    email_enabled: bool,
+) -> (TestApp, Arc<RwLock<MockState>>) {
     let state = Arc::new(RwLock::new(MockState::default()));
     let repos = MockRepos {
-        users: MockUserRepo { state: state.clone() },
-        guests: MockGuestRepo { state: state.clone() },
-        sessions: MockSessionRepo { state: state.clone() },
-        credentials: MockCredentialRepo { state: state.clone() },
+        users: MockUserRepo {
+            state: state.clone(),
+        },
+        guests: MockGuestRepo {
+            state: state.clone(),
+        },
+        sessions: MockSessionRepo {
+            state: state.clone(),
+        },
+        credentials: MockCredentialRepo {
+            state: state.clone(),
+        },
         roles: MockRoleRepo,
-        tokens: MockPendingTokenRepo { state: state.clone() },
-        audit: MockAuditRepo { state: state.clone() },
-        outbox: MockOutboxRepo { state: state.clone() },
+        tokens: MockPendingTokenRepo {
+            state: state.clone(),
+        },
+        audit: MockAuditRepo {
+            state: state.clone(),
+        },
+        outbox: MockOutboxRepo {
+            state: state.clone(),
+        },
     };
     let deps = AppDeps {
         repos,
@@ -588,7 +1172,9 @@ pub fn make_app(clock: &MockClock, email_enabled: bool) -> (TestApp, Arc<RwLock<
         hasher: MockHasher,
         tokens: MockTokenGen,
         webhooks: MockWebhook,
-        clock: MockClock { now: clock.handle() },
+        clock: MockClock {
+            now: clock.handle(),
+        },
         ids: MockIdGen::new(),
         webauthn: MockWebAuthn,
     };

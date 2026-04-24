@@ -1,13 +1,13 @@
-use axum::extract::State;
-use axum::http::HeaderMap;
-use axum::Json;
 use aegis_app::{LoginCommand, RequestContext, SignupCommand};
 use aegis_types::{ApiResponse, LoginRequest, SignupRequest};
+use axum::Json;
+use axum::extract::State;
+use axum::http::HeaderMap;
 
 use crate::auth::{OptionalAuth, RequiredAuth};
 use crate::context;
 use crate::cookies;
-use crate::error::HttpError;
+use crate::error::{ApiJson, HttpError};
 use crate::mapping;
 use crate::state::AppState;
 
@@ -15,7 +15,7 @@ pub async fn signup<R, C, H, T, W, K, I, A>(
     State(state): State<AppState<R, C, H, T, W, K, I, A>>,
     auth: OptionalAuth<R, C, H, T, W, K, I, A>,
     headers: HeaderMap,
-    Json(body): Json<SignupRequest>,
+    ApiJson(body): ApiJson<SignupRequest>,
 ) -> Result<(HeaderMap, Json<ApiResponse<serde_json::Value>>), HttpError>
 where
     R: aegis_app::Repos,
@@ -53,7 +53,12 @@ where
     }
     cookies::set_session_cookie(
         &mut response_headers,
-        &state.config.session.as_ref().expect("session config is required").cookie,
+        &state
+            .config
+            .session
+            .as_ref()
+            .expect("session config is required")
+            .cookie,
         &result.session_token,
         state.app.policy().auth.session_max_age,
     );
@@ -75,7 +80,7 @@ where
 pub async fn login<R, C, H, T, W, K, I, A>(
     State(state): State<AppState<R, C, H, T, W, K, I, A>>,
     headers: HeaderMap,
-    Json(body): Json<LoginRequest>,
+    ApiJson(body): ApiJson<LoginRequest>,
 ) -> Result<(HeaderMap, Json<ApiResponse<serde_json::Value>>), HttpError>
 where
     R: aegis_app::Repos,
@@ -107,7 +112,12 @@ where
         aegis_app::LoginOutcome::Authenticated(result) => {
             cookies::set_session_cookie(
                 &mut response_headers,
-                &state.config.session.as_ref().expect("session config is required").cookie,
+                &state
+                    .config
+                    .session
+                    .as_ref()
+                    .expect("session config is required")
+                    .cookie,
                 &result.session_token,
                 state.app.policy().auth.session_max_age,
             );
@@ -115,7 +125,12 @@ where
         aegis_app::LoginOutcome::RequiresMfa { session_token, .. } => {
             cookies::set_session_cookie(
                 &mut response_headers,
-                &state.config.session.as_ref().expect("session config is required").cookie,
+                &state
+                    .config
+                    .session
+                    .as_ref()
+                    .expect("session config is required")
+                    .cookie,
                 session_token,
                 state.app.policy().auth.session_max_age,
             );
@@ -169,7 +184,12 @@ where
     let mut response_headers = HeaderMap::new();
     cookies::clear_session_cookie(
         &mut response_headers,
-        &state.config.session.as_ref().expect("session config is required").cookie,
+        &state
+            .config
+            .session
+            .as_ref()
+            .expect("session config is required")
+            .cookie,
     );
 
     let meta = aegis_types::ResponseMeta::new(request_id.to_string());
@@ -204,7 +224,10 @@ where
 
     let result = match &identity.inner {
         aegis_core::Identity::User(_) => {
-            state.app.get_current_identity(identity.verified_user_id()?).await?
+            state
+                .app
+                .get_current_identity(identity.verified_user_id()?)
+                .await?
         }
         aegis_core::Identity::Guest(g) => {
             state.app.get_guest_identity(g.id).await?
@@ -226,7 +249,7 @@ pub async fn update_profile<R, C, H, T, W, K, I, A>(
     State(state): State<AppState<R, C, H, T, W, K, I, A>>,
     auth: RequiredAuth<R, C, H, T, W, K, I, A>,
     headers: HeaderMap,
-    Json(body): Json<aegis_types::UpdateProfileRequest>,
+    ApiJson(body): ApiJson<aegis_types::UpdateProfileRequest>,
 ) -> Result<Json<ApiResponse<serde_json::Value>>, HttpError>
 where
     R: aegis_app::Repos,

@@ -3,10 +3,15 @@ use crate::ref_or::RefOr;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema, Default)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema, Default,
+)]
 #[serde(deny_unknown_fields)]
 pub struct WebhooksConfig {
-    #[schemars(title = "Enabled", description = "Enable outbound webhook delivery.")]
+    #[schemars(
+        title = "Enabled",
+        description = "Enable outbound webhook delivery."
+    )]
     #[serde(default)]
     pub enabled: bool,
 
@@ -20,11 +25,17 @@ pub struct WebhookEndpointConfig {
     #[schemars(title = "URL", description = "Webhook endpoint URL.")]
     pub url: String,
 
-    #[schemars(title = "Events", description = "List of event types to subscribe to.")]
+    #[schemars(
+        title = "Events",
+        description = "List of event types to subscribe to."
+    )]
     #[serde(default)]
     pub events: Vec<String>,
 
-    #[schemars(title = "Signing secret", description = "Secret for webhook payload signing. Use env:VAR reference.")]
+    #[schemars(
+        title = "Signing secret",
+        description = "Secret for webhook payload signing. Use env:VAR reference."
+    )]
     #[serde(default)]
     pub secret: Option<String>,
 
@@ -32,7 +43,10 @@ pub struct WebhookEndpointConfig {
     #[serde(default = "default_webhook_timeout")]
     pub timeout_seconds: u64,
 
-    #[schemars(title = "Max retries", description = "Maximum retry attempts for failed deliveries.")]
+    #[schemars(
+        title = "Max retries",
+        description = "Maximum retry attempts for failed deliveries."
+    )]
     #[serde(default = "default_webhook_retry")]
     pub retry_max_attempts: u32,
 }
@@ -40,7 +54,10 @@ pub struct WebhookEndpointConfig {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct WebhooksConfigSrc {
-    #[schemars(title = "Enabled", description = "Enable outbound webhook delivery.")]
+    #[schemars(
+        title = "Enabled",
+        description = "Enable outbound webhook delivery."
+    )]
     #[serde(default)]
     pub enabled: RefOr<bool>,
 
@@ -55,11 +72,17 @@ pub struct WebhookEndpointConfigSrc {
     #[serde(default)]
     pub url: RefOr<String>,
 
-    #[schemars(title = "Events", description = "List of event types to subscribe to.")]
+    #[schemars(
+        title = "Events",
+        description = "List of event types to subscribe to."
+    )]
     #[serde(default)]
     pub events: RefOr<Vec<String>>,
 
-    #[schemars(title = "Signing secret", description = "Secret for webhook payload signing. Use env:VAR reference.")]
+    #[schemars(
+        title = "Signing secret",
+        description = "Secret for webhook payload signing. Use env:VAR reference."
+    )]
     #[serde(default)]
     pub secret: RefOr<Option<String>>,
 
@@ -67,7 +90,10 @@ pub struct WebhookEndpointConfigSrc {
     #[serde(default = "default_webhook_timeout_or")]
     pub timeout_seconds: RefOr<u64>,
 
-    #[schemars(title = "Max retries", description = "Maximum retry attempts for failed deliveries.")]
+    #[schemars(
+        title = "Max retries",
+        description = "Maximum retry attempts for failed deliveries."
+    )]
     #[serde(default = "default_webhook_retry_or")]
     pub retry_max_attempts: RefOr<u32>,
 }
@@ -111,9 +137,9 @@ impl Default for WebhookEndpointConfigSrc {
 
 impl WebhooksConfigSrc {
     pub fn resolve(&self) -> Result<WebhooksConfig, ConfigError> {
-        let endpoints = self
-            .endpoints
-            .resolve_nested(|v| v.iter().map(|e| e.resolve()).collect::<Result<Vec<_>, _>>())?;
+        let endpoints = self.endpoints.resolve_nested(|v| {
+            v.iter().map(|e| e.resolve()).collect::<Result<Vec<_>, _>>()
+        })?;
         Ok(WebhooksConfig {
             enabled: self.enabled.resolve()?,
             endpoints,

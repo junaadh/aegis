@@ -40,11 +40,15 @@ impl PasswordPolicy {
             });
         }
 
-        if self.require_uppercase && !password.chars().any(|c| c.is_ascii_uppercase()) {
+        if self.require_uppercase
+            && !password.chars().any(|c| c.is_ascii_uppercase())
+        {
             violations.push(PasswordViolation::MissingUppercase);
         }
 
-        if self.require_lowercase && !password.chars().any(|c| c.is_ascii_lowercase()) {
+        if self.require_lowercase
+            && !password.chars().any(|c| c.is_ascii_lowercase())
+        {
             violations.push(PasswordViolation::MissingLowercase);
         }
 
@@ -53,9 +57,7 @@ impl PasswordPolicy {
         }
 
         if self.require_symbol
-            && !password
-                .chars()
-                .any(|c| !c.is_ascii_alphanumeric())
+            && !password.chars().any(|c| !c.is_ascii_alphanumeric())
         {
             violations.push(PasswordViolation::MissingSymbol);
         }
@@ -65,10 +67,7 @@ impl PasswordPolicy {
         {
             let email_lower = email.to_ascii_lowercase();
             let local_part = email_lower.split('@').next().unwrap_or("");
-            if password
-                .to_ascii_lowercase()
-                .contains(local_part)
-            {
+            if password.to_ascii_lowercase().contains(local_part) {
                 violations.push(PasswordViolation::ContainsEmailSubstring);
             }
         }
@@ -98,10 +97,16 @@ impl fmt::Display for PasswordViolation {
             Self::TooShort { min, actual } => {
                 write!(f, "password is too short ({actual}/{min} characters)")
             }
-            Self::MissingUppercase => f.write_str("password must contain an uppercase letter"),
-            Self::MissingLowercase => f.write_str("password must contain a lowercase letter"),
+            Self::MissingUppercase => {
+                f.write_str("password must contain an uppercase letter")
+            }
+            Self::MissingLowercase => {
+                f.write_str("password must contain a lowercase letter")
+            }
             Self::MissingDigit => f.write_str("password must contain a digit"),
-            Self::MissingSymbol => f.write_str("password must contain a symbol"),
+            Self::MissingSymbol => {
+                f.write_str("password must contain a symbol")
+            }
             Self::TooCommon => f.write_str("password is too common"),
             Self::ContainsEmailSubstring => {
                 f.write_str("password must not contain email local part")

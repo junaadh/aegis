@@ -2,16 +2,20 @@ mod common;
 
 use time::{Duration, OffsetDateTime};
 
-use aegis_core::UserStatus;
-use aegis_app::{
-    AppError, ChangePasswordCommand, ForgotPasswordCommand, ResendVerificationCommand,
-    ResetPasswordCommand, VerifyEmailCommand,
-};
 use aegis_app::TokenGenerator;
+use aegis_app::{
+    AppError, ChangePasswordCommand, ForgotPasswordCommand,
+    ResendVerificationCommand, ResetPasswordCommand, VerifyEmailCommand,
+};
+use aegis_core::UserStatus;
 
 use common::*;
 
-async fn signup_user_local(app: &TestApp, email: &str, password: &str) -> aegis_app::AuthResult {
+async fn signup_user_local(
+    app: &TestApp,
+    email: &str,
+    password: &str,
+) -> aegis_app::AuthResult {
     app.signup(
         aegis_app::SignupCommand {
             email: email.to_owned(),
@@ -41,18 +45,26 @@ async fn create_session_for_user_local(
     token
 }
 
-fn extract_verification_token(state: &std::sync::Arc<tokio::sync::RwLock<MockState>>) -> Option<String> {
+fn extract_verification_token(
+    state: &std::sync::Arc<tokio::sync::RwLock<MockState>>,
+) -> Option<String> {
     let s = state.try_read().unwrap();
     s.outbox.iter().find_map(|j| match j {
-        aegis_app::JobPayload::SendVerificationEmail { token, .. } => Some(token.clone()),
+        aegis_app::JobPayload::SendVerificationEmail { token, .. } => {
+            Some(token.clone())
+        }
         _ => None,
     })
 }
 
-fn extract_reset_token(state: &std::sync::Arc<tokio::sync::RwLock<MockState>>) -> Option<String> {
+fn extract_reset_token(
+    state: &std::sync::Arc<tokio::sync::RwLock<MockState>>,
+) -> Option<String> {
     let s = state.try_read().unwrap();
     s.outbox.iter().find_map(|j| match j {
-        aegis_app::JobPayload::SendPasswordResetEmail { token, .. } => Some(token.clone()),
+        aegis_app::JobPayload::SendPasswordResetEmail { token, .. } => {
+            Some(token.clone())
+        }
         _ => None,
     })
 }
@@ -80,7 +92,11 @@ async fn verify_email_activates_account() {
     assert_eq!(user.status, UserStatus::Active);
     assert!(user.is_email_verified());
 
-    let verify_audit = s.audits.iter().find(|a| a.event_type == "user.verify_email").unwrap();
+    let verify_audit = s
+        .audits
+        .iter()
+        .find(|a| a.event_type == "user.verify_email")
+        .unwrap();
     assert!(matches!(verify_audit.actor, aegis_core::Actor::User(_)));
 }
 
@@ -93,13 +109,13 @@ async fn verify_email_consumes_token() {
     signup_user_local(&app, "consume@test.com", "password123").await;
     let token = extract_verification_token(&state).unwrap();
 
-    app.verify_email(VerifyEmailCommand { token: token.clone() })
-        .await
-        .unwrap();
+    app.verify_email(VerifyEmailCommand {
+        token: token.clone(),
+    })
+    .await
+    .unwrap();
 
-    let result = app
-        .verify_email(VerifyEmailCommand { token })
-        .await;
+    let result = app.verify_email(VerifyEmailCommand { token }).await;
 
     assert!(result.is_err());
     assert!(matches!(result.unwrap_err(), AppError::TokenInvalid));
@@ -117,9 +133,7 @@ async fn expired_verification_token_fails() {
     let future = now + Duration::hours(25);
     *clock.handle().write().await = future;
 
-    let result = app
-        .verify_email(VerifyEmailCommand { token })
-        .await;
+    let result = app.verify_email(VerifyEmailCommand { token }).await;
 
     assert!(result.is_err());
     assert!(matches!(result.unwrap_err(), AppError::TokenInvalid));
@@ -168,7 +182,11 @@ async fn resend_verification_creates_new_token() {
     let s = state.read().await;
     assert_eq!(s.outbox.len(), first_count + 1);
 
-    let resend_audit = s.audits.iter().find(|a| a.event_type == "user.resend_verification").unwrap();
+    let resend_audit = s
+        .audits
+        .iter()
+        .find(|a| a.event_type == "user.resend_verification")
+        .unwrap();
     assert!(matches!(resend_audit.actor, aegis_core::Actor::User(_)));
 }
 
@@ -181,7 +199,9 @@ async fn resend_verification_silently_succeeds_for_already_verified() {
     signup_user_local(&app, "already@test.com", "password123").await;
     let token = extract_verification_token(&state).unwrap();
 
-    app.verify_email(VerifyEmailCommand { token }).await.unwrap();
+    app.verify_email(VerifyEmailCommand { token })
+        .await
+        .unwrap();
 
     let outbox_before = state.read().await.outbox.len();
 
@@ -241,7 +261,9 @@ async fn forgot_password_enqueues_email_for_active_user() {
 
     signup_user_local(&app, "reset@test.com", "password123").await;
     let token = extract_verification_token(&state).unwrap();
-    app.verify_email(VerifyEmailCommand { token }).await.unwrap();
+    app.verify_email(VerifyEmailCommand { token })
+        .await
+        .unwrap();
 
     app.forgot_password(ForgotPasswordCommand {
         email: "reset@test.com".to_owned(),
@@ -253,7 +275,11 @@ async fn forgot_password_enqueues_email_for_active_user() {
     assert!(reset_token.is_some());
 
     let s = state.read().await;
-    let forgot_audit = s.audits.iter().find(|a| a.event_type == "user.forgot_password").unwrap();
+    let forgot_audit = s
+        .audits
+        .iter()
+        .find(|a| a.event_type == "user.forgot_password")
+        .unwrap();
     assert!(matches!(forgot_audit.actor, aegis_core::Actor::User(_)));
 }
 
@@ -265,7 +291,11 @@ async fn reset_password_updates_credential() {
 
     signup_user_local(&app, "resetpw@test.com", "password123").await;
     let verify_token = extract_verification_token(&state).unwrap();
-    app.verify_email(VerifyEmailCommand { token: verify_token }).await.unwrap();
+    app.verify_email(VerifyEmailCommand {
+        token: verify_token,
+    })
+    .await
+    .unwrap();
 
     app.forgot_password(ForgotPasswordCommand {
         email: "resetpw@test.com".to_owned(),
@@ -283,11 +313,19 @@ async fn reset_password_updates_credential() {
     .unwrap();
 
     let s = state.read().await;
-    let user = s.users.values().find(|u| u.email.as_str() == "resetpw@test.com").unwrap();
+    let user = s
+        .users
+        .values()
+        .find(|u| u.email.as_str() == "resetpw@test.com")
+        .unwrap();
     let cred = s.credentials_password.get(&user.id.as_uuid()).unwrap();
     assert_eq!(cred.hash, "hashed:newpassword456");
 
-    let reset_audit = s.audits.iter().find(|a| a.event_type == "user.reset_password").unwrap();
+    let reset_audit = s
+        .audits
+        .iter()
+        .find(|a| a.event_type == "user.reset_password")
+        .unwrap();
     assert!(matches!(reset_audit.actor, aegis_core::Actor::User(_)));
 }
 
@@ -299,7 +337,11 @@ async fn reset_password_revokes_all_sessions() {
 
     let auth = signup_user_local(&app, "revoke@test.com", "password123").await;
     let verify_token = extract_verification_token(&state).unwrap();
-    app.verify_email(VerifyEmailCommand { token: verify_token }).await.unwrap();
+    app.verify_email(VerifyEmailCommand {
+        token: verify_token,
+    })
+    .await
+    .unwrap();
 
     create_session_for_user_local(&state, auth.user.id).await;
 
@@ -331,7 +373,11 @@ async fn reset_password_consumes_token() {
 
     signup_user_local(&app, "reuse@test.com", "password123").await;
     let verify_token = extract_verification_token(&state).unwrap();
-    app.verify_email(VerifyEmailCommand { token: verify_token }).await.unwrap();
+    app.verify_email(VerifyEmailCommand {
+        token: verify_token,
+    })
+    .await
+    .unwrap();
 
     app.forgot_password(ForgotPasswordCommand {
         email: "reuse@test.com".to_owned(),
@@ -367,7 +413,11 @@ async fn expired_reset_token_fails() {
 
     signup_user_local(&app, "expiredreset@test.com", "password123").await;
     let verify_token = extract_verification_token(&state).unwrap();
-    app.verify_email(VerifyEmailCommand { token: verify_token }).await.unwrap();
+    app.verify_email(VerifyEmailCommand {
+        token: verify_token,
+    })
+    .await
+    .unwrap();
 
     app.forgot_password(ForgotPasswordCommand {
         email: "expiredreset@test.com".to_owned(),
@@ -435,7 +485,11 @@ async fn change_password_succeeds() {
     let cred = s.credentials_password.get(&user_id.as_uuid()).unwrap();
     assert_eq!(cred.hash, "hashed:newpassword2");
 
-    let audit = s.audits.iter().find(|a| a.event_type == "user.change_password").unwrap();
+    let audit = s
+        .audits
+        .iter()
+        .find(|a| a.event_type == "user.change_password")
+        .unwrap();
     assert!(matches!(audit.actor, aegis_core::Actor::User(_)));
 }
 
@@ -445,7 +499,8 @@ async fn change_password_wrong_current_fails() {
     let clock = MockClock::new(now);
     let (app, _state) = make_app(&clock, false);
 
-    let auth = signup_user_local(&app, "wrongchange@test.com", "correctpass1").await;
+    let auth =
+        signup_user_local(&app, "wrongchange@test.com", "correctpass1").await;
 
     let result = app
         .change_password(
@@ -468,7 +523,8 @@ async fn change_password_revokes_sessions() {
     let clock = MockClock::new(now);
     let (app, state) = make_app(&clock, false);
 
-    let auth = signup_user_local(&app, "revchange@test.com", "oldpassword1").await;
+    let auth =
+        signup_user_local(&app, "revchange@test.com", "oldpassword1").await;
 
     create_session_for_user_local(&state, auth.user.id).await;
     assert!(state.read().await.sessions.len() >= 2);
@@ -496,9 +552,11 @@ async fn verify_email_idempotent_for_already_verified() {
     signup_user_local(&app, "idempotent@test.com", "password123").await;
     let token = extract_verification_token(&state).unwrap();
 
-    app.verify_email(VerifyEmailCommand { token: token.clone() })
-        .await
-        .unwrap();
+    app.verify_email(VerifyEmailCommand {
+        token: token.clone(),
+    })
+    .await
+    .unwrap();
 
     assert!(state.read().await.pending_tokens.is_empty());
 }

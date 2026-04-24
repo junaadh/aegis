@@ -32,7 +32,9 @@ impl JobPayload {
         match self {
             Self::SendVerificationEmail { .. } => "send_verification_email",
             Self::SendPasswordResetEmail { .. } => "send_password_reset_email",
-            Self::SendMfaEnrolledNotification { .. } => "send_mfa_enrolled_notification",
+            Self::SendMfaEnrolledNotification { .. } => {
+                "send_mfa_enrolled_notification"
+            }
             Self::CleanupExpiredSessions => "cleanup_expired_sessions",
             Self::CleanupExpiredGuests => "cleanup_expired_guests",
         }

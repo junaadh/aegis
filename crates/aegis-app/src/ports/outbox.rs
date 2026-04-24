@@ -4,5 +4,9 @@ use crate::error::AppError;
 
 #[async_trait]
 pub trait OutboxProcessor: Send + Sync {
-    async fn process(&self, job_type: &str, payload: &str) -> Result<(), AppError>;
+    async fn process(
+        &self,
+        job_type: &str,
+        payload: &str,
+    ) -> Result<(), AppError>;
 }

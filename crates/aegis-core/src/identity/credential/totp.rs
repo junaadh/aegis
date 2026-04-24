@@ -28,12 +28,12 @@ impl TotpCredential {
         self.updated_at = now;
     }
 
-    pub fn rotate_secret(
-        &mut self,
-        secret_encrypted: Vec<u8>,
-        nonce: Vec<u8>,
-    ) {
-        self.rotate_secret_at(secret_encrypted, nonce, OffsetDateTime::now_utc());
+    pub fn rotate_secret(&mut self, secret_encrypted: Vec<u8>, nonce: Vec<u8>) {
+        self.rotate_secret_at(
+            secret_encrypted,
+            nonce,
+            OffsetDateTime::now_utc(),
+        );
     }
 
     pub fn rotate_secret_at(

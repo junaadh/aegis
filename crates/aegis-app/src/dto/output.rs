@@ -1,4 +1,5 @@
 use std::fmt;
+
 use time::OffsetDateTime;
 use uuid::Uuid;
 
@@ -83,5 +84,121 @@ pub struct UserLookupResult {
 pub struct HealthResult {
     pub status: String,
     pub version: String,
-    pub database_connected: bool,
+    pub uptime_seconds: u64,
+    pub database: ComponentHealth,
+    pub cache: ComponentHealth,
+    pub email_enabled: bool,
+    pub outbox_pending: u64,
+}
+
+#[derive(Debug, Clone)]
+pub struct ComponentHealth {
+    pub status: String,
+    pub latency_ms: Option<u64>,
+    pub details: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Clone)]
+pub struct PaginatedResult<T> {
+    pub items: Vec<T>,
+    pub page: u32,
+    pub per_page: u32,
+    pub total: u64,
+}
+
+#[derive(Debug, Clone)]
+pub struct AdminUserListItem {
+    pub id: Uuid,
+    pub email: String,
+    pub display_name: String,
+    pub status: String,
+    pub email_verified: bool,
+    pub created_at: OffsetDateTime,
+    pub updated_at: OffsetDateTime,
+}
+
+#[derive(Debug, Clone)]
+pub struct UserSessionSummary {
+    pub session_count: u64,
+    pub last_seen_at: Option<OffsetDateTime>,
+}
+
+#[derive(Debug, Clone)]
+pub struct AdminUserDetailResult {
+    pub id: Uuid,
+    pub email: String,
+    pub display_name: String,
+    pub status: String,
+    pub email_verified_at: Option<OffsetDateTime>,
+    pub metadata: serde_json::Value,
+    pub roles: Vec<String>,
+    pub credentials: AdminUserCredentialSummary,
+    pub session_count: u64,
+    pub last_seen_at: Option<OffsetDateTime>,
+    pub created_at: OffsetDateTime,
+    pub updated_at: OffsetDateTime,
+}
+
+#[derive(Debug, Clone)]
+pub struct AdminUserCredentialSummary {
+    pub has_password: bool,
+    pub passkey_count: u64,
+    pub totp_enabled: bool,
+}
+
+#[derive(Debug, Clone)]
+pub struct OverviewStats {
+    pub total_users: u64,
+    pub active_users: u64,
+    pub total_guests: u64,
+    pub active_guests: u64,
+    pub active_sessions: u64,
+}
+
+#[derive(Debug, Clone)]
+pub struct AdminGuestListItem {
+    pub id: Uuid,
+    pub email: Option<String>,
+    pub status: String,
+    pub converted_to: Option<Uuid>,
+    pub expires_at: OffsetDateTime,
+    pub created_at: OffsetDateTime,
+    pub updated_at: OffsetDateTime,
+}
+
+#[derive(Debug, Clone)]
+pub struct AdminGuestDetailResult {
+    pub id: Uuid,
+    pub email: Option<String>,
+    pub status: String,
+    pub converted_to: Option<Uuid>,
+    pub metadata: serde_json::Value,
+    pub expires_at: OffsetDateTime,
+    pub created_at: OffsetDateTime,
+    pub updated_at: OffsetDateTime,
+}
+
+#[derive(Debug, Clone)]
+pub struct AdminSessionListItem {
+    pub id: Uuid,
+    pub identity_type: String,
+    pub identity_id: Uuid,
+    pub expires_at: OffsetDateTime,
+    pub last_seen_at: OffsetDateTime,
+    pub mfa_verified: bool,
+    pub user_agent: Option<String>,
+    pub ip_address: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct AdminSessionDetailResult {
+    pub id: Uuid,
+    pub identity_type: String,
+    pub identity_id: Uuid,
+    pub expires_at: OffsetDateTime,
+    pub last_seen_at: OffsetDateTime,
+    pub mfa_verified: bool,
+    pub user_agent: Option<String>,
+    pub ip_address: Option<String>,
+    pub metadata: serde_json::Value,
 }

@@ -27,8 +27,9 @@ pub struct RedisAppCache {
 
 impl RedisAppCache {
     pub fn new(url: &str) -> Result<Self, AppError> {
-        let inner = aegis_cache::RedisCache::new(url)
-            .map_err(|e| AppError::Infrastructure(format!("redis cache init failed: {e}")))?;
+        let inner = aegis_cache::RedisCache::new(url).map_err(|e| {
+            AppError::Infrastructure(format!("redis cache init failed: {e}"))
+        })?;
         Ok(Self { inner })
     }
 }
@@ -58,7 +59,12 @@ impl AppCache for InMemoryAppCache {
         self.inner.get(key).await.map_err(infra_error)
     }
 
-    async fn set(&self, key: &str, value: Vec<u8>, ttl: Duration) -> Result<(), AppError> {
+    async fn set(
+        &self,
+        key: &str,
+        value: Vec<u8>,
+        ttl: Duration,
+    ) -> Result<(), AppError> {
         self.inner.set(key, value, ttl).await.map_err(infra_error)
     }
 
@@ -73,12 +79,21 @@ impl AppCache for RedisAppCache {
         self.inner.get(key).await.map_err(infra_error)
     }
 
-    async fn set(&self, key: &str, value: Vec<u8>, ttl: Duration) -> Result<(), AppError> {
+    async fn set(
+        &self,
+        key: &str,
+        value: Vec<u8>,
+        ttl: Duration,
+    ) -> Result<(), AppError> {
         self.inner.set(key, value, ttl).await.map_err(infra_error)
     }
 
     async fn delete(&self, key: &str) -> Result<(), AppError> {
         self.inner.delete(key).await.map_err(infra_error)
+    }
+
+    async fn ping(&self) -> Result<(), AppError> {
+        self.inner.ping().await.map_err(infra_error)
     }
 }
 
@@ -91,7 +106,12 @@ impl AppCache for ConfiguredCache {
         }
     }
 
-    async fn set(&self, key: &str, value: Vec<u8>, ttl: Duration) -> Result<(), AppError> {
+    async fn set(
+        &self,
+        key: &str,
+        value: Vec<u8>,
+        ttl: Duration,
+    ) -> Result<(), AppError> {
         match self {
             Self::InMemory(cache) => cache.set(key, value, ttl).await,
             Self::Redis(cache) => cache.set(key, value, ttl).await,
@@ -102,6 +122,13 @@ impl AppCache for ConfiguredCache {
         match self {
             Self::InMemory(cache) => cache.delete(key).await,
             Self::Redis(cache) => cache.delete(key).await,
+        }
+    }
+
+    async fn ping(&self) -> Result<(), AppError> {
+        match self {
+            Self::InMemory(_) => Ok(()),
+            Self::Redis(cache) => cache.ping().await,
         }
     }
 }

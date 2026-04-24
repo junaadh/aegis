@@ -1,6 +1,6 @@
 use crate::{
-    ids::{GuestId, UserId},
     identity::{GuestStatus, Metadata, UserStatus},
+    ids::{GuestId, UserId},
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]

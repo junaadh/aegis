@@ -6,22 +6,37 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct DatabaseConfig {
-    #[schemars(title = "Database URL", description = "PostgreSQL connection string.")]
+    #[schemars(
+        title = "Database URL",
+        description = "PostgreSQL connection string."
+    )]
     pub url: String,
 
-    #[schemars(title = "Max connections", description = "Maximum number of database connections.")]
+    #[schemars(
+        title = "Max connections",
+        description = "Maximum number of database connections."
+    )]
     #[serde(default = "default_max_connections")]
     pub max_connections: u32,
 
-    #[schemars(title = "Min idle", description = "Minimum number of idle connections.")]
+    #[schemars(
+        title = "Min idle",
+        description = "Minimum number of idle connections."
+    )]
     #[serde(default = "default_min_idle")]
     pub min_idle: u32,
 
-    #[schemars(title = "Connection timeout", description = "Connection timeout in seconds.")]
+    #[schemars(
+        title = "Connection timeout",
+        description = "Connection timeout in seconds."
+    )]
     #[serde(default = "default_connection_timeout")]
     pub connection_timeout_seconds: u64,
 
-    #[schemars(title = "Encryption key", description = "Key for encrypting sensitive columns. Use env:VAR or file:/path references.")]
+    #[schemars(
+        title = "Encryption key",
+        description = "Key for encrypting sensitive columns. Use env:VAR or file:/path references."
+    )]
     #[serde(default)]
     pub encryption_key: Option<String>,
 }
@@ -77,23 +92,38 @@ fn default_connection_timeout_or() -> RefOr<u64> {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct DatabaseConfigSrc {
-    #[schemars(title = "Database URL", description = "PostgreSQL connection string.")]
+    #[schemars(
+        title = "Database URL",
+        description = "PostgreSQL connection string."
+    )]
     #[serde(default)]
     pub url: RefOr<String>,
 
-    #[schemars(title = "Max connections", description = "Maximum number of database connections.")]
+    #[schemars(
+        title = "Max connections",
+        description = "Maximum number of database connections."
+    )]
     #[serde(default = "default_max_connections_or")]
     pub max_connections: RefOr<u32>,
 
-    #[schemars(title = "Min idle", description = "Minimum number of idle connections.")]
+    #[schemars(
+        title = "Min idle",
+        description = "Minimum number of idle connections."
+    )]
     #[serde(default = "default_min_idle_or")]
     pub min_idle: RefOr<u32>,
 
-    #[schemars(title = "Connection timeout", description = "Connection timeout in seconds.")]
+    #[schemars(
+        title = "Connection timeout",
+        description = "Connection timeout in seconds."
+    )]
     #[serde(default = "default_connection_timeout_or")]
     pub connection_timeout_seconds: RefOr<u64>,
 
-    #[schemars(title = "Encryption key", description = "Key for encrypting sensitive columns. Use env:VAR or file:/path references.")]
+    #[schemars(
+        title = "Encryption key",
+        description = "Key for encrypting sensitive columns. Use env:VAR or file:/path references."
+    )]
     #[serde(default)]
     pub encryption_key: RefOr<Option<String>>,
 }
@@ -104,7 +134,9 @@ impl Default for DatabaseConfigSrc {
             url: RefOr::Value(String::new()),
             max_connections: RefOr::Value(default_max_connections()),
             min_idle: RefOr::Value(default_min_idle()),
-            connection_timeout_seconds: RefOr::Value(default_connection_timeout()),
+            connection_timeout_seconds: RefOr::Value(
+                default_connection_timeout(),
+            ),
             encryption_key: RefOr::Value(None),
         }
     }
@@ -116,7 +148,9 @@ impl DatabaseConfigSrc {
             url: self.url.resolve()?,
             max_connections: self.max_connections.resolve()?,
             min_idle: self.min_idle.resolve()?,
-            connection_timeout_seconds: self.connection_timeout_seconds.resolve()?,
+            connection_timeout_seconds: self
+                .connection_timeout_seconds
+                .resolve()?,
             encryption_key: self.encryption_key.resolve()?,
         })
     }

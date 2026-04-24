@@ -28,7 +28,12 @@ impl PgTxRoleRepo {
     }
 
     fn tx(&self) -> &mut Transaction<'static, Postgres> {
-        unsafe { self.tx.as_ptr().as_mut().expect("transaction pointer must be valid") }
+        unsafe {
+            self.tx
+                .as_ptr()
+                .as_mut()
+                .expect("transaction pointer must be valid")
+        }
     }
 }
 
@@ -36,7 +41,10 @@ fn infra_error(err: impl std::fmt::Display) -> AppError {
     AppError::Infrastructure(err.to_string())
 }
 
-async fn get_roles_by_user_id_impl<'e, E>(executor: E, user_id: UserId) -> Result<Vec<Role>, AppError>
+async fn get_roles_by_user_id_impl<'e, E>(
+    executor: E,
+    user_id: UserId,
+) -> Result<Vec<Role>, AppError>
 where
     E: Executor<'e, Database = Postgres>,
 {
@@ -57,7 +65,10 @@ where
         .collect()
 }
 
-async fn get_assignments_by_user_id_impl<'e, E>(executor: E, user_id: UserId) -> Result<Vec<UserRoleAssignment>, AppError>
+async fn get_assignments_by_user_id_impl<'e, E>(
+    executor: E,
+    user_id: UserId,
+) -> Result<Vec<UserRoleAssignment>, AppError>
 where
     E: Executor<'e, Database = Postgres>,
 {
@@ -74,22 +85,34 @@ where
 
 #[async_trait::async_trait]
 impl RoleRepo for PgRoleRepo {
-    async fn get_roles_by_user_id(&self, user_id: UserId) -> Result<Vec<Role>, AppError> {
+    async fn get_roles_by_user_id(
+        &self,
+        user_id: UserId,
+    ) -> Result<Vec<Role>, AppError> {
         get_roles_by_user_id_impl(&self.pool, user_id).await
     }
 
-    async fn get_assignments_by_user_id(&self, user_id: UserId) -> Result<Vec<UserRoleAssignment>, AppError> {
+    async fn get_assignments_by_user_id(
+        &self,
+        user_id: UserId,
+    ) -> Result<Vec<UserRoleAssignment>, AppError> {
         get_assignments_by_user_id_impl(&self.pool, user_id).await
     }
 }
 
 #[async_trait::async_trait]
 impl RoleRepo for PgTxRoleRepo {
-    async fn get_roles_by_user_id(&self, user_id: UserId) -> Result<Vec<Role>, AppError> {
+    async fn get_roles_by_user_id(
+        &self,
+        user_id: UserId,
+    ) -> Result<Vec<Role>, AppError> {
         get_roles_by_user_id_impl(self.tx().as_mut(), user_id).await
     }
 
-    async fn get_assignments_by_user_id(&self, user_id: UserId) -> Result<Vec<UserRoleAssignment>, AppError> {
+    async fn get_assignments_by_user_id(
+        &self,
+        user_id: UserId,
+    ) -> Result<Vec<UserRoleAssignment>, AppError> {
         get_assignments_by_user_id_impl(self.tx().as_mut(), user_id).await
     }
 }

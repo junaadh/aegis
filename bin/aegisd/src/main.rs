@@ -1,3 +1,4 @@
+use std::net::SocketAddr;
 use std::path::Path;
 use std::sync::Arc;
 
@@ -5,15 +6,17 @@ use aegis_app::{AppDeps, AppPolicies};
 use aegis_config::Config;
 use aegis_db::outbox::OutboxWorker;
 use aegis_db::repo::PgRepos;
-use aegis_http::{app_router, request_id_middleware, AppHandle, AppState};
+use aegis_http::{AppHandle, AppState, app_router, request_id_middleware};
 use aegis_infra::{
-    Argon2Hasher, ConfiguredCache, EmailOutboxProcessor, NoopWebhookDispatcher, SmtpEmailSender,
-    SystemClock, SystemTokenGenerator, UuidV7IdGenerator, WebAuthnAdapter,
+    Argon2Hasher, ConfiguredCache, EmailOutboxProcessor, JwtVerifier,
+    NoopWebhookDispatcher, SmtpEmailSender, SystemClock, SystemTokenGenerator,
+    UuidV7IdGenerator, WebAuthnAdapter,
 };
 use axum::extract::State;
 use axum::middleware;
 use axum::response::Response;
 use axum::{body::Body, http::Request};
+use ipnet::IpNet;
 use sqlx::postgres::PgPoolOptions;
 use tower_http::cors::CorsLayer;
 
@@ -53,7 +56,9 @@ async fn run(config: Config) -> Result<(), String> {
     let pool = PgPoolOptions::new()
         .max_connections(db.max_connections)
         .min_connections(db.min_idle)
-        .acquire_timeout(std::time::Duration::from_secs(db.connection_timeout_seconds))
+        .acquire_timeout(std::time::Duration::from_secs(
+            db.connection_timeout_seconds,
+        ))
         .connect(&db.url)
         .await
         .map_err(|e| format!("failed to connect to postgres: {e}"))?;
@@ -66,8 +71,13 @@ async fn run(config: Config) -> Result<(), String> {
     let ids = UuidV7IdGenerator::new();
     let webhooks = NoopWebhookDispatcher::new();
     let policies = AppPolicies::from_config(&config).map_err(app_error)?;
+    let internal_allowed_cidrs = parse_internal_allowed_cidrs(&config)?;
+    let internal_jwt_verifier =
+        JwtVerifier::from_config(&config).map_err(|e| e.to_string())?;
 
-    let webauthn = match WebAuthnAdapter::from_config(&config.credentials.passkeys) {
+    let webauthn = match WebAuthnAdapter::from_config(
+        &config.credentials.passkeys,
+    ) {
         Ok(w) => w,
         Err(e) => {
             tracing::warn!(error = %e, "passkeys disabled: webauthn not configured");
@@ -92,12 +102,20 @@ async fn run(config: Config) -> Result<(), String> {
     let state = Arc::new(AppHandle {
         app,
         config: config.clone(),
+        internal_allowed_cidrs: Arc::new(internal_allowed_cidrs),
+        internal_jwt_verifier: internal_jwt_verifier.map(Arc::new),
+        started_at: std::time::Instant::now(),
     });
 
     if config.email.enabled {
-        let email_sender = SmtpEmailSender::from_config(&config).map_err(app_error)?;
+        let email_sender =
+            SmtpEmailSender::from_config(&config).map_err(app_error)?;
         let processor = EmailOutboxProcessor::new(email_sender);
-        let worker = OutboxWorker::new(pool.clone(), PgRepos::new(pool.clone()), processor);
+        let worker = OutboxWorker::new(
+            pool.clone(),
+            PgRepos::new(pool.clone()),
+            processor,
+        );
         tokio::spawn(worker.run());
     }
 
@@ -120,7 +138,6 @@ async fn run(config: Config) -> Result<(), String> {
     >()
     .with_state(state.clone())
     .layer(CorsLayer::permissive())
-    .layer(middleware::from_fn(request_id_middleware))
     .layer(middleware::from_fn_with_state(
         state.clone(),
         auth_context_middleware_for_server,
@@ -128,12 +145,21 @@ async fn run(config: Config) -> Result<(), String> {
     .layer(middleware::from_fn_with_state(
         state.clone(),
         internal_auth_middleware_for_server,
+    ))
+    .layer(middleware::from_fn_with_state(
+        state.clone(),
+        internal_network_guard_for_server,
     ));
 
-    axum::serve(listener, app)
-        .with_graceful_shutdown(shutdown_signal())
-        .await
-        .map_err(|e| format!("server error: {e}"))
+    let app = app.layer(middleware::from_fn(request_id_middleware));
+
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .with_graceful_shutdown(shutdown_signal())
+    .await
+    .map_err(|e| format!("server error: {e}"))
 }
 
 type ServerState = AppState<
@@ -163,6 +189,14 @@ async fn internal_auth_middleware_for_server(
     aegis_http::internal_auth_middleware(state, request, next).await
 }
 
+async fn internal_network_guard_for_server(
+    State(state): State<ServerState>,
+    request: Request<Body>,
+    next: middleware::Next,
+) -> Response {
+    aegis_http::internal_network_guard(state, request, next).await
+}
+
 async fn shutdown_signal() {
     tokio::signal::ctrl_c()
         .await
@@ -172,4 +206,20 @@ async fn shutdown_signal() {
 
 fn app_error(err: aegis_app::AppError) -> String {
     err.to_string()
+}
+
+fn parse_internal_allowed_cidrs(config: &Config) -> Result<Vec<IpNet>, String> {
+    config
+        .api
+        .internal
+        .allowed_cidrs
+        .iter()
+        .map(|cidr| {
+            cidr.parse::<IpNet>().map_err(|err| {
+                format!(
+                    "invalid api.internal.allowed_cidrs entry '{cidr}': {err}"
+                )
+            })
+        })
+        .collect()
 }

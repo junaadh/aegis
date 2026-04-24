@@ -16,7 +16,11 @@ impl Default for NoopWebhookDispatcher {
 
 #[async_trait::async_trait]
 impl WebhookDispatcher for NoopWebhookDispatcher {
-    async fn dispatch(&self, event: &str, payload: &str) -> Result<(), AppError> {
+    async fn dispatch(
+        &self,
+        event: &str,
+        payload: &str,
+    ) -> Result<(), AppError> {
         tracing::debug!(event, payload, "noop webhook dispatch");
         Ok(())
     }

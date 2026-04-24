@@ -15,7 +15,9 @@ impl RedisCache {
         Ok(Self { client })
     }
 
-    async fn conn(&self) -> Result<redis::aio::MultiplexedConnection, CacheError> {
+    async fn conn(
+        &self,
+    ) -> Result<redis::aio::MultiplexedConnection, CacheError> {
         self.client
             .get_multiplexed_async_connection()
             .await
@@ -49,5 +51,14 @@ impl Cache for RedisCache {
         conn.del(key)
             .await
             .map_err(|e| CacheError::Backend(e.to_string()))
+    }
+
+    async fn ping(&self) -> Result<(), CacheError> {
+        let mut conn = self.conn().await?;
+        redis::cmd("PING")
+            .query_async::<String>(&mut conn)
+            .await
+            .map_err(|e| CacheError::Connection(e.to_string()))?;
+        Ok(())
     }
 }

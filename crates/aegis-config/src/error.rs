@@ -15,12 +15,22 @@ impl fmt::Display for ConfigError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Parse(e) => write!(f, "config parse error: {e}"),
-            Self::Validation(msg) => write!(f, "config validation error: {msg}"),
-            Self::MissingField(field) => write!(f, "missing required field: {field}"),
+            Self::Validation(msg) => {
+                write!(f, "config validation error: {msg}")
+            }
+            Self::MissingField(field) => {
+                write!(f, "missing required field: {field}")
+            }
             Self::Io(e) => write!(f, "config I/O error: {e}"),
-            Self::Serialize(msg) => write!(f, "config serialization error: {msg}"),
-            Self::ResolveEnv { var } => write!(f, "env variable not found: {var}"),
-            Self::ResolveFile { path, source } => write!(f, "failed to read '{path}': {source}"),
+            Self::Serialize(msg) => {
+                write!(f, "config serialization error: {msg}")
+            }
+            Self::ResolveEnv { var } => {
+                write!(f, "env variable not found: {var}")
+            }
+            Self::ResolveFile { path, source } => {
+                write!(f, "failed to read '{path}': {source}")
+            }
         }
     }
 }

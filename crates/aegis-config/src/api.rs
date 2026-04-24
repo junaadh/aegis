@@ -1,9 +1,12 @@
 use crate::error::ConfigError;
 use crate::ref_or::RefOr;
+use ipnet::IpNet;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema, Default)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema, Default,
+)]
 #[serde(deny_unknown_fields)]
 pub struct ApiConfig {
     #[serde(default)]
@@ -12,7 +15,10 @@ pub struct ApiConfig {
     #[serde(default)]
     pub internal: InternalApiConfig,
 
-    #[schemars(title = "Allowed metadata keys", description = "Allowlist of metadata keys users can set.")]
+    #[schemars(
+        title = "Allowed metadata keys",
+        description = "Allowlist of metadata keys users can set."
+    )]
     #[serde(default)]
     pub metadata_allowed_keys: Vec<String>,
 }
@@ -24,23 +30,37 @@ pub struct RateLimitConfig {
     #[serde(default = "default_true")]
     pub enabled: bool,
 
-    #[schemars(title = "Requests per minute", description = "Maximum requests per minute per client.")]
+    #[schemars(
+        title = "Requests per minute",
+        description = "Maximum requests per minute per client."
+    )]
     #[serde(default = "default_requests_per_minute")]
     pub requests_per_minute: u32,
 
-    #[schemars(title = "Burst", description = "Burst capacity for rate limiter.")]
+    #[schemars(
+        title = "Burst",
+        description = "Burst capacity for rate limiter."
+    )]
     #[serde(default = "default_burst")]
     pub burst: u32,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema, Default)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema, Default,
+)]
 #[serde(deny_unknown_fields)]
 pub struct InternalApiConfig {
-    #[schemars(title = "API token", description = "Static token for service-to-service auth. Use env:VAR reference.")]
+    #[schemars(
+        title = "API token",
+        description = "Static token for service-to-service auth. Use env:VAR reference."
+    )]
     #[serde(default)]
     pub api_token: Option<String>,
 
-    #[schemars(title = "Allowed CIDRs", description = "Network ranges allowed for internal API access.")]
+    #[schemars(
+        title = "Allowed CIDRs",
+        description = "Network ranges allowed for internal API access."
+    )]
     #[serde(default)]
     pub allowed_cidrs: Vec<String>,
 }
@@ -54,7 +74,10 @@ pub struct ApiConfigSrc {
     #[serde(default)]
     pub internal: RefOr<InternalApiConfigSrc>,
 
-    #[schemars(title = "Allowed metadata keys", description = "Allowlist of metadata keys users can set.")]
+    #[schemars(
+        title = "Allowed metadata keys",
+        description = "Allowlist of metadata keys users can set."
+    )]
     #[serde(default)]
     pub metadata_allowed_keys: RefOr<Vec<String>>,
 }
@@ -66,11 +89,17 @@ pub struct RateLimitConfigSrc {
     #[serde(default = "default_true_or")]
     pub enabled: RefOr<bool>,
 
-    #[schemars(title = "Requests per minute", description = "Maximum requests per minute per client.")]
+    #[schemars(
+        title = "Requests per minute",
+        description = "Maximum requests per minute per client."
+    )]
     #[serde(default = "default_requests_per_minute_or")]
     pub requests_per_minute: RefOr<u32>,
 
-    #[schemars(title = "Burst", description = "Burst capacity for rate limiter.")]
+    #[schemars(
+        title = "Burst",
+        description = "Burst capacity for rate limiter."
+    )]
     #[serde(default = "default_burst_or")]
     pub burst: RefOr<u32>,
 }
@@ -78,11 +107,17 @@ pub struct RateLimitConfigSrc {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct InternalApiConfigSrc {
-    #[schemars(title = "API token", description = "Static token for service-to-service auth. Use env:VAR reference.")]
+    #[schemars(
+        title = "API token",
+        description = "Static token for service-to-service auth. Use env:VAR reference."
+    )]
     #[serde(default)]
     pub api_token: RefOr<Option<String>>,
 
-    #[schemars(title = "Allowed CIDRs", description = "Network ranges allowed for internal API access.")]
+    #[schemars(
+        title = "Allowed CIDRs",
+        description = "Network ranges allowed for internal API access."
+    )]
     #[serde(default)]
     pub allowed_cidrs: RefOr<Vec<String>>,
 }
@@ -176,5 +211,19 @@ impl InternalApiConfigSrc {
             api_token: self.api_token.resolve()?,
             allowed_cidrs: self.allowed_cidrs.resolve()?,
         })
+    }
+}
+
+impl InternalApiConfig {
+    pub fn validate(&self) -> Result<(), ConfigError> {
+        for cidr in &self.allowed_cidrs {
+            cidr.parse::<IpNet>().map_err(|err| {
+                ConfigError::Validation(format!(
+                    "invalid api.internal.allowed_cidrs entry '{cidr}': {err}"
+                ))
+            })?;
+        }
+
+        Ok(())
     }
 }

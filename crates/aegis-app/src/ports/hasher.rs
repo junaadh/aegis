@@ -17,7 +17,10 @@ pub enum PasswordVerifyResult {
 pub trait Hasher: Send + Sync {
     fn current_algorithm_version(&self) -> u32;
 
-    async fn hash_password(&self, password: &str) -> Result<PasswordHash, AppError>;
+    async fn hash_password(
+        &self,
+        password: &str,
+    ) -> Result<PasswordHash, AppError>;
 
     async fn verify_password(
         &self,
