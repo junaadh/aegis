@@ -11,6 +11,7 @@ import {
   BASE_URL,
   INTERNAL_TOKEN,
   createCookieFetch,
+  isServerAvailable,
   testEmail,
   verifyEmail,
   waitForMailpitToken,
@@ -18,7 +19,24 @@ import {
 
 const PASSWORD = "Password123!Test";
 
-describe("@junaadh/aegis-server integration", () => {
+describe("request helpers", () => {
+  it("parses bearer token, cookie header, and cookie value from a Request", () => {
+    const request = new Request(`${BASE_URL}/demo`, {
+      headers: {
+        authorization: "Bearer bearer-token",
+        cookie: "aegis_session=session-token; other=value",
+      },
+    });
+
+    expect(getBearerToken(request)).toBe("bearer-token");
+    expect(getCookieHeader(request)).toContain("aegis_session=session-token");
+    expect(getCookieValue(getCookieHeader(request), "aegis_session")).toBe(
+      "session-token",
+    );
+  });
+});
+
+describe.skipIf(!(await isServerAvailable()))("@junaadh/aegis-server integration", () => {
   it("validates a real session using the internal endpoint and cookie store helper", async () => {
     const cookie = createCookieFetch();
     const client = new AegisClient({
@@ -66,7 +84,7 @@ describe("@junaadh/aegis-server integration", () => {
     expect(fromCookies?.valid).toBe(true);
   });
 
-  it("rejects invalid sessions and parses cookie and bearer headers correctly", async () => {
+  it("rejects invalid sessions", async () => {
     const serverClient = createAegisServerClient({
       baseUrl: BASE_URL,
       internalToken: INTERNAL_TOKEN,
@@ -74,18 +92,5 @@ describe("@junaadh/aegis-server integration", () => {
 
     const invalid = await serverClient.validateSessionToken("not-a-real-session");
     expect(invalid).toBeNull();
-
-    const request = new Request(`${BASE_URL}/demo`, {
-      headers: {
-        authorization: "Bearer bearer-token",
-        cookie: "aegis_session=session-token; other=value",
-      },
-    });
-
-    expect(getBearerToken(request)).toBe("bearer-token");
-    expect(getCookieHeader(request)).toContain("aegis_session=session-token");
-    expect(getCookieValue(getCookieHeader(request), "aegis_session")).toBe(
-      "session-token",
-    );
   });
 });

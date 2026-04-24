@@ -5,6 +5,26 @@ import type { AegisApiErrorBody } from "../packages/aegis-core/src/errors";
 export const BASE_URL = process.env.AEGIS_BASE_URL ?? "http://127.0.0.1:4001";
 export const INTERNAL_TOKEN = process.env.AEGIS_INTERNAL_TOKEN ?? "test-internal-token";
 
+let _serverAvailable: boolean | undefined;
+
+export async function isServerAvailable(): Promise<boolean> {
+  if (_serverAvailable !== undefined) {
+    return _serverAvailable;
+  }
+
+  try {
+    const response = await fetch(`${BASE_URL}/v1/internal/health`, {
+      headers: { authorization: `Bearer ${INTERNAL_TOKEN}` },
+      signal: AbortSignal.timeout(2000),
+    });
+    _serverAvailable = response.ok;
+  } catch {
+    _serverAvailable = false;
+  }
+
+  return _serverAvailable;
+}
+
 export function testEmail(prefix: string): string {
   return `${prefix}-${randomUUID()}@example.test`;
 }

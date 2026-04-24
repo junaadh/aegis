@@ -5,6 +5,7 @@ import {
   BASE_URL,
   INTERNAL_TOKEN,
   createCookieFetch,
+  isServerAvailable,
   testEmail,
   verifyEmail,
   waitForMailpitToken,
@@ -12,7 +13,7 @@ import {
 
 const PASSWORD = "Password123!Test";
 
-describe("@junaadh/aegis integration", () => {
+describe.skipIf(!(await isServerAvailable()))("@junaadh/aegis integration", () => {
   it("signs up, verifies, logs in, fetches me, validates, and logs out against aegisd", async () => {
     const cookie = createCookieFetch();
     const client = new AegisClient({
