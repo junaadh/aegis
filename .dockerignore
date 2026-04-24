@@ -1,0 +1,15 @@
+.git
+.github
+target
+node_modules
+sdk/node_modules
+sdk/packages/*/node_modules
+dashboard
+.env
+.env.*
+docker-compose*.yml
+scripts
+schemas
+coverage
+dist
+**/*.log

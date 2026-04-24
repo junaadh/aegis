@@ -1,3 +1,5 @@
+#![allow(clippy::type_complexity)]
+
 mod auth;
 mod context;
 mod cookies;

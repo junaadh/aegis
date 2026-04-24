@@ -2,10 +2,11 @@
   "name": "aegis",
   "private": true,
   "workspaces": [
-    "dashboard",
     "sdk/packages/*"
   ],
   "scripts": {
-    "build": "bun run --cwd sdk build"
+    "build": "bun run --cwd sdk build",
+    "typecheck": "bun run --cwd sdk typecheck",
+    "test": "bun run --cwd sdk test"
   }
 }

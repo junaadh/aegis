@@ -41,13 +41,13 @@ export function mapIdentityDtoToDomain(dto: IdentityDto): Identity {
   if (dto.type === "user") {
     return {
       type: "user",
-      user: mapUserDtoToDomain(dto as UserIdentityDto),
+      user: mapUserDtoToDomain((dto as UserIdentityDto).user),
     };
   }
 
   return {
     type: "guest",
-    guest: mapGuestDtoToDomain(dto as GuestIdentityDto),
+    guest: mapGuestDtoToDomain((dto as GuestIdentityDto).guest),
   };
 }
 

@@ -6,7 +6,7 @@ import {
   type Identity,
   type SessionValidation,
   type User,
-} from "@aegis/core";
+} from "@junaadh/aegis";
 import { cookies } from "next/headers";
 
 import { getBearerToken, getCookieHeader } from "../node/request";

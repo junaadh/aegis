@@ -12,13 +12,12 @@ use aegis_app::{
     AdminUserListItem, AdminUserListQuery, AegisApp, AppDeps, AppError,
     AppPolicies, AuditRepo, AuthPolicy, Cache, Clock, CompliancePolicy,
     CredentialRepo, CredentialSummary, CryptoPolicy, EmailPolicy, GuestRepo,
-    Hasher, IdGenerator, JobPayload, OutboxEntry, OutboxRepo,
-    PaginatedResult, PasskeyLoginFinishResult, PasskeyLoginStartResult,
-    PasskeyPolicy, PasskeyRegisterFinishResult, PasskeyRegisterStartResult,
-    PasswordHash, PasswordVerifyResult, PendingTokenRepo, RecoveryCodePolicy,
-    RepoHealth, Repos, RoleRepo, SessionRepo, TokenGenerator, TotpPolicy,
-    TransactionRepos, UserRepo, UserSessionSummary, WebAuthn,
-    WebhookDispatcher,
+    Hasher, IdGenerator, JobPayload, OutboxEntry, OutboxRepo, PaginatedResult,
+    PasskeyLoginFinishResult, PasskeyLoginStartResult, PasskeyPolicy,
+    PasskeyRegisterFinishResult, PasskeyRegisterStartResult, PasswordHash,
+    PasswordVerifyResult, PendingTokenRepo, RecoveryCodePolicy, RepoHealth,
+    Repos, RoleRepo, SessionRepo, TokenGenerator, TotpPolicy, TransactionRepos,
+    UserRepo, UserSessionSummary, WebAuthn, WebhookDispatcher,
 };
 use aegis_core::{
     Guest, GuestId, NewAuditEntry, PasskeyCredential, PasswordCredential,
@@ -577,7 +576,8 @@ impl SessionRepo for MockSessionRepo {
         let mut sessions: Vec<_> = state.sessions.values().cloned().collect();
 
         if let Some(user_id) = query.user_id {
-            sessions.retain(|s| s.user_id() == Some(UserId::from_uuid(user_id)));
+            sessions
+                .retain(|s| s.user_id() == Some(UserId::from_uuid(user_id)));
         }
         if query.active_only.unwrap_or(false) {
             sessions.retain(|s| s.expires_at > now);

@@ -1,0 +1,62 @@
+name: Publish SDK
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: read
+  id-token: write
+  packages: write
+
+concurrency:
+  group: publish-sdk-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Cache Bun
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            node_modules
+          key: ${{ runner.os }}-bun-publish-${{ hashFiles('bun.lock', 'package.json', 'sdk/package.json', 'sdk/packages/**/package.json') }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Validate SDK
+        run: |
+          bun run typecheck
+          bun run build
+          bun test
+
+      - name: Publish core
+        working-directory: sdk/packages/aegis-core
+        run: npm publish --access public --provenance
+
+      - name: Publish server
+        working-directory: sdk/packages/aegis-server
+        run: npm publish --access public --provenance
+
+      - name: Publish react
+        working-directory: sdk/packages/aegis-react
+        run: npm publish --access public --provenance

@@ -3,8 +3,9 @@ use crate::convert::core_to_output::user_to_lookup_result;
 use crate::dto::{
     AdminGuestListQuery, AdminSessionListQuery, AdminUserCredentialSummary,
     AdminUserDetailResult, AdminUserListQuery, ComponentHealth, HealthResult,
-    LookupUserByEmailCommand, LookupUserCommand, OverviewStats, PaginatedResult,
-    RegisterWebhookCommand, SessionValidateResult, UserLookupResult,
+    LookupUserByEmailCommand, LookupUserCommand, OverviewStats,
+    PaginatedResult, RegisterWebhookCommand, SessionValidateResult,
+    UserLookupResult,
 };
 use crate::error::AppError;
 use crate::ports::{
@@ -472,12 +473,8 @@ where
 
     pub async fn get_overview(&self) -> Result<OverviewStats, AppError> {
         let total_users = self.deps.repos.users().count().await?;
-        let active_users = self
-            .deps
-            .repos
-            .users()
-            .count_by_status("active")
-            .await?;
+        let active_users =
+            self.deps.repos.users().count_by_status("active").await?;
         let total_guests = self.deps.repos.guests().count().await?;
         let active_guests = self.deps.repos.guests().count_active().await?;
         let active_sessions = self.deps.repos.sessions().count_active().await?;
@@ -494,8 +491,7 @@ where
     pub async fn list_admin_guests(
         &self,
         query: AdminGuestListQuery,
-    ) -> Result<PaginatedResult<crate::dto::AdminGuestListItem>, AppError>
-    {
+    ) -> Result<PaginatedResult<crate::dto::AdminGuestListItem>, AppError> {
         self.deps.repos.guests().list_admin(&query).await
     }
 

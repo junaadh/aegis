@@ -1,4 +1,4 @@
-import type { SessionValidation, AegisLogger } from "@aegis/core";
+import type { SessionValidation, AegisLogger } from "@junaadh/aegis";
 import { NextResponse, type NextRequest, type NextMiddleware } from "next/server";
 
 import { getBearerToken } from "../node/request";

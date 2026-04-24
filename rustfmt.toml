@@ -1,0 +1,2 @@
+# Keep rustfmt deterministic across developer machines and CI.
+max_width = 80

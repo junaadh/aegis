@@ -12,7 +12,7 @@ import type {
   Session,
   SignupRequestDto,
   User,
-} from "@aegis/core";
+} from "@junaadh/aegis";
 import { createContext, useContext } from "react";
 
 export type AegisReactError = Error | null;

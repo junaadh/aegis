@@ -24,6 +24,7 @@ use tower_http::cors::CorsLayer;
 async fn main() {
     let config_path = std::env::args()
         .nth(1)
+        .or_else(|| std::env::var("AEGIS_CONFIG").ok())
         .unwrap_or_else(|| "aegis.toml".to_owned());
 
     let config = match Config::load(Some(Path::new(&config_path))) {

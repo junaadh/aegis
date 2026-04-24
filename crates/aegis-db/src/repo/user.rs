@@ -309,13 +309,12 @@ async fn count_by_status_impl<'e, E>(
 where
     E: Executor<'e, Database = Postgres>,
 {
-    let count: i64 = sqlx::query_scalar(
-        "SELECT COUNT(*) FROM users WHERE status = $1",
-    )
-    .bind(status)
-    .fetch_one(executor)
-    .await
-    .map_err(infra_error)?;
+    let count: i64 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM users WHERE status = $1")
+            .bind(status)
+            .fetch_one(executor)
+            .await
+            .map_err(infra_error)?;
 
     Ok(count as u64)
 }

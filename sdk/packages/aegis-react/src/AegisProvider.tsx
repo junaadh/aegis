@@ -10,7 +10,7 @@ import {
   type LoginResult,
   type Session,
   type SignupRequestDto,
-} from "@aegis/core";
+} from "@junaadh/aegis";
 import { useEffect, useRef, useState } from "react";
 
 import {

@@ -21,6 +21,7 @@
   - [`cargo run --bin aegis -- ...`](#cargo-run---bin-aegis---)
 - [How It Works](#how-it-works)
 - [Architecture](#architecture)
+- [SDK Packages](#sdk-packages)
 - [Troubleshooting](#troubleshooting)
   - [Checking Logs](#checking-logs)
   - [Common Issues](#common-issues)
@@ -180,6 +181,12 @@ crates/aegis-config Config loading, schema, validation
 crates/aegis-migrate Migration runner
 crates/aegis-cache Cache abstraction and Redis implementation
 ```
+
+## SDK Packages
+
+- [`@junaadh/aegis`](./sdk/packages/aegis-core/README.md)
+- [`@junaadh/aegis-server`](./sdk/packages/aegis-server/README.md)
+- [`@junaadh/aegis-react`](./sdk/packages/aegis-react/README.md)
 
 ## Troubleshooting
 

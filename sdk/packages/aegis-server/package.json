@@ -1,10 +1,21 @@
 {
-  "name": "@aegis/server",
-  "version": "0.0.0",
+  "name": "@junaadh/aegis-server",
+  "version": "0.1.0",
+  "description": "Server-side helpers for integrating with the Aegis auth server",
+  "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "sideEffects": false,
+  "homepage": "https://github.com/junaadh/aegis#readme",
+  "bugs": {
+    "url": "https://github.com/junaadh/aegis/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/junaadh/aegis.git",
+    "directory": "sdk/packages/aegis-server"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -22,12 +33,16 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "bunx tsc -p tsconfig.json",
-    "typecheck": "bunx tsc --noEmit -p tsconfig.json"
+    "typecheck": "bun run --filter @junaadh/aegis build && bunx tsc --noEmit -p tsconfig.json",
+    "test": "bun test ./test"
   },
   "dependencies": {
-    "@aegis/core": "workspace:*"
+    "@junaadh/aegis": "0.1.0"
   },
   "peerDependencies": {
     "next": "^16.2.4"

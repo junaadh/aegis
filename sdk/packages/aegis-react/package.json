@@ -1,10 +1,21 @@
 {
-  "name": "@aegis/react",
-  "version": "0.0.0",
+  "name": "@junaadh/aegis-react",
+  "version": "0.1.0",
+  "description": "React bindings for the Aegis auth server",
+  "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "sideEffects": false,
+  "homepage": "https://github.com/junaadh/aegis#readme",
+  "bugs": {
+    "url": "https://github.com/junaadh/aegis/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/junaadh/aegis.git",
+    "directory": "sdk/packages/aegis-react"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -14,18 +25,25 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "bunx tsc -p tsconfig.json",
-    "typecheck": "bunx tsc --noEmit -p tsconfig.json"
+    "typecheck": "bun run --filter @junaadh/aegis build && bunx tsc --noEmit -p tsconfig.json",
+    "test": "bun test ./test"
   },
   "dependencies": {
-    "@aegis/core": "workspace:*"
+    "@junaadh/aegis": "0.1.0"
   },
   "peerDependencies": {
     "react": "^19.0.0"
   },
   "devDependencies": {
     "@types/react": "^19.2.2",
+    "@types/react-test-renderer": "^19.1.0",
+    "react": "^19.2.0",
+    "react-test-renderer": "^19.2.0",
     "typescript": "^5.9.3"
   }
 }

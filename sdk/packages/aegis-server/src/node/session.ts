@@ -1,4 +1,4 @@
-import type { SessionValidation } from "@aegis/core";
+import type { SessionValidation } from "@junaadh/aegis";
 
 export const AEGIS_AUTHENTICATED_HEADER = "x-aegis-authenticated";
 export const AEGIS_USER_ID_HEADER = "x-aegis-user-id";

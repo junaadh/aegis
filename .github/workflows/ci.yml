@@ -1,0 +1,192 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgres://aegis:aegis@localhost:5433/aegis_test
+      REDIS_URL: redis://localhost:6380
+      SMTP_HOST: localhost
+      SMTP_PORT: "1026"
+      MAILPIT_WEB_URL: http://localhost:8026
+      AEGIS_ENV: test
+      AEGIS_HTTP_ADDR: 127.0.0.1:4001
+      AEGIS_INTERNAL_TOKEN: test-internal-token
+      AEGIS_COOKIE_NAME: aegis_session
+      AEGIS_COOKIE_SECURE: "false"
+      AEGIS_DATABASE_URL: postgres://aegis:aegis@localhost:5433/aegis_test
+      AEGIS_REDIS_URL: redis://localhost:6380
+      AEGIS_EMAIL_SMTP_HOST: localhost
+      AEGIS_EMAIL_SMTP_PORT: "1026"
+      AEGIS_EMAIL_SMTP_USERNAME: ""
+      AEGIS_EMAIL_SMTP_PASSWORD: ""
+      AEGIS_EMAIL_FROM_ADDRESS: noreply@aegis.test
+      AEGIS_SESSION_SECRET: test-session-secret-test-session-secret
+      AEGIS_CRYPTO_MASTER_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+      AEGIS_BASE_URL: http://127.0.0.1:4001
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: aegis
+          POSTGRES_PASSWORD: aegis
+          POSTGRES_DB: aegis_test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U aegis -d aegis_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6380:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+      mailpit:
+        image: axllent/mailpit:latest
+        ports:
+          - 1026:1025
+          - 8026:8025
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Cache Bun
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            node_modules
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock', 'package.json', 'sdk/package.json', 'sdk/packages/**/package.json') }}
+
+      - name: Write test config
+        run: |
+          mkdir -p target/test-artifacts
+          cat > target/test-artifacts/aegis.test.toml <<'EOF'
+          [server]
+          host = "127.0.0.1"
+          port = 4001
+          log_level = "debug"
+
+          [database]
+          url = "postgres://aegis:aegis@localhost:5433/aegis_test"
+
+          [redis]
+          enabled = true
+          url = "redis://localhost:6380"
+
+          [session]
+          secret = "test-session-secret-test-session-secret"
+
+          [session.cookie]
+          name = "aegis_session"
+          path = "/"
+          secure = false
+          http_only = true
+          same_site = "lax"
+
+          [credentials.passkeys]
+          rp_id = "localhost"
+          rp_name = "Aegis Test"
+          origins = ["http://localhost:4001"]
+
+          [email]
+          enabled = true
+          from_address = "noreply@aegis.test"
+          from_name = "Aegis Test"
+
+          [email.smtp]
+          host = "localhost"
+          port = 1026
+          username = ""
+          password = ""
+          starttls = false
+
+          [api.internal]
+          api_token = "test-internal-token"
+          allowed_cidrs = []
+
+          [crypto]
+          master_key = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+
+          [crypto.jwt]
+          enabled = false
+          EOF
+
+      - name: Rust format check
+        run: cargo fmt --all -- --check
+
+      - name: Rust clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Rust tests
+        run: cargo test --workspace
+
+      - name: Bun install
+        run: bun install --frozen-lockfile
+
+      - name: Build aegisd
+        run: cargo build -p aegisd --bin aegisd
+
+      - name: Run migrations
+        run: cargo run -p aegis -- --config target/test-artifacts/aegis.test.toml migrate up
+
+      - name: Start aegisd
+        run: |
+          ./target/debug/aegisd target/test-artifacts/aegis.test.toml > target/test-artifacts/aegisd.log 2>&1 &
+          echo $! > target/test-artifacts/aegisd.pid
+
+      - name: Wait for health
+        run: |
+          for _ in $(seq 1 60); do
+            if curl -fsS -H "Authorization: Bearer ${AEGIS_INTERNAL_TOKEN}" http://${AEGIS_HTTP_ADDR}/v1/internal/health >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "aegisd did not become healthy" >&2
+          exit 1
+
+      - name: Typecheck SDK
+        run: bun run typecheck
+
+      - name: Build SDK
+        run: bun run build
+
+      - name: SDK tests
+        run: bun test
+
+      - name: Stop aegisd
+        if: always()
+        run: |
+          if [[ -f target/test-artifacts/aegisd.pid ]]; then
+            kill "$(cat target/test-artifacts/aegisd.pid)" || true
+          fi
+
+      - name: Upload test artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-test-artifacts
+          path: target/test-artifacts

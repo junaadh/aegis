@@ -185,7 +185,7 @@ where
                                 ip_address: ctx.ip_address.clone(),
                                 user_agent: ctx.user_agent.clone(),
                                 request_id: ctx.request_id,
-                                metadata: Metadata::new(&format!(
+                                metadata: Metadata::new(format!(
                                     r#"{{"email":"{}"}}"#,
                                     email
                                 )),

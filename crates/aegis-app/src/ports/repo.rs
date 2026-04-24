@@ -13,8 +13,8 @@ use aegis_core::{
 use crate::dto::{
     AdminGuestDetailResult, AdminGuestListItem, AdminGuestListQuery,
     AdminSessionDetailResult, AdminSessionListItem, AdminSessionListQuery,
-    AdminUserListItem, AdminUserListQuery, CredentialSummary,
-    PaginatedResult, UserSessionSummary,
+    AdminUserListItem, AdminUserListQuery, CredentialSummary, PaginatedResult,
+    UserSessionSummary,
 };
 use crate::error::AppError;
 use crate::jobs::JobPayload;

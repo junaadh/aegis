@@ -1,8 +1,8 @@
-# @aegis/core
+# @junaadh/aegis
 
 TypeScript SDK for talking to the Aegis HTTP API.
 
-`@aegis/core` is the base package in the SDK stack. It is responsible for:
+`@junaadh/aegis` is the base package in the SDK stack. It is responsible for:
 
 - making HTTP requests to the Aegis API
 - handling the API response envelope
@@ -15,13 +15,13 @@ It does not depend on React or server framework helpers.
 ## Install
 
 ```bash
-bun add @aegis/core
+bun add @junaadh/aegis
 ```
 
 ## Create a client
 
 ```ts
-import { AegisClient } from "@aegis/core";
+import { AegisClient } from "@junaadh/aegis";
 
 const client = new AegisClient({
   baseUrl: "https://auth.example.com",
@@ -33,7 +33,7 @@ const client = new AegisClient({
 Use `internalToken` for `/internal/*` endpoints.
 
 ```ts
-import { AegisClient } from "@aegis/core";
+import { AegisClient } from "@junaadh/aegis";
 
 const client = new AegisClient({
   baseUrl: "http://localhost:8080",
@@ -118,7 +118,7 @@ The client logs:
 ## Errors
 
 ```ts
-import { AegisApiError } from "@aegis/core";
+import { AegisApiError } from "@junaadh/aegis";
 
 try {
   await client.internal.overview();

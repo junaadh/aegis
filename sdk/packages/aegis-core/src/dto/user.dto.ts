@@ -56,11 +56,13 @@ export type GuestDto = {
 
 export type UserIdentityDto = {
   type: "user";
-} & UserDto;
+  user: UserDto;
+};
 
 export type GuestIdentityDto = {
   type: "guest";
-} & GuestDto;
+  guest: GuestDto;
+};
 
 export type IdentityDto = UserIdentityDto | GuestIdentityDto;
 

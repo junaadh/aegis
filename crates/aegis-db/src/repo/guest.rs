@@ -155,13 +155,15 @@ fn push_guest_status_filter(
 ) {
     match status {
         "active" => {
-            builder.push(" AND g.converted_to IS NULL AND g.expires_at > NOW()");
+            builder
+                .push(" AND g.converted_to IS NULL AND g.expires_at > NOW()");
         }
         "converted" => {
             builder.push(" AND g.converted_to IS NOT NULL");
         }
         "expired" => {
-            builder.push(" AND g.converted_to IS NULL AND g.expires_at <= NOW()");
+            builder
+                .push(" AND g.converted_to IS NULL AND g.expires_at <= NOW()");
         }
         _ => {}
     }
@@ -170,8 +172,9 @@ fn push_guest_status_filter(
 fn build_guest_count_query(
     query: &AdminGuestListQuery,
 ) -> QueryBuilder<'static, Postgres> {
-    let mut builder =
-        QueryBuilder::<Postgres>::new("SELECT COUNT(*) FROM guests g WHERE 1 = 1");
+    let mut builder = QueryBuilder::<Postgres>::new(
+        "SELECT COUNT(*) FROM guests g WHERE 1 = 1",
+    );
     if let Some(status) = query.status.as_deref() {
         push_guest_status_filter(&mut builder, status);
     }
@@ -277,11 +280,10 @@ async fn count_impl<'e, E>(executor: E) -> Result<u64, AppError>
 where
     E: Executor<'e, Database = Postgres>,
 {
-    let count: i64 =
-        sqlx::query_scalar("SELECT COUNT(*) FROM guests")
-            .fetch_one(executor)
-            .await
-            .map_err(infra_error)?;
+    let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM guests")
+        .fetch_one(executor)
+        .await
+        .map_err(infra_error)?;
 
     Ok(count as u64)
 }

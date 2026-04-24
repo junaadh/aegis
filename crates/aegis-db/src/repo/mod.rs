@@ -1,3 +1,5 @@
+#![allow(clippy::mut_from_ref)]
+
 mod audit;
 mod credential;
 mod guest;

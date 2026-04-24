@@ -5,8 +5,9 @@
     "packages/*"
   ],
   "scripts": {
-    "typecheck": "bun run --filter @aegis/core typecheck && bun run --filter @aegis/server typecheck && bun run --filter @aegis/react typecheck",
-    "build": "bun run --filter @aegis/core build && bun run --filter @aegis/server build && bun run --filter @aegis/react build"
+    "typecheck": "bun run --filter @junaadh/aegis typecheck && bun run --filter @junaadh/aegis-server typecheck && bun run --filter @junaadh/aegis-react typecheck",
+    "build": "bun run --filter @junaadh/aegis build && bun run --filter @junaadh/aegis-server build && bun run --filter @junaadh/aegis-react build",
+    "test": "bun run --filter @junaadh/aegis test && bun run --filter @junaadh/aegis-server test && bun run --filter @junaadh/aegis-react test"
   },
   "devDependencies": {
     "typescript": "^5.9.3"

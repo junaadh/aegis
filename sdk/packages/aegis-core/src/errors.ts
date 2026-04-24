@@ -62,4 +62,8 @@ export class AegisApiError extends AegisError {
   get meta(): AegisApiMeta {
     return this.response.meta;
   }
+
+  get requestId(): string {
+    return this.response.meta.requestId;
+  }
 }
