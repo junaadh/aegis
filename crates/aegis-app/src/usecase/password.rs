@@ -52,6 +52,7 @@ where
         let expires_at = now + self.policy().email.password_reset_token_ttl;
 
         let pending = aegis_core::PendingToken {
+            id: uuid::Uuid::now_v7(),
             token_hash,
             user_id: user.id,
             purpose: PendingTokenPurpose::PasswordReset,

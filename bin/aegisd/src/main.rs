@@ -26,13 +26,6 @@ async fn main() {
         .nth(1)
         .unwrap_or_else(|| "aegis.toml".to_owned());
 
-    tracing_subscriber::fmt()
-        .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info")),
-        )
-        .init();
-
     let config = match Config::load(Some(Path::new(&config_path))) {
         Ok(config) => config,
         Err(err) => {
@@ -40,6 +33,15 @@ async fn main() {
             std::process::exit(1);
         }
     };
+
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| {
+                    tracing_subscriber::EnvFilter::new(config.server.log_level)
+                }),
+        )
+        .init();
 
     if let Err(err) = run(config).await {
         tracing::error!(error = %err, "aegisd failed");

@@ -21,6 +21,17 @@ pub enum LogLevel {
     Error,
 }
 
+impl AsRef<str> for LogLevel {
+    fn as_ref(&self) -> &str {
+        match self {
+            Self::Info => "info",
+            Self::Debug => "debug",
+            Self::Warn => "warn",
+            Self::Error => "error",
+        }
+    }
+}
+
 #[derive(
     Debug,
     Clone,

@@ -18,9 +18,8 @@ BEGIN
 
     RETURN (
         lpad(to_hex(hi), 16, '0')
-        || to_hex(128 | (get_byte(rnd, 1) & 63))
-        || lpad(to_hex(get_byte(rnd, 2)), 2, '0')
-        || encode(substring(rnd, 4, 7), 'hex')
+        || lpad(to_hex(128 | (get_byte(rnd, 1) & 63)), 2, '0')
+        || encode(substring(rnd, 3, 7), 'hex')
     )::uuid;
 END
 $$ LANGUAGE plpgsql VOLATILE;

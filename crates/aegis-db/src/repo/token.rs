@@ -84,14 +84,15 @@ where
 {
     let sql = match token.purpose {
         PendingTokenPurpose::EmailVerification => {
-            "INSERT INTO email_verification_tokens (user_id, token_hash, expires_at, created_at) VALUES ($1, $2, $3, $4)"
+            "INSERT INTO email_verification_tokens (id, user_id, token_hash, expires_at, created_at) VALUES ($1, $2, $3, $4, $5)"
         }
         PendingTokenPurpose::PasswordReset => {
-            "INSERT INTO password_reset_tokens (user_id, token_hash, expires_at, created_at) VALUES ($1, $2, $3, $4)"
+            "INSERT INTO password_reset_tokens (id, user_id, token_hash, expires_at, created_at) VALUES ($1, $2, $3, $4, $5)"
         }
     };
 
     sqlx::query(sql)
+        .bind(token.id)
         .bind(token.user_id.as_uuid())
         .bind(token.token_hash.as_slice())
         .bind(token.expires_at)

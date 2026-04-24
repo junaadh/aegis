@@ -42,6 +42,4 @@ services:
 
 volumes:
   aegis-postgres-data:
-    name: aegis-postgres-data
   aegis-redis-data:
-    name: aegis-redis-data

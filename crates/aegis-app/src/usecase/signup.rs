@@ -93,6 +93,7 @@ where
                 self.deps.tokens.hash_token(&verification_token.0).await;
 
             let pending_token = aegis_core::PendingToken {
+                id: uuid::Uuid::now_v7(),
                 token_hash,
                 user_id,
                 purpose: aegis_core::PendingTokenPurpose::EmailVerification,

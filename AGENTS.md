@@ -1,0 +1,3 @@
+- sdk folder is where sdk should and is located
+- sdk should use bun everywhere npm is needed
+- vice versa if npx is needed default to bunx

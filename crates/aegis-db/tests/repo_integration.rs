@@ -485,6 +485,7 @@ async fn pending_token_repo_roundtrip() {
     let repos = PgRepos::new(pool);
     let user = make_user("token-user@example.com");
     let token = PendingToken {
+        id: uuid::Uuid::now_v7(),
         token_hash: [9; 32],
         user_id: user.id,
         purpose: PendingTokenPurpose::EmailVerification,

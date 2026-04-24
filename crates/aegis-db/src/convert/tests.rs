@@ -382,6 +382,7 @@ fn email_verification_token_row() {
     };
 
     let token: aegis_core::PendingToken = row.try_into().unwrap();
+    assert_eq!(token.id, uuid(60));
     assert_eq!(token.purpose, PendingTokenPurpose::EmailVerification);
     assert_eq!(token.user_id.as_uuid(), uuid(1));
 }
@@ -397,6 +398,7 @@ fn password_reset_token_row() {
     };
 
     let token: aegis_core::PendingToken = row.try_into().unwrap();
+    assert_eq!(token.id, uuid(61));
     assert_eq!(token.purpose, PendingTokenPurpose::PasswordReset);
 }
 

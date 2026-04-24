@@ -1,0 +1,11 @@
+{
+  "name": "aegis",
+  "private": true,
+  "workspaces": [
+    "dashboard",
+    "sdk/packages/*"
+  ],
+  "scripts": {
+    "build": "bun run --cwd sdk build"
+  }
+}

@@ -66,7 +66,7 @@ cmd_down() {
 
 cmd_reset() {
     warn "wiping all data..."
-    $COMPOSE down -v
+    $COMPOSE down -v --remove-orphans
     $COMPOSE up -d
     wait_for_postgres
     wait_for_redis

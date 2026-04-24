@@ -16,6 +16,7 @@ impl TryFrom<EmailVerificationTokenRow> for PendingToken {
             })?;
 
         Ok(Self {
+            id: row.id,
             token_hash,
             user_id: UserId::from_uuid(row.user_id),
             purpose: PendingTokenPurpose::EmailVerification,
@@ -38,6 +39,7 @@ impl TryFrom<PasswordResetTokenRow> for PendingToken {
             })?;
 
         Ok(Self {
+            id: row.id,
             token_hash,
             user_id: UserId::from_uuid(row.user_id),
             purpose: PendingTokenPurpose::PasswordReset,

@@ -56,6 +56,7 @@ impl std::error::Error for PendingTokenPurposeParseError {}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PendingToken {
+    pub id: uuid::Uuid,
     pub token_hash: [u8; 32],
     pub user_id: UserId,
     pub purpose: PendingTokenPurpose,
